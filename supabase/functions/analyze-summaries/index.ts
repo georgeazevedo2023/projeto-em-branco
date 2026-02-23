@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY")!;
 
 const serviceSupabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -147,8 +147,8 @@ Regras:
 
     // Retry helper with backoff and fallback
     async function callAIWithRetry(): Promise<Response> {
-      const models = ["google/gemini-2.5-flash"];
-      const fallback = "google/gemini-2.5-flash-lite";
+      const models = ["llama-3.3-70b-versatile"];
+      const fallback = "llama-3.1-8b-instant";
       const payload = {
         messages: [
           { role: "system", content: systemPrompt },
@@ -157,11 +157,11 @@ Regras:
       };
 
       for (let attempt = 1; attempt <= 3; attempt++) {
-        console.log(`[analyze-summaries] Attempt ${attempt}/3 with gemini-2.5-flash`);
-        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        console.log(`[analyze-summaries] Attempt ${attempt}/3 with llama-3.3-70b-versatile`);
+        const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            Authorization: `Bearer ${GROQ_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ model: models[0], ...payload }),
@@ -181,10 +181,10 @@ Regras:
       }
 
       console.log(`[analyze-summaries] Trying fallback model: ${fallback}`);
-      return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      return await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${GROQ_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ model: fallback, ...payload }),
