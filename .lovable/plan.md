@@ -1,50 +1,30 @@
 
-# Corrigir: Erro 404 "Instance not found" ao enviar resposta do agente IA com inbox_id
 
-## Problema
+## Problema Identificado
 
-O fluxo quando o payload contem `inbox_id` + `status_ia` + mensagem:
+As policies RLS da tabela `user_roles` estao todas como **RESTRICTIVE** (em vez de PERMISSIVE). Isso faz com que **todas** as policies precisem retornar `true` simultaneamente para liberar acesso. Como um usuario normal nao e super_admin, a combinacao das policies sempre bloqueia a leitura.
 
-1. Bloco `status_ia` (linha 89-196): funciona corretamente, resolve o inbox via `inbox_id`, atualiza status, e **cai para o processamento de mensagem**
-2. Bloco `isRawMessage` (linha 200-211): reconstroi o payload com `instanceName: payload.owner` ("558181696546")
-3. Busca de instancia (linha 257-258): procura `owner_jid.eq.558181696546@s.whatsapp.net` -- **so com sufixo**
-4. No banco, o `owner_jid` esta salvo como `558181696546` (sem sufixo) --> **404 Instance not found**
-
-Existem **dois problemas**:
-- A busca na linha 257-258 tem o mesmo bug do owner_jid (so busca com sufixo)
-- O `inbox_id` ja resolvido no bloco status_ia e descartado e nao e reaproveitado
+O resultado: a query `SELECT role FROM user_roles WHERE user_id = ...` retorna array vazio, e o AuthContext nao consegue identificar o role do usuario.
 
 ## Solucao
 
-### Arquivo: `supabase/functions/whatsapp-webhook/index.ts`
+Recriar as 3 policies da tabela `user_roles` como **PERMISSIVE** (o padrao do Supabase). Com policies permissivas, basta **uma** delas retornar `true` para liberar o acesso.
 
-**Mudanca 1 - Linha 257-258:** Corrigir busca de instancia para procurar owner_jid com E sem sufixo (mesmo padrao aplicado no bloco status_ia):
+## Etapas Tecnicas
 
-```
-// Antes (bugado):
-const ownerJid = `${instanceName}@s.whatsapp.net`
-instanceQuery = instanceQuery.or(`id.eq.${instanceName},name.eq.${instanceName},owner_jid.eq.${ownerJid}`)
+1. **Criar uma migracao SQL** que:
+   - Remove as 3 policies RESTRICTIVE existentes:
+     - `Super admin can manage all roles`
+     - `Super admin can view all roles`
+     - `Users can view own roles`
+   - Recria as mesmas 3 policies como PERMISSIVE (usando `CREATE POLICY ... AS PERMISSIVE`):
+     - `Super admin can manage all roles` (ALL) - `is_super_admin(auth.uid())`
+     - `Super admin can view all roles` (SELECT) - `is_super_admin(auth.uid())`  
+     - `Users can view own roles` (SELECT) - `auth.uid() = user_id`
 
-// Depois (corrigido):
-const ownerClean = instanceName.replace('@s.whatsapp.net', '')
-const ownerWithSuffix = `${ownerClean}@s.whatsapp.net`
-instanceQuery = instanceQuery.or(`id.eq.${instanceName},name.eq.${instanceName},owner_jid.eq.${ownerClean},owner_jid.eq.${ownerWithSuffix}`)
-```
+2. **Limpar dados orfaos** do usuario antigo (`66de650f...`) que ja nao existe no `auth.users`:
+   - Remover roles do user_id `66de650f...` da tabela `user_roles`
+   - Remover perfil do user_id `66de650f...` da tabela `user_profiles`
 
-**Mudanca 2 - Propagar inbox_id resolvido:** Quando o bloco status_ia ja resolveu o inbox e a conversa, salvar essas informacoes para que o processamento de mensagem possa pular a busca de instancia/inbox. Adicionar uma variavel `resolvedFromStatusIa` antes do bloco status_ia e, no processamento de mensagem (apos linha 270), usar o inbox_id ja resolvido se disponivel.
+Nenhuma alteracao de codigo frontend e necessaria -- o problema e exclusivamente no banco de dados.
 
-Concretamente:
-- Antes do bloco status_ia (linha 87): declarar `let resolvedInboxIdForMessage = ''` e `let resolvedConversationId = ''`
-- Dentro do bloco status_ia, antes do fall-through (linha 194): atribuir `resolvedInboxIdForMessage = resolvedInboxId` e `resolvedConversationId = iaConv.id`
-- No bloco de busca de instancia/inbox (linhas 242-280): se `resolvedInboxIdForMessage` ja tem valor, pular a busca e usar diretamente
-
-Tambem, no bloco isRawMessage (linhas 200-211), propagar o `inbox_id` original para o payload sintetizado.
-
-## Resumo
-
-| Local | Mudanca |
-|---|---|
-| Linha 257-258 | Buscar owner_jid com e sem sufixo @s.whatsapp.net |
-| Linhas 87, 194 | Propagar inbox_id e conversation_id resolvidos do bloco status_ia |
-| Linhas 242-280 | Se inbox_id ja resolvido, pular busca de instancia |
-| Linhas 200-211 | Propagar inbox_id no payload sintetizado do isRawMessage |
