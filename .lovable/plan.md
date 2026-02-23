@@ -1,92 +1,63 @@
 
 
-## Diagnostico Completo do Projeto
+## Migrar 4 Edge Functions de Lovable AI Gateway para Groq
 
-### Problema Critico: TODAS as tabelas com policies RESTRICTIVE
+### Funcoes Afetadas
 
-Apos corrigir `user_roles` e `user_profiles`, verifiquei que **todas as outras 26 tabelas** ainda possuem policies **RESTRICTIVE**. Isso causa o mesmo problema que impedia o login como super_admin -- quando ha multiplas policies RESTRICTIVE, **todas** precisam retornar `true` ao mesmo tempo, o que bloqueia acessos legitimos.
+1. **summarize-conversation** - Gera resumos de conversas via IA
+2. **auto-summarize** - Resumo automatico quando conversa e resolvida
+3. **analyze-summaries** - Analise de inteligencia de negocios
+4. **send-shift-report** - Formata relatorio de turno com IA
 
-Tabelas afetadas (todas com RESTRICTIVE):
-- `broadcast_logs` (5 policies)
-- `contacts` (3 policies)
-- `conversation_labels` (3 policies)
-- `conversation_messages` (4 policies)
-- `conversations` (4 policies)
-- `inbox_users` (4 policies)
-- `inboxes` (2 policies)
-- `instance_connection_logs` (2 policies)
-- `instances` (4 policies)
-- `kanban_board_members` (2 policies)
-- `kanban_boards` (5 policies)
-- `kanban_card_data` (5 policies)
-- `kanban_cards` (5 policies)
-- `kanban_columns` (2 policies)
-- `kanban_entities` (2 policies)
-- `kanban_entity_values` (2 policies)
-- `kanban_fields` (2 policies)
-- `labels` (3 policies)
-- `lead_database_entries` (2 policies)
-- `lead_databases` (2 policies)
-- `message_templates` (4 policies)
-- `scheduled_message_logs` (2 policies)
-- `scheduled_messages` (2 policies)
-- `shift_report_configs` (1 policy)
-- `shift_report_logs` (1 policy)
-- `user_instance_access` (2 policies)
+### O que muda em cada funcao
 
-### Problema Secundario: CORS incompleto na Edge Function `uazapi-proxy`
+Para cada uma das 4 funcoes, as alteracoes sao identicas em conceito:
 
-O header `Access-Control-Allow-Headers` atual e:
-```
-authorization, x-client-info, apikey, content-type
-```
+| De (Lovable AI) | Para (Groq) |
+|---|---|
+| `LOVABLE_API_KEY` | `GROQ_API_KEY` |
+| `https://ai.gateway.lovable.dev/v1/chat/completions` | `https://api.groq.com/openai/v1/chat/completions` |
+| `google/gemini-3-flash-preview` | `llama-3.3-70b-versatile` |
+| `google/gemini-2.5-flash` | `llama-3.3-70b-versatile` |
+| `google/gemini-2.5-flash-lite` | `llama-3.1-8b-instant` |
 
-Faltam os headers que o Supabase JS Client envia automaticamente:
-```
-x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version
-```
+### Detalhes por funcao
 
-### Problema: `config.toml` sem configuracao de edge functions
+**1. summarize-conversation/index.ts**
+- Linha 138: `LOVABLE_API_KEY` -> `GROQ_API_KEY`
+- Linha 155: URL do gateway -> URL Groq
+- Linha 158: Header Authorization usa `GROQ_API_KEY`
+- Linha 162: modelo -> `llama-3.3-70b-versatile`
 
-O arquivo `supabase/config.toml` so tem o `project_id`. Deveria ter a configuracao `verify_jwt = false` para as edge functions que precisam de validacao manual (como `uazapi-proxy`, `whatsapp-webhook`, etc.).
+**2. auto-summarize/index.ts**
+- Linha 12: variavel `LOVABLE_API_KEY` -> `GROQ_API_KEY`
+- Linha 63: URL do gateway -> URL Groq
+- Linha 66: Header Authorization usa `GROQ_API_KEY`
+- Linha 70: modelo -> `llama-3.3-70b-versatile`
+- Tambem corrigir CORS headers (linha 7 esta incompleto)
 
-### O que esta OK
+**3. analyze-summaries/index.ts**
+- Linha 12: variavel `LOVABLE_API_KEY` -> `GROQ_API_KEY`
+- Linhas 161 e 184: URLs do gateway -> URL Groq
+- Linhas 164 e 187: Headers Authorization usam `GROQ_API_KEY`
+- Linha 167: modelo principal -> `llama-3.3-70b-versatile`
+- Linha 151: fallback -> `llama-3.1-8b-instant`
 
-- Todas as 28 tabelas existem e tem RLS habilitado
-- Triggers estao funcionando (auto_summarize, status_change, updated_at)
-- Edge functions estao respondendo (logs mostram atividade recente com status 200)
-- Autenticacao funciona (super_admin logando corretamente)
-- Perfil do usuario carregando (user_profiles corrigido)
-- Roles funcionando (user_roles corrigido)
-- Secrets todas configuradas (UAZAPI_ADMIN_TOKEN, GROQ_API_KEY, etc.)
-- Storage buckets criados (audio-messages, carousel-images, helpdesk-media)
+**4. send-shift-report/index.ts**
+- Linha 12: variavel `LOVABLE_API_KEY` -> `GROQ_API_KEY`
+- Linha 48: URL do gateway -> URL Groq
+- Linha 51: Header Authorization usa `GROQ_API_KEY`
+- Linha 55: modelo -> `llama-3.3-70b-versatile`
 
----
+### Correcao adicional
 
-## Plano de Correcao
+A funcao `auto-summarize` tambem tem o CORS incompleto (faltam os headers `x-supabase-client-*`). Sera corrigido junto.
 
-### Etapa 1: Migracao SQL -- Corrigir TODAS as policies RESTRICTIVE
+### A API Groq
 
-Criar uma migracao que faz DROP + CREATE de todas as policies de todas as tabelas afetadas, recriando-as como **PERMISSIVE** (o padrao). A logica de cada policy permanece identica, apenas muda o modo de `RESTRICTIVE` para `PERMISSIVE`.
+A API Groq e compativel com o formato OpenAI, entao a estrutura do request/response permanece identica. So muda a URL base, a chave de API e os nomes dos modelos.
 
-Serao ~70 policies recriadas ao total, cobrindo as 26 tabelas listadas acima.
+### Nenhuma alteracao de frontend necessaria
 
-### Etapa 2: Corrigir CORS da Edge Function `uazapi-proxy`
-
-Atualizar o `corsHeaders` em `supabase/functions/uazapi-proxy/index.ts` para incluir todos os headers necessarios:
-
-```typescript
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-}
-```
-
-### Etapa 3: Atualizar `supabase/config.toml`
-
-Adicionar configuracao de edge functions com `verify_jwt = false` para funcoes que validam auth manualmente no codigo (como `uazapi-proxy`, `whatsapp-webhook`, `admin-create-user`, etc.).
-
-### Nenhuma alteracao de codigo frontend necessaria
-
-O problema e exclusivamente no banco de dados (policies) e configuracao de edge functions.
+Todas as mudancas sao exclusivamente nas edge functions.
 
