@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Loader2, Trash2, UserPlus } from 'lucide-react';
+import { Plus, Loader2, Trash2, UserPlus, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -289,6 +289,19 @@ const ManageInboxUsersDialog = ({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{member.full_name || 'Sem nome'}</p>
                   <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="text-[10px] font-mono text-muted-foreground truncate">ID: {member.user_id}</span>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => {
+                        navigator.clipboard.writeText(member.user_id);
+                        toast.success('ID copiado!');
+                      }}
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
                 <Select
                   value={member.role}

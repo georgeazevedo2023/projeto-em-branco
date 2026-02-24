@@ -963,6 +963,19 @@ const AdminPanel = () => {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">{u.full_name || 'Sem nome'}</p>
                       <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] font-mono text-muted-foreground truncate">ID: {u.id}</span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => {
+                            navigator.clipboard.writeText(u.id);
+                            toast.success('ID copiado!');
+                          }}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
