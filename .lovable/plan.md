@@ -1,85 +1,61 @@
-## Ativar Cron Jobs com pg_cron + Intervalos Otimizados
 
-### Passo 1: Habilitar extensoes pg_cron e pg_net
 
-Criar uma migration SQL para habilitar as duas extensoes necessarias:
+## Corrigir mensagens outgoing do agente IA nao aparecendo no Helpdesk
+
+### Problema identificado
+
+O payload do n8n contem `status_ia: "ligada"`, o que faz a edge function entrar no bloco de processamento de `status_ia` (linha 92). Quando esse bloco nao encontra uma conversa aberta, ele retorna `status_ia_no_conversation` e **nunca processa a mensagem**, mesmo que o payload tambem contenha `content.text`.
+
+Alem disso, o `inbox_id` no payload aponta para "Ibirajuba Teste" em vez de "Ibirajuba".
+
+### Correcoes
+
+**1. Corrigir o `inbox_id` no n8n**
+
+Trocar no payload do n8n:
+- De: `f851e9c8-f7a5-40bc-be12-697993fc5dbd` (Ibirajuba Teste)
+- Para: `74c8fa53-45a7-4237-83f6-4d2548e083ed` (Ibirajuba)
+
+**2. Corrigir a edge function `whatsapp-webhook`**
+
+No bloco de `status_ia` (linha 164-168), quando nao encontra conversa aberta mas o payload contem conteudo de mensagem, ao inves de retornar early, permitir que o fluxo continue para o processamento de mensagem (que cria a conversa automaticamente).
+
+Alteracao no arquivo `supabase/functions/whatsapp-webhook/index.ts`:
+
+Linhas 164-168 - trocar o return early por um fall-through quando ha conteudo de mensagem:
 
 ```text
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+// Antes (retorna e ignora a mensagem):
+if (!iaConv) {
+  console.log('status_ia: no open conversation found')
+  return new Response(...)
+}
+
+// Depois (permite processar a mensagem mesmo sem conversa existente):
+if (!iaConv) {
+  const hasMessageContent = payload.content?.text || unwrapped?.content?.text
+  if (!hasMessageContent) {
+    console.log('status_ia: no open conversation found and no message content')
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'status_ia_no_conversation' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+  console.log('status_ia: no open conversation but has message content, falling through to message processing')
+  resolvedInboxIdForMessage = resolvedInboxId
+} else {
+  // Conversa encontrada - atualiza status_ia e propaga IDs
+  await supabase.from('conversations').update({ status_ia: statusIaPayload }).eq('id', iaConv.id)
+  // ... resto do bloco existente de broadcast e propagacao
+  resolvedInboxIdForMessage = resolvedInboxId
+  resolvedConversationId = iaConv.id
+}
 ```
-
-### Passo 2: Criar os 3 cron jobs via SQL (insert direto, nao migration)
-
-Como os cron jobs contem URLs e chaves especificas do projeto, serao criados via SQL direto (nao migration).
-
-**Intervalos com +50% de economia:**
-
-
-| Job                        | Original      | Novo intervalo     | Cron syntax   |
-| -------------------------- | ------------- | ------------------ | ------------- |
-| process-scheduled-messages | a cada 1 min  | a cada **1 hora**  | `*/2 * * * *` |
-| auto-summarize (inactive)  | a cada 1 hora | a cada **2 horas** | `0 */2 * * *` |
-| send-shift-report (hourly) | a cada 1 hora | a cada **2 horas** | `0 */2 * * *` |
-
-
-**SQL para criar os 3 jobs:**
-
-```text
--- Job 1: Processa mensagens agendadas a cada 2 minutos
-SELECT cron.schedule(
-  'process-scheduled-messages',
-  '*/2 * * * *',
-  $$
-  SELECT net.http_post(
-    url:='https://crzcpnczpuzwieyzbqev.supabase.co/functions/v1/process-scheduled-messages',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyemNwbmN6cHV6d2lleXpicWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODI1NDUsImV4cCI6MjA4NzM1ODU0NX0.49SQU4odU9nNL9rdIXRsE92HFZFcrRmjQIuur5LRHh4"}'::jsonb,
-    body:='{}'::jsonb
-  ) AS request_id;
-  $$
-);
-
--- Job 2: Auto-resumo de conversas inativas a cada 2 horas
-SELECT cron.schedule(
-  'auto-summarize-inactive',
-  '0 */2 * * *',
-  $$
-  SELECT net.http_post(
-    url:='https://crzcpnczpuzwieyzbqev.supabase.co/functions/v1/auto-summarize',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyemNwbmN6cHV6d2lleXpicWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODI1NDUsImV4cCI6MjA4NzM1ODU0NX0.49SQU4odU9nNL9rdIXRsE92HFZFcrRmjQIuur5LRHh4"}'::jsonb,
-    body:='{"mode":"inactive","limit":20}'::jsonb
-  ) AS request_id;
-  $$
-);
-
--- Job 3: Relatorio de turno a cada 2 horas
-SELECT cron.schedule(
-  'send-shift-reports-hourly',
-  '0 */2 * * *',
-  $$
-  SELECT net.http_post(
-    url:='https://crzcpnczpuzwieyzbqev.supabase.co/functions/v1/send-shift-report',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyemNwbmN6cHV6d2lleXpicWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3ODI1NDUsImV4cCI6MjA4NzM1ODU0NX0.49SQU4odU9nNL9rdIXRsE92HFZFcrRmjQIuur5LRHh4"}'::jsonb,
-    body:='{"mode":"cron"}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
-
-### Passo 3: Verificacao
-
-Apos criar os jobs, consultar `cron.job` para confirmar que os 3 estao ativos.
-
-### Impacto na economia
-
-- **process-scheduled-messages**: 80% menos execucoes (de 1440/dia para 720/dia)
-- **auto-summarize + send-shift-report**: 50% menos execucoes (de 24/dia para 12/dia cada)
-- **Total**: de ~1488 execucoes/dia para ~744 execucoes/dia
 
 ### Secao tecnica
 
-- A migration cria apenas as extensoes (pg_cron + pg_net)
-- Os cron jobs sao criados via SQL direto (contem dados sensíveis como anon key)
-- O `process-scheduled-messages` a cada 2 min pode ter delay maximo de 2 min para mensagens agendadas (aceitavel)
-- O `send-shift-report` verifica internamente se e hora de enviar baseado no `send_hour` da config, entao rodar a cada 2h ainda funciona (pode ter delay de ate 1h)
-- Nenhuma alteracao de codigo nas edge functions e necessaria
+- A alteracao e apenas na edge function `whatsapp-webhook/index.ts`, linhas ~164-202
+- O bloco de status_ia atualmente faz return early em 4 cenarios de erro. Apenas o cenario `no_conversation` precisa ser alterado para fazer fall-through quando ha conteudo de mensagem
+- O fluxo de mensagem (a partir da linha 206) ja sabe criar conversas novas, entao a mensagem sera salva corretamente
+- Apos o deploy, a mensagem do agente IA aparecera no helpdesk como `outgoing` (porque `fromMe: true`)
+- O usuario tambem precisa corrigir o `inbox_id` no n8n para apontar para a inbox correta
+
