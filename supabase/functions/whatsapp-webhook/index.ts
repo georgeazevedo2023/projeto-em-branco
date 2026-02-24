@@ -162,44 +162,50 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .maybeSingle()
       if (!iaConv) {
-        console.log('status_ia: no open conversation found')
-        return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'status_ia_no_conversation' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      // Update status_ia
-      await supabase.from('conversations').update({ status_ia: statusIaPayload } as any).eq('id', iaConv.id)
-      console.log('status_ia updated to', statusIaPayload, 'for conversation', iaConv.id)
-
-      // Broadcast via REST API
-      const SB_URL = Deno.env.get('SUPABASE_URL')!
-      const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY')!
-      const iaBroadcast = { conversation_id: iaConv.id, status_ia: statusIaPayload }
-      await Promise.all(
-        ['helpdesk-realtime', 'helpdesk-conversations'].map(topic =>
-          fetch(`${SB_URL}/realtime/v1/api/broadcast`, {
-            method: 'POST',
-            headers: { 'apikey': SB_ANON, 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_ANON}` },
-            body: JSON.stringify({ messages: [{ topic, event: 'new-message', payload: iaBroadcast }] }),
+        // No open conversation found - check if payload also contains message content
+        const hasMessageContentNoConv = payload.content?.text || unwrapped?.content?.text
+        if (!hasMessageContentNoConv) {
+          console.log('status_ia: no open conversation found and no message content')
+          return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'status_ia_no_conversation' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           })
+        }
+        // Has message content - fall through to message processing which will create the conversation
+        console.log('status_ia: no open conversation but has message content, falling through to message processing')
+        resolvedInboxIdForMessage = resolvedInboxId
+      } else {
+        // Conversation found - update status_ia
+        await supabase.from('conversations').update({ status_ia: statusIaPayload } as any).eq('id', iaConv.id)
+        console.log('status_ia updated to', statusIaPayload, 'for conversation', iaConv.id)
+
+        // Broadcast via REST API
+        const SB_URL = Deno.env.get('SUPABASE_URL')!
+        const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY')!
+        const iaBroadcast = { conversation_id: iaConv.id, status_ia: statusIaPayload }
+        await Promise.all(
+          ['helpdesk-realtime', 'helpdesk-conversations'].map(topic =>
+            fetch(`${SB_URL}/realtime/v1/api/broadcast`, {
+              method: 'POST',
+              headers: { 'apikey': SB_ANON, 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_ANON}` },
+              body: JSON.stringify({ messages: [{ topic, event: 'new-message', payload: iaBroadcast }] }),
+            })
+          )
         )
-      )
 
-      // Check if payload ALSO contains a message to save (e.g. agent IA response)
-      const hasMessageContent = payload.content?.text || unwrapped?.content?.text
-      if (!hasMessageContent) {
-        // Pure status_ia update - return early
-        return new Response(JSON.stringify({ ok: true, status_ia: statusIaPayload, conversation_id: iaConv.id }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        // Check if payload ALSO contains a message to save (e.g. agent IA response)
+        const hasMessageContent = payload.content?.text || unwrapped?.content?.text
+        if (!hasMessageContent) {
+          // Pure status_ia update - return early
+          return new Response(JSON.stringify({ ok: true, status_ia: statusIaPayload, conversation_id: iaConv.id }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+
+        // Has message content alongside status_ia - fall through to message processing
+        resolvedInboxIdForMessage = resolvedInboxId
+        resolvedConversationId = iaConv.id
+        console.log('status_ia updated, continuing to process message content:', hasMessageContent.substring(0, 80), 'resolvedInboxId:', resolvedInboxIdForMessage)
       }
-
-      // Has message content alongside status_ia - fall through to isRawMessage processing
-      // Propagate resolved inbox_id and conversation_id so message processing can skip instance lookup
-      resolvedInboxIdForMessage = resolvedInboxId
-      resolvedConversationId = iaConv.id
-      console.log('status_ia updated, continuing to process message content:', hasMessageContent.substring(0, 80), 'resolvedInboxId:', resolvedInboxIdForMessage)
     }
 
     // 2. Detect raw UAZAPI message format (e.g. from n8n agent output)
