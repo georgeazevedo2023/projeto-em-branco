@@ -227,6 +227,7 @@ const Instances = () => {
       const { data: instancesData, error: instancesError } = await supabase
         .from('instances')
         .select('*')
+        .eq('disabled', false)
         .order('created_at', { ascending: false });
 
       if (instancesError) throw instancesError;
@@ -497,14 +498,14 @@ const Instances = () => {
     if (!instanceToDelete) return;
     setIsDeletingInstance(true);
     try {
-      const { error } = await supabase.from('instances').delete().eq('id', instanceToDelete.id);
+      const { error } = await supabase.from('instances').update({ disabled: true } as any).eq('id', instanceToDelete.id);
       if (error) throw error;
-      toast.success('Instância excluída com sucesso');
+      toast.success('Instância removida do painel');
       setInstanceToDelete(null);
       fetchInstances();
     } catch (error) {
-      console.error('Error deleting instance:', error);
-      toast.error('Erro ao excluir instância');
+      console.error('Error disabling instance:', error);
+      toast.error('Erro ao remover instância');
     } finally {
       setIsDeletingInstance(false);
     }
@@ -674,10 +675,10 @@ const Instances = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-destructive" />
-              Excluir instância?
+              Remover instância
             </AlertDialogTitle>
             <AlertDialogDescription>
-              A instância <strong>{instanceToDelete?.name}</strong> será excluída permanentemente. Esta ação não pode ser desfeita.
+              A instância <strong>{instanceToDelete?.name}</strong> será removida do painel. Ela não será excluída na UAZAPI e poderá ser restaurada posteriormente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -687,7 +688,7 @@ const Instances = () => {
               disabled={isDeletingInstance}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeletingInstance ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}Excluir
+              {isDeletingInstance ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}Remover
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

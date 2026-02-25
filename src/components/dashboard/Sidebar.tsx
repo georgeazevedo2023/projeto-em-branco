@@ -84,7 +84,7 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
     try {
       if (isSuperAdmin) {
         const [instancesRes, inboxesRes] = await Promise.all([
-          supabase.from('instances').select('id, name, status').order('name'),
+          supabase.from('instances').select('id, name, status').eq('disabled', false).order('name'),
           supabase.from('inboxes').select('id, name, instance_id').order('name'),
         ]);
 

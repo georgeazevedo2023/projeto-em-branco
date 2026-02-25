@@ -265,7 +265,7 @@ const AdminPanel = () => {
 
   // ── Fetch instances ────────────────────────────────────────────────────────
   const fetchInstances = useCallback(async () => {
-    const { data } = await supabase.from('instances').select('id, name, status').order('name');
+    const { data } = await supabase.from('instances').select('id, name, status').eq('disabled', false).order('name');
     if (data) setInstances(data);
   }, []);
 

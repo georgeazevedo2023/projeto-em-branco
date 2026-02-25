@@ -365,6 +365,7 @@ export type Database = {
       instances: {
         Row: {
           created_at: string
+          disabled: boolean
           id: string
           name: string
           owner_jid: string | null
@@ -376,6 +377,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          disabled?: boolean
           id: string
           name: string
           owner_jid?: string | null
@@ -387,6 +389,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          disabled?: boolean
           id?: string
           name?: string
           owner_jid?: string | null
