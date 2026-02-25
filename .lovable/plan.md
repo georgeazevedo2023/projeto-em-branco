@@ -1,29 +1,34 @@
 
-## Melhorar os modais de confirmacao de exclusao em todos os modulos
+
+## Corrigir exclusao de instancias: soft delete em vez de hard delete
 
 ### Problema
 
-A pagina de Instancias usa `confirm()` nativo do navegador (aquele modal feio com "Uma pagina incorporada em..."). Os demais modulos ja usam o componente `AlertDialog` estilizado, mas podem ser melhorados visualmente com icone de alerta e estilo consistente.
+A funcao de "Excluir" instancia atualmente faz `supabase.from('instances').delete()`, removendo o registro do banco. O comportamento correto e apenas ocultar a instancia no CRM, sem comunicar com a UAZAPI nem excluir dados.
+
+### Solucao
+
+Adicionar uma coluna `disabled` na tabela `instances` e alterar a logica para fazer soft delete.
 
 ### Alteracoes
 
-**1. Instancias (`src/pages/dashboard/Instances.tsx`) - Substituir `confirm()` por `AlertDialog`**
+**1. Migracao de banco de dados**
 
-- Adicionar estado `instanceToDelete` para controlar o dialog
-- Substituir a chamada `confirm(...)` na funcao `handleDelete` por `setInstanceToDelete(instance)`
-- Adicionar um `AlertDialog` no JSX com icone `AlertTriangle`, titulo, descricao com nome da instancia em negrito, e botoes Cancelar/Excluir estilizados (vermelho destrutivo com spinner durante exclusao)
+Adicionar coluna `disabled` (boolean, default false) na tabela `instances`:
 
-**2. Padronizar todos os AlertDialogs existentes para ter icone de alerta**
+```sql
+ALTER TABLE instances ADD COLUMN disabled boolean NOT NULL DEFAULT false;
+```
 
-Nos modulos que ja usam `AlertDialog` mas sem icone:
+**2. `src/pages/dashboard/Instances.tsx`**
 
-- **AdminPanel** - Dialog de exclusao de inbox (linha ~1130): adicionar icone `AlertTriangle` no titulo (ja existe no de usuario, falta no de inbox e no de remover membro)
-- **LeadDatabaseSelector** - Dialog de exclusao de base de leads: adicionar icone `AlertTriangle`
-- **BroadcastHistory** - Dialogs de exclusao individual e em lote: adicionar icone `AlertTriangle`
-- **BoardCard (KanbanCRM)** - Dialog de exclusao de quadro: adicionar icone `AlertTriangle`
+- Na funcao `confirmDeleteInstance`: trocar `.delete()` por `.update({ disabled: true })` e ajustar a mensagem para "Instancia removida do painel"
+- Na funcao `fetchInstances`: adicionar filtro `.eq('disabled', false)` na query para nao exibir instancias desabilitadas
+- Atualizar o texto do AlertDialog: trocar "Excluir" por "Remover" e ajustar descricao para explicar que a instancia sera ocultada do painel (nao excluida da UAZAPI)
 
-### Detalhes tecnicos
+**3. Textos do modal**
 
-- Na pagina Instances: importar `AlertDialog*`, `AlertTriangle`, `Loader2`; adicionar `const [instanceToDelete, setInstanceToDelete] = useState<Instance | null>(null)` e `const [isDeletingInstance, setIsDeletingInstance] = useState(false)`
-- A funcao `handleDelete` sera dividida: o clique no menu seta `instanceToDelete`, e a confirmacao no dialog executa a exclusao com loading state
-- Todos os dialogs seguirao o mesmo padrao visual: icone vermelho `AlertTriangle` no titulo, texto descritivo com nome em negrito, botao vermelho "Excluir" com spinner
+- Titulo: "Remover instancia"
+- Descricao: "A instancia **{nome}** sera removida do painel. Ela nao sera excluida na UAZAPI e podera ser restaurada posteriormente."
+- Botao: "Remover" (em vez de "Excluir")
+
