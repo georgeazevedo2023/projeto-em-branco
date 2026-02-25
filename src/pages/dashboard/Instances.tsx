@@ -503,6 +503,7 @@ const Instances = () => {
       toast.success('Instância removida do painel');
       setInstanceToDelete(null);
       fetchInstances();
+      window.dispatchEvent(new CustomEvent('instances-updated'));
     } catch (error) {
       console.error('Error disabling instance:', error);
       toast.error('Erro ao remover instância');
