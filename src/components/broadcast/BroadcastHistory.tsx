@@ -52,7 +52,8 @@ import {
   LayoutGrid,
   Trash2,
   User,
-  Search
+  Search,
+  AlertTriangle
 } from 'lucide-react';
 import { isAfter, isBefore, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { formatBR } from '@/lib/dateUtils';
@@ -1108,7 +1109,10 @@ const BroadcastHistory = ({ onResend }: BroadcastHistoryProps) => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir registro</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Excluir registro
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir este registro do histórico? Esta ação não pode ser desfeita.
               {logToDelete && (
@@ -1137,7 +1141,10 @@ const BroadcastHistory = ({ onResend }: BroadcastHistoryProps) => {
       <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[95vw] sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir {selectedIds.size} registros</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Excluir {selectedIds.size} registros
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir <strong>{selectedIds.size} registros</strong> do histórico? 
               Esta ação não pode ser desfeita.

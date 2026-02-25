@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Database, Plus, Trash2, Users, Calendar, ChevronRight, FolderOpen, Pencil, MessageCircle, Settings2 } from 'lucide-react';
+import { Database, Plus, Trash2, Users, Calendar, ChevronRight, FolderOpen, Pencil, MessageCircle, Settings2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatBR } from '@/lib/dateUtils';
@@ -277,7 +277,10 @@ const LeadDatabaseSelector = ({
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover base de leads?</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Remover base de leads?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação irá remover permanentemente a base "{deleteTarget?.name}" e todos os {deleteTarget?.leads_count} contatos. 
               Esta ação não pode ser desfeita.

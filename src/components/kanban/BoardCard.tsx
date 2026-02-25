@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { MoreVertical, Edit, Copy, Trash2, ArrowRight, Columns, FileText, Users, Lock, MessageSquare } from 'lucide-react';
+import { MoreVertical, Edit, Copy, Trash2, ArrowRight, Columns, FileText, Users, Lock, MessageSquare, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { EditBoardDialog } from './EditBoardDialog';
 
@@ -220,7 +220,10 @@ export function BoardCard({ board, inboxes, onRefresh, canManage = false }: Boar
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir Quadro?</AlertDialogTitle>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-destructive" />
+                        Excluir Quadro?
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
                         Todos os cards e dados deste quadro serão perdidos. Esta ação não pode ser desfeita.
                       </AlertDialogDescription>
