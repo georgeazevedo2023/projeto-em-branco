@@ -70,7 +70,7 @@ const Settings = () => {
   const { data: instances } = useQuery({
     queryKey: ['instances-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('instances').select('id, name, status').order('name');
+      const { data, error } = await supabase.from('instances').select('id, name, status').eq('disabled', false).order('name');
       if (error) throw error;
       return data || [];
     },
