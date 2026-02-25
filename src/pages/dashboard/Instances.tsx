@@ -23,7 +23,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Server, Loader2, RefreshCw, QrCode } from 'lucide-react';
+import { Plus, Search, Server, Loader2, RefreshCw, QrCode, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -103,6 +113,10 @@ const Instances = () => {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isLoadingQr, setIsLoadingQr] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Estado para delete dialog
+  const [instanceToDelete, setInstanceToDelete] = useState<Instance | null>(null);
+  const [isDeletingInstance, setIsDeletingInstance] = useState(false);
 
   useEffect(() => {
     fetchInstances();
@@ -475,21 +489,24 @@ const Instances = () => {
     setSelectedInstance(null);
   };
 
-  const handleDelete = async (instance: Instance) => {
-    if (!confirm(`Tem certeza que deseja excluir a instância "${instance.name}"?`)) {
-      return;
-    }
+  const handleDelete = (instance: Instance) => {
+    setInstanceToDelete(instance);
+  };
 
+  const confirmDeleteInstance = async () => {
+    if (!instanceToDelete) return;
+    setIsDeletingInstance(true);
     try {
-      const { error } = await supabase.from('instances').delete().eq('id', instance.id);
-
+      const { error } = await supabase.from('instances').delete().eq('id', instanceToDelete.id);
       if (error) throw error;
-
       toast.success('Instância excluída com sucesso');
+      setInstanceToDelete(null);
       fetchInstances();
     } catch (error) {
       console.error('Error deleting instance:', error);
       toast.error('Erro ao excluir instância');
+    } finally {
+      setIsDeletingInstance(false);
     }
   };
 
@@ -650,6 +667,31 @@ const Instances = () => {
           ))}
         </div>
       )}
+
+      {/* Delete Instance Dialog */}
+      <AlertDialog open={!!instanceToDelete} onOpenChange={(open) => !open && setInstanceToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Excluir instância?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              A instância <strong>{instanceToDelete?.name}</strong> será excluída permanentemente. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingInstance}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteInstance}
+              disabled={isDeletingInstance}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingInstance ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Modal de QR Code Centralizado */}
       <Dialog open={qrDialogOpen} onOpenChange={handleCloseQrDialog}>

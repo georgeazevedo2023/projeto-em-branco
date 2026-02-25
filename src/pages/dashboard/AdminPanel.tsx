@@ -1127,7 +1127,10 @@ const AdminPanel = () => {
       <AlertDialog open={!!inboxToDelete} onOpenChange={open => !open && setInboxToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir caixa de entrada?</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Excluir caixa de entrada?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               <strong>{inboxToDelete?.name}</strong> e todos seus membros e etiquetas serão removidos. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
@@ -1166,7 +1169,10 @@ const AdminPanel = () => {
       <AlertDialog open={!!removeMembership} onOpenChange={open => !open && setRemoveMembership(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover membro da caixa?</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Remover membro da caixa?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {removeMembership && (
                 <><strong>{removeMembership.userName}</strong> será removido de <strong>{removeMembership.inboxName}</strong>. A conta não será excluída.</>
