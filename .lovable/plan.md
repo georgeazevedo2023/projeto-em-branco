@@ -1,35 +1,29 @@
 
-## Mostrar o ID de cada agente na aba Equipe e no dialog de membros
+## Melhorar os modais de confirmacao de exclusao em todos os modulos
 
-### O que sera feito
+### Problema
 
-Adicionar o `user_id` de cada agente/membro em dois locais do painel admin, com botao de copiar para facilitar o cadastro no n8n:
+A pagina de Instancias usa `confirm()` nativo do navegador (aquele modal feio com "Uma pagina incorporada em..."). Os demais modulos ja usam o componente `AlertDialog` estilizado, mas podem ser melhorados visualmente com icone de alerta e estilo consistente.
 
 ### Alteracoes
 
-**1. Aba "Equipe" do AdminPanel (`src/pages/dashboard/AdminPanel.tsx`)**
+**1. Instancias (`src/pages/dashboard/Instances.tsx`) - Substituir `confirm()` por `AlertDialog`**
 
-Na secao de cada membro (linhas 957-966), abaixo do email, adicionar uma linha com o `user_id` e um botao de copiar:
+- Adicionar estado `instanceToDelete` para controlar o dialog
+- Substituir a chamada `confirm(...)` na funcao `handleDelete` por `setInstanceToDelete(instance)`
+- Adicionar um `AlertDialog` no JSX com icone `AlertTriangle`, titulo, descricao com nome da instancia em negrito, e botoes Cancelar/Excluir estilizados (vermelho destrutivo com spinner durante exclusao)
 
-```text
-Nome do Agente
-email@exemplo.com
-ID: abc123-def456...  [copiar]
-```
+**2. Padronizar todos os AlertDialogs existentes para ter icone de alerta**
 
-**2. Dialog "Membros" da inbox (`src/components/dashboard/ManageInboxUsersDialog.tsx`)**
+Nos modulos que ja usam `AlertDialog` mas sem icone:
 
-Na lista de membros (linhas 289-291), abaixo do email, adicionar o `user_id` com botao de copiar:
-
-```text
-Nome do Membro
-email@exemplo.com
-ID: abc123-def456...  [copiar]
-```
+- **AdminPanel** - Dialog de exclusao de inbox (linha ~1130): adicionar icone `AlertTriangle` no titulo (ja existe no de usuario, falta no de inbox e no de remover membro)
+- **LeadDatabaseSelector** - Dialog de exclusao de base de leads: adicionar icone `AlertTriangle`
+- **BroadcastHistory** - Dialogs de exclusao individual e em lote: adicionar icone `AlertTriangle`
+- **BoardCard (KanbanCRM)** - Dialog de exclusao de quadro: adicionar icone `AlertTriangle`
 
 ### Detalhes tecnicos
 
-- O `user_id` ja esta disponivel como `u.id` na aba Equipe e como `member.user_id` no dialog de membros
-- O botao de copiar usara `navigator.clipboard.writeText()` com feedback via `toast.success`
-- O ID sera exibido em fonte monospacada (`font-mono`) e tamanho reduzido (`text-[10px]`) para nao poluir o layout
-- Nenhuma alteracao de banco de dados necessaria
+- Na pagina Instances: importar `AlertDialog*`, `AlertTriangle`, `Loader2`; adicionar `const [instanceToDelete, setInstanceToDelete] = useState<Instance | null>(null)` e `const [isDeletingInstance, setIsDeletingInstance] = useState(false)`
+- A funcao `handleDelete` sera dividida: o clique no menu seta `instanceToDelete`, e a confirmacao no dialog executa a exclusao com loading state
+- Todos os dialogs seguirao o mesmo padrao visual: icone vermelho `AlertTriangle` no titulo, texto descritivo com nome em negrito, botao vermelho "Excluir" com spinner
