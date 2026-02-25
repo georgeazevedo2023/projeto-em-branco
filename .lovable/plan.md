@@ -1,34 +1,31 @@
 
 
-## Corrigir exclusao de instancias: soft delete em vez de hard delete
+## Corrigir: instancia removida nao sai do menu lateral
 
 ### Problema
 
-A funcao de "Excluir" instancia atualmente faz `supabase.from('instances').delete()`, removendo o registro do banco. O comportamento correto e apenas ocultar a instancia no CRM, sem comunicar com a UAZAPI nem excluir dados.
+Ao remover (desabilitar) uma instancia na pagina de Instancias, a lista principal atualiza corretamente, mas o menu lateral (Sidebar) continua exibindo a instancia removida. Isso acontece porque a funcao `confirmDeleteInstance` nao dispara o evento `instances-updated` que o Sidebar escuta para se atualizar.
 
-### Solucao
+### Correcao
 
-Adicionar uma coluna `disabled` na tabela `instances` e alterar a logica para fazer soft delete.
+**Arquivo: `src/pages/dashboard/Instances.tsx`** (linha ~505)
 
-### Alteracoes
+Adicionar `window.dispatchEvent(new CustomEvent('instances-updated'))` logo apos o `fetchInstances()` dentro da funcao `confirmDeleteInstance`, para notificar o Sidebar a re-buscar a lista de instancias.
 
-**1. Migracao de banco de dados**
-
-Adicionar coluna `disabled` (boolean, default false) na tabela `instances`:
-
-```sql
-ALTER TABLE instances ADD COLUMN disabled boolean NOT NULL DEFAULT false;
+Antes:
+```typescript
+toast.success('Instância removida do painel');
+setInstanceToDelete(null);
+fetchInstances();
 ```
 
-**2. `src/pages/dashboard/Instances.tsx`**
+Depois:
+```typescript
+toast.success('Instância removida do painel');
+setInstanceToDelete(null);
+fetchInstances();
+window.dispatchEvent(new CustomEvent('instances-updated'));
+```
 
-- Na funcao `confirmDeleteInstance`: trocar `.delete()` por `.update({ disabled: true })` e ajustar a mensagem para "Instancia removida do painel"
-- Na funcao `fetchInstances`: adicionar filtro `.eq('disabled', false)` na query para nao exibir instancias desabilitadas
-- Atualizar o texto do AlertDialog: trocar "Excluir" por "Remover" e ajustar descricao para explicar que a instancia sera ocultada do painel (nao excluida da UAZAPI)
-
-**3. Textos do modal**
-
-- Titulo: "Remover instancia"
-- Descricao: "A instancia **{nome}** sera removida do painel. Ela nao sera excluida na UAZAPI e podera ser restaurada posteriormente."
-- Botao: "Remover" (em vez de "Excluir")
+Uma unica linha adicionada. O Sidebar ja escuta esse evento e chama seu proprio `fetchInstances()` com o filtro `disabled = false`.
 
