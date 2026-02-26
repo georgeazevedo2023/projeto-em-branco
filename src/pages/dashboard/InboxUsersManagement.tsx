@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,7 +18,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Users, Inbox, Trash2, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Plus, Search, Users, Inbox, Trash2, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import CreateInboxUserDialog from '@/components/dashboard/CreateInboxUserDialog';
 import type { Database } from '@/integrations/supabase/types';
@@ -58,6 +67,13 @@ const InboxUsersManagement = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [removeMembership, setRemoveMembership] = useState<{ userId: string; inboxId: string; userName: string; inboxName: string } | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+
+  // Edit user state
+  const [editingUser, setEditingUser] = useState<InboxUser | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   useEffect(() => {
     if (isSuperAdmin) fetchData();
@@ -140,6 +156,48 @@ const InboxUsersManagement = () => {
     }
   };
 
+  const openEditUser = (u: InboxUser) => {
+    setEditingUser(u);
+    setEditName(u.full_name || '');
+    setEditEmail(u.email);
+    setEditPassword('');
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser) return;
+    if (!editEmail.trim()) {
+      toast.error('Email é obrigatório');
+      return;
+    }
+    if (editPassword && editPassword.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+    setIsSavingEdit(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          user_id: editingUser.id,
+          email: editEmail.trim(),
+          full_name: editName.trim(),
+          ...(editPassword ? { password: editPassword } : {}),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
+      toast.success('Atendente atualizado!');
+      setEditingUser(null);
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao atualizar atendente');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const filteredUsers = users.filter(
     (u) =>
       u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -205,10 +263,18 @@ const InboxUsersManagement = () => {
                     {user.full_name?.charAt(0)?.toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h3 className="font-semibold truncate">{user.full_name || 'Sem nome'}</h3>
                   <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
+                  onClick={() => openEditUser(user)}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
               </div>
 
               {/* Inbox memberships */}
@@ -287,6 +353,36 @@ const InboxUsersManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={open => !open && setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Atendente</DialogTitle>
+            <DialogDescription>Altere nome, email ou senha do atendente</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input placeholder="Nome completo" value={editName} onChange={e => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input type="email" placeholder="email@exemplo.com" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Nova Senha</Label>
+              <Input type="password" placeholder="Deixe vazio para manter atual" value={editPassword} onChange={e => setEditPassword(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>Cancelar</Button>
+            <Button onClick={handleEditUser} disabled={isSavingEdit}>
+              {isSavingEdit ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

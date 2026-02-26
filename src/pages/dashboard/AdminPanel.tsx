@@ -222,6 +222,13 @@ const AdminPanel = () => {
   } | null>(null);
   const [isRemovingMembership, setIsRemovingMembership] = useState(false);
 
+  // Edit team user state
+  const [editingTeamUser, setEditingTeamUser] = useState<InboxUser | null>(null);
+  const [editTeamName, setEditTeamName] = useState('');
+  const [editTeamEmail, setEditTeamEmail] = useState('');
+  const [editTeamPassword, setEditTeamPassword] = useState('');
+  const [isSavingTeamUser, setIsSavingTeamUser] = useState(false);
+
   // ── Fetch inboxes ──────────────────────────────────────────────────────────
   const fetchInboxes = useCallback(async () => {
     setInboxesLoading(true);
@@ -523,6 +530,48 @@ const AdminPanel = () => {
       toast.error('Erro ao remover membro');
     } finally {
       setIsRemovingMembership(false);
+    }
+  };
+
+  const openEditTeamUser = (u: InboxUser) => {
+    setEditingTeamUser(u);
+    setEditTeamName(u.full_name || '');
+    setEditTeamEmail(u.email);
+    setEditTeamPassword('');
+  };
+
+  const handleEditTeamUser = async () => {
+    if (!editingTeamUser) return;
+    if (!editTeamEmail.trim()) {
+      toast.error('Email é obrigatório');
+      return;
+    }
+    if (editTeamPassword && editTeamPassword.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+    setIsSavingTeamUser(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          user_id: editingTeamUser.id,
+          email: editTeamEmail.trim(),
+          full_name: editTeamName.trim(),
+          ...(editTeamPassword ? { password: editTeamPassword } : {}),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
+      toast.success('Atendente atualizado!');
+      setEditingTeamUser(null);
+      fetchTeam();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao atualizar atendente');
+    } finally {
+      setIsSavingTeamUser(false);
     }
   };
 
@@ -954,30 +1003,38 @@ const AdminPanel = () => {
               {filteredTeam.map(u => (
                 <div key={u.id} className="p-4 rounded-xl border border-border/50 bg-card/40 space-y-3">
                   {/* User header */}
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {u.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{u.full_name || 'Sem nome'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-[10px] font-mono text-muted-foreground truncate">ID: {u.id}</span>
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          onClick={() => {
-                            navigator.clipboard.writeText(u.id);
-                            toast.success('ID copiado!');
-                          }}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                   <div className="flex items-center gap-3">
+                     <Avatar className="w-10 h-10">
+                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                         {u.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                       </AvatarFallback>
+                     </Avatar>
+                     <div className="min-w-0 flex-1">
+                       <p className="font-semibold text-sm truncate">{u.full_name || 'Sem nome'}</p>
+                       <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                       <div className="flex items-center gap-1 mt-0.5">
+                         <span className="text-[10px] font-mono text-muted-foreground truncate">ID: {u.id}</span>
+                         <button
+                           type="button"
+                           className="text-muted-foreground hover:text-foreground transition-colors"
+                           onClick={() => {
+                             navigator.clipboard.writeText(u.id);
+                             toast.success('ID copiado!');
+                           }}
+                         >
+                           <Copy className="w-3 h-3" />
+                         </button>
+                       </div>
+                     </div>
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
+                       onClick={() => openEditTeamUser(u)}
+                     >
+                       <Pencil className="w-4 h-4" />
+                     </Button>
+                   </div>
 
                   {/* Memberships */}
                   <div className="space-y-1.5">
@@ -1213,6 +1270,36 @@ const AdminPanel = () => {
         onOpenChange={setIsCreateTeamUserOpen}
         onCreated={() => { fetchTeam(); fetchUsers(); }}
       />
+
+      {/* Edit Team User */}
+      <Dialog open={!!editingTeamUser} onOpenChange={open => !open && setEditingTeamUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Atendente</DialogTitle>
+            <DialogDescription>Altere nome, email ou senha do atendente</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input placeholder="Nome completo" value={editTeamName} onChange={e => setEditTeamName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input type="email" placeholder="email@exemplo.com" value={editTeamEmail} onChange={e => setEditTeamEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Nova Senha</Label>
+              <Input type="password" placeholder="Deixe vazio para manter atual" value={editTeamPassword} onChange={e => setEditTeamPassword(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTeamUser(null)}>Cancelar</Button>
+            <Button onClick={handleEditTeamUser} disabled={isSavingTeamUser}>
+              {isSavingTeamUser ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
