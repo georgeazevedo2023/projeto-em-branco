@@ -228,6 +228,7 @@ const AdminPanel = () => {
   const [editTeamEmail, setEditTeamEmail] = useState('');
   const [editTeamPassword, setEditTeamPassword] = useState('');
   const [isSavingTeamUser, setIsSavingTeamUser] = useState(false);
+  const [editTeamInboxes, setEditTeamInboxes] = useState<Record<string, InboxRole>>({});
 
   // ── Fetch inboxes ──────────────────────────────────────────────────────────
   const fetchInboxes = useCallback(async () => {
@@ -538,6 +539,9 @@ const AdminPanel = () => {
     setEditTeamName(u.full_name || '');
     setEditTeamEmail(u.email);
     setEditTeamPassword('');
+    const inboxMap: Record<string, InboxRole> = {};
+    u.memberships.forEach(m => { inboxMap[m.inbox_id] = m.role; });
+    setEditTeamInboxes(inboxMap);
   };
 
   const handleEditTeamUser = async () => {
@@ -565,6 +569,23 @@ const AdminPanel = () => {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
+      // Sync inbox memberships
+      const previousIds = editingTeamUser.memberships.map(m => m.inbox_id);
+      const currentIds = new Set(Object.keys(editTeamInboxes));
+      const toRemove = previousIds.filter(id => !currentIds.has(id));
+      for (const inboxId of toRemove) {
+        await supabase.from('inbox_users').delete().eq('user_id', editingTeamUser.id).eq('inbox_id', inboxId);
+      }
+      for (const [inboxId, role] of Object.entries(editTeamInboxes)) {
+        const existing = editingTeamUser.memberships.find(m => m.inbox_id === inboxId);
+        if (existing) {
+          if (existing.role !== role) {
+            await supabase.from('inbox_users').update({ role }).eq('user_id', editingTeamUser.id).eq('inbox_id', inboxId);
+          }
+        } else {
+          await supabase.from('inbox_users').insert({ user_id: editingTeamUser.id, inbox_id: inboxId, role });
+        }
+      }
       toast.success('Atendente atualizado!');
       setEditingTeamUser(null);
       fetchTeam();
@@ -1290,6 +1311,47 @@ const AdminPanel = () => {
             <div className="space-y-2">
               <Label>Nova Senha</Label>
               <Input type="password" placeholder="Deixe vazio para manter atual" value={editTeamPassword} onChange={e => setEditTeamPassword(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Caixas de Entrada</Label>
+              <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
+                {inboxes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma caixa disponível</p>
+                ) : (
+                  inboxes.map(inbox => {
+                    const isChecked = inbox.id in editTeamInboxes;
+                    return (
+                      <div key={inbox.id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={e => {
+                            setEditTeamInboxes(prev => {
+                              if (e.target.checked) return { ...prev, [inbox.id]: 'agente' };
+                              const { [inbox.id]: _, ...rest } = prev;
+                              return rest;
+                            });
+                          }}
+                          className="h-4 w-4 rounded border-primary"
+                        />
+                        <span className="text-sm flex-1 truncate">{inbox.name} <span className="text-muted-foreground">({inbox.instance_name})</span></span>
+                        {isChecked && (
+                          <Select value={editTeamInboxes[inbox.id]} onValueChange={(v: InboxRole) => setEditTeamInboxes(prev => ({ ...prev, [inbox.id]: v }))}>
+                            <SelectTrigger className="w-28 h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="gestor">Gestor</SelectItem>
+                              <SelectItem value="agente">Agente</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>

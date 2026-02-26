@@ -27,6 +27,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Plus, Search, Users, Inbox, Trash2, Loader2, Pencil } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import CreateInboxUserDialog from '@/components/dashboard/CreateInboxUserDialog';
 import type { Database } from '@/integrations/supabase/types';
@@ -74,6 +81,8 @@ const InboxUsersManagement = () => {
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editInboxes, setEditInboxes] = useState<Record<string, InboxRole>>({});
+  const [allInboxes, setAllInboxes] = useState<{ id: string; name: string; instance_name: string }[]>([]);
 
   useEffect(() => {
     if (isSuperAdmin) fetchData();
@@ -97,6 +106,12 @@ const InboxUsersManagement = () => {
 
       const inboxMap = new Map(inboxesList.map((ib) => [ib.id, ib]));
       const instanceMap = new Map(instancesList.map((i) => [i.id, i]));
+
+      setAllInboxes(inboxesList.map(ib => ({
+        id: ib.id,
+        name: ib.name,
+        instance_name: instanceMap.get(ib.instance_id)?.name || '',
+      })));
 
       // Only include users that have at least one inbox membership
       const userIdsWithInbox = new Set(inboxUsers.map((iu) => iu.user_id));
@@ -161,6 +176,9 @@ const InboxUsersManagement = () => {
     setEditName(u.full_name || '');
     setEditEmail(u.email);
     setEditPassword('');
+    const inboxMap: Record<string, InboxRole> = {};
+    u.memberships.forEach(m => { inboxMap[m.inbox_id] = m.role; });
+    setEditInboxes(inboxMap);
   };
 
   const handleEditUser = async () => {
@@ -188,6 +206,23 @@ const InboxUsersManagement = () => {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
+      // Sync inbox memberships
+      const previousIds = editingUser.memberships.map(m => m.inbox_id);
+      const currentIds = new Set(Object.keys(editInboxes));
+      const toRemove = previousIds.filter(id => !currentIds.has(id));
+      for (const inboxId of toRemove) {
+        await supabase.from('inbox_users').delete().eq('user_id', editingUser.id).eq('inbox_id', inboxId);
+      }
+      for (const [inboxId, role] of Object.entries(editInboxes)) {
+        const existing = editingUser.memberships.find(m => m.inbox_id === inboxId);
+        if (existing) {
+          if (existing.role !== role) {
+            await supabase.from('inbox_users').update({ role }).eq('user_id', editingUser.id).eq('inbox_id', inboxId);
+          }
+        } else {
+          await supabase.from('inbox_users').insert({ user_id: editingUser.id, inbox_id: inboxId, role });
+        }
+      }
       toast.success('Atendente atualizado!');
       setEditingUser(null);
       fetchData();
@@ -373,6 +408,47 @@ const InboxUsersManagement = () => {
             <div className="space-y-2">
               <Label>Nova Senha</Label>
               <Input type="password" placeholder="Deixe vazio para manter atual" value={editPassword} onChange={e => setEditPassword(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Caixas de Entrada</Label>
+              <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
+                {allInboxes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma caixa disponível</p>
+                ) : (
+                  allInboxes.map(inbox => {
+                    const isChecked = inbox.id in editInboxes;
+                    return (
+                      <div key={inbox.id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={e => {
+                            setEditInboxes(prev => {
+                              if (e.target.checked) return { ...prev, [inbox.id]: 'agente' };
+                              const { [inbox.id]: _, ...rest } = prev;
+                              return rest;
+                            });
+                          }}
+                          className="h-4 w-4 rounded border-primary"
+                        />
+                        <span className="text-sm flex-1 truncate">{inbox.name} <span className="text-muted-foreground">({inbox.instance_name})</span></span>
+                        {isChecked && (
+                          <Select value={editInboxes[inbox.id]} onValueChange={(v: InboxRole) => setEditInboxes(prev => ({ ...prev, [inbox.id]: v }))}>
+                            <SelectTrigger className="w-28 h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="gestor">Gestor</SelectItem>
+                              <SelectItem value="agente">Agente</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>
