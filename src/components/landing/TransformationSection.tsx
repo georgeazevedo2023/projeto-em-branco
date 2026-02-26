@@ -34,7 +34,7 @@ const TransformationSection = () => {
             <span className="text-gradient">profissional</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Veja como o WsmartQR transforma sua rotina de comunicação no WhatsApp
+            Veja como o WhatsPRO transforma sua rotina de comunicação no WhatsApp
           </p>
         </div>
 

@@ -7,7 +7,7 @@ const testimonials = [
     name: 'João Silva',
     role: 'Diretor de Marketing',
     company: 'Agência Digital Pro',
-    content: 'Economizamos 20 horas por semana com o WsmartQR. Antes, mandávamos mensagem por mensagem. Agora disparamos para 50 grupos em minutos.',
+    content: 'Economizamos 20 horas por semana com o WhatsPRO. Antes, mandávamos mensagem por mensagem. Agora disparamos para 50 grupos em minutos.',
     avatar: 'JS',
     rating: 5,
   },

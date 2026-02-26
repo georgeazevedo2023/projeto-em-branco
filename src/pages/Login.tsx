@@ -45,7 +45,7 @@ const Login = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-emerald-600 mb-4 shadow-lg shadow-primary/25">
             <Phone className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-display font-bold text-gradient">WsmartQR</h1>
+          <h1 className="text-3xl font-display font-bold text-gradient">WhatsPRO</h1>
           <p className="text-muted-foreground mt-2">Conecte-se ao futuro da comunicação</p>
         </div>
 

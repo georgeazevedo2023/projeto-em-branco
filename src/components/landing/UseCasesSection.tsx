@@ -173,7 +173,7 @@ const UseCasesSection = () => {
             Casos de Uso
           </span>
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Veja como <span className="text-gradient">empresas reais</span> usam o WsmartQR
+            Veja como <span className="text-gradient">empresas reais</span> usam o WhatsPRO
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Do follow-up à cobrança, cada mensagem é uma oportunidade de venda

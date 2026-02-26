@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 const faqs = [
   {
     question: 'O WhatsApp não vai bloquear minha conta?',
-    answer: 'O WsmartQR possui sistema de delays anti-bloqueio configurável. Você define o intervalo entre cada mensagem (recomendamos 3-5 segundos), o que simula o comportamento humano e evita detecção. Milhares de empresas usam diariamente sem problemas.',
+    answer: 'O WhatsPRO possui sistema de delays anti-bloqueio configurável. Você define o intervalo entre cada mensagem (recomendamos 3-5 segundos), o que simula o comportamento humano e evita detecção. Milhares de empresas usam diariamente sem problemas.',
   },
   {
     question: 'Preciso instalar algo no celular?',
