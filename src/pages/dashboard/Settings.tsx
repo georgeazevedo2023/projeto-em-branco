@@ -213,7 +213,7 @@ const Settings = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-muted-foreground">Configurações do sistema WsmartQR</p>
+        <p className="text-muted-foreground">Configurações do sistema WhatsPRO</p>
       </div>
 
       {/* ── Relatório de Turno ── */}

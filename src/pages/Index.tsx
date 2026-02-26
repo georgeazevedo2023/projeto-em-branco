@@ -30,7 +30,7 @@ const Index = () => {
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <MessageSquare className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-display font-bold text-xl">WsmartQR</span>
+            <span className="font-display font-bold text-xl">WhatsPRO</span>
           </div>
           <Link to="/login">
             <Button variant="outline">
@@ -56,7 +56,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="relative z-10 py-8 border-t border-border/50">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2026 WsmartQR. Todos os direitos reservados.</p>
+          <p>© 2026 WhatsPRO. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

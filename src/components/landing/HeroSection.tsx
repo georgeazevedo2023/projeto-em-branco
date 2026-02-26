@@ -35,7 +35,7 @@ const HeroSection = () => {
             
             {/* CTA */}
             <div className="flex justify-center lg:justify-start mb-8">
-              <a href="https://wa.me/5581993856099?text=Olá! Gostaria de agendar uma demonstração do WsmartQR." target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/5581993856099?text=Olá! Gostaria de agendar uma demonstração do WhatsPRO." target="_blank" rel="noopener noreferrer">
                 <Button size="lg" className="glow-primary w-full sm:w-auto text-base px-8 py-6">
                   <MessageCircle className="w-5 h-5 mr-2" />
                   Agendar Demonstração
@@ -62,7 +62,7 @@ const HeroSection = () => {
                     </div>
                     <div className="flex-1 flex justify-center">
                       <div className="px-3 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
-                        dashboard.wsmartqr.com
+                        dashboard.whatspro.com
                       </div>
                     </div>
                   </div>

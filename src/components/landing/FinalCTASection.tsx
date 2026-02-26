@@ -22,11 +22,11 @@ const FinalCTASection = () => {
           
           <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
             Junte-se a mais de 500 empresas que já economizam tempo e vendem mais 
-            com o WsmartQR.
+            com o WhatsPRO.
           </p>
           
           {/* CTA Button */}
-          <a href="https://wa.me/5581993856099?text=Olá! Gostaria de agendar uma demonstração do WsmartQR." target="_blank" rel="noopener noreferrer">
+          <a href="https://wa.me/5581993856099?text=Olá! Gostaria de agendar uma demonstração do WhatsPRO." target="_blank" rel="noopener noreferrer">
             <Button size="lg" className="glow-primary text-lg px-10 py-7 mb-8">
               <MessageCircle className="w-5 h-5 mr-2" />
               Agendar Demonstração

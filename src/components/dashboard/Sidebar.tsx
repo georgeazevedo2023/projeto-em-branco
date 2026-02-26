@@ -187,7 +187,7 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <MessageSquareMore className="w-5 h-5 text-primary" />
             </div>
-            <span className="font-display font-bold text-lg">WsmartQR</span>
+            <span className="font-display font-bold text-lg">WhatsPRO</span>
           </div>
         )}
         {!isMobile && (
