@@ -1,50 +1,55 @@
 
 
-## Adicionar funcionalidade de editar atendentes da equipe (email e senha)
+## Adicionar edicao de caixas de entrada no dialog de editar atendente
 
 ### Resumo
 
-Adicionar um botao de editar em cada card de membro na aba "Equipe" do AdminPanel, abrindo um dialog onde o super admin pode alterar nome, email e senha do atendente.
+O dialog "Editar Atendente" atualmente permite alterar nome, email e senha, mas nao permite editar as caixas de entrada (inboxes) que o atendente tem acesso. A ideia e adicionar uma secao de checkboxes com as inboxes disponiveis e selecao de role para cada inbox marcada.
 
 ### Alteracoes
 
-**1. Nova Edge Function: `admin-update-user`**
+**Arquivo: `src/pages/dashboard/AdminPanel.tsx`**
 
-Criar `supabase/functions/admin-update-user/index.ts` seguindo o mesmo padrao de autenticacao das funcoes existentes (`admin-create-user`, `admin-delete-user`):
-- Valida Bearer token e verifica role `super_admin`
-- Recebe `{ user_id, email?, password?, full_name? }`
-- Usa `adminClient.auth.admin.updateUserById()` para alterar email e/ou senha
-- Atualiza `user_profiles` (full_name, email) via service role client
-- Retorna `{ success: true }` ou erro
+1. **Novos estados para o dialog de edicao:**
+   - `editTeamInboxes`: `Record<string, InboxRole>` - mapa de inbox_id para role das inboxes selecionadas
+   - Usar a lista `inboxes` ja carregada no componente para exibir as opcoes
 
-**2. Atualizar `src/pages/dashboard/AdminPanel.tsx`**
+2. **Atualizar `openEditTeamUser`** (funcao que inicializa o dialog):
+   - Pre-carregar as memberships atuais do usuario no estado `editTeamInboxes` a partir de `editingTeamUser.memberships`
 
-- Adicionar estados para o dialog de edicao: `editingTeamUser`, `editTeamName`, `editTeamEmail`, `editTeamPassword`, `isSavingTeamUser`
-- Adicionar funcao `handleEditTeamUser()` que chama a edge function `admin-update-user`
-- Na aba "Equipe", adicionar botao de editar (icone `Pencil`) ao lado do nome de cada membro
-- Adicionar um `Dialog` com campos: Nome, Email e Senha (opcional, placeholder "Deixe vazio para manter atual")
-- Apos salvar, chamar `fetchTeam()` para atualizar a lista
+3. **Atualizar `handleEditTeamUser`** (funcao de salvar):
+   - Apos salvar nome/email/senha via edge function, sincronizar as inboxes:
+     - Remover memberships que foram desmarcadas (`DELETE FROM inbox_users WHERE user_id = X AND inbox_id = Y`)
+     - Adicionar novas memberships que foram marcadas (`INSERT INTO inbox_users`)
+     - Atualizar roles de memberships existentes que mudaram (`UPDATE inbox_users SET role = ...`)
 
-**3. Atualizar `src/pages/dashboard/InboxUsersManagement.tsx`**
-
-- Mesma funcionalidade de edicao para manter consistencia entre as duas paginas que exibem a equipe
+4. **Atualizar o Dialog UI** (linhas 1274-1302):
+   - Adicionar uma secao "Caixas de Entrada" abaixo do campo de senha
+   - Para cada inbox disponivel, exibir um checkbox com o nome da inbox e instancia
+   - Quando marcada, exibir um Select para escolher a role (admin/gestor/agente)
+   - Agrupar por instancia para melhor organizacao visual
 
 ### Detalhes tecnicos
 
-A edge function usara:
+A sincronizacao de inboxes sera feita diretamente via Supabase client (nao precisa de edge function), pois o usuario logado e super_admin e ja tem permissao de gerenciar `inbox_users` via RLS.
+
 ```typescript
-adminClient.auth.admin.updateUserById(user_id, {
-  email: newEmail,       // se fornecido
-  password: newPassword, // se fornecido
-})
+// Remover inboxes desmarcadas
+const currentIds = new Set(Object.keys(editTeamInboxes));
+const previousIds = editingTeamUser.memberships.map(m => m.inbox_id);
+const toRemove = previousIds.filter(id => !currentIds.has(id));
+for (const inboxId of toRemove) {
+  await supabase.from('inbox_users').delete()
+    .eq('user_id', editingTeamUser.id).eq('inbox_id', inboxId);
+}
+
+// Adicionar/atualizar inboxes marcadas
+for (const [inboxId, role] of Object.entries(editTeamInboxes)) {
+  await supabase.from('inbox_users').upsert({
+    user_id: editingTeamUser.id, inbox_id: inboxId, role
+  }, { onConflict: 'user_id,inbox_id' });
+}
 ```
 
-E atualizara o perfil:
-```typescript
-adminClient.from('user_profiles').update({ 
-  full_name, email 
-}).eq('id', user_id)
-```
-
-O dialog tera validacao basica: email obrigatorio, senha minimo 6 caracteres (quando preenchida).
+Nao e necessaria migracao de banco, pois a tabela `inbox_users` ja suporta a operacao. O `upsert` precisara de um unique constraint em `(user_id, inbox_id)` - verificarei se ja existe. Se nao existir, usarei insert/update separados com verificacao.
 
