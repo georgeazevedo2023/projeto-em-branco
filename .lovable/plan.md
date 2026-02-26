@@ -1,55 +1,30 @@
 
 
-## Adicionar edicao de caixas de entrada no dialog de editar atendente
+## Renomear "WsmartQR" para "WhatsPRO"
 
 ### Resumo
 
-O dialog "Editar Atendente" atualmente permite alterar nome, email e senha, mas nao permite editar as caixas de entrada (inboxes) que o atendente tem acesso. A ideia e adicionar uma secao de checkboxes com as inboxes disponiveis e selecao de role para cada inbox marcada.
+Substituir todas as ocorrencias do nome "WsmartQR" por "WhatsPRO" em toda a aplicacao visivel ao usuario. Documentos PRD nao serao alterados por serem arquivos de referencia interna.
 
-### Alteracoes
+### Arquivos a alterar
 
-**Arquivo: `src/pages/dashboard/AdminPanel.tsx`**
+1. **`index.html`** — Titulo da aba e meta tags (og:title, twitter:title, og:description, twitter:description)
+2. **`src/components/dashboard/Sidebar.tsx`** (linha 190) — Nome no menu lateral
+3. **`src/components/dashboard/MobileHeader.tsx`** (linha 17) — Nome no header mobile
+4. **`src/pages/Login.tsx`** (linha 48) — Nome na tela de login
+5. **`src/pages/Index.tsx`** (linhas 33, 59) — Nome no header e footer da landing page
+6. **`src/pages/dashboard/Settings.tsx`** (linha 216) — Subtitulo da pagina de configuracoes
+7. **`src/components/landing/HeroSection.tsx`** (linhas 38, 65) — Texto do CTA e URL mockup
+8. **`src/components/landing/UseCasesSection.tsx`** (linha 176) — Titulo da secao
+9. **`src/components/landing/TransformationSection.tsx`** (linha 37) — Descricao da secao
+10. **`src/components/landing/FAQSection.tsx`** (linha 13) — Resposta do FAQ
+11. **`src/components/landing/TestimonialsSection.tsx`** (linha 10) — Depoimento
+12. **`src/components/landing/FinalCTASection.tsx`** — Texto do CTA (se houver referencia)
+13. **`src/index.css`** (linha 7) — Comentario do design system
 
-1. **Novos estados para o dialog de edicao:**
-   - `editTeamInboxes`: `Record<string, InboxRole>` - mapa de inbox_id para role das inboxes selecionadas
-   - Usar a lista `inboxes` ja carregada no componente para exibir as opcoes
+### Escopo
 
-2. **Atualizar `openEditTeamUser`** (funcao que inicializa o dialog):
-   - Pre-carregar as memberships atuais do usuario no estado `editTeamInboxes` a partir de `editingTeamUser.memberships`
-
-3. **Atualizar `handleEditTeamUser`** (funcao de salvar):
-   - Apos salvar nome/email/senha via edge function, sincronizar as inboxes:
-     - Remover memberships que foram desmarcadas (`DELETE FROM inbox_users WHERE user_id = X AND inbox_id = Y`)
-     - Adicionar novas memberships que foram marcadas (`INSERT INTO inbox_users`)
-     - Atualizar roles de memberships existentes que mudaram (`UPDATE inbox_users SET role = ...`)
-
-4. **Atualizar o Dialog UI** (linhas 1274-1302):
-   - Adicionar uma secao "Caixas de Entrada" abaixo do campo de senha
-   - Para cada inbox disponivel, exibir um checkbox com o nome da inbox e instancia
-   - Quando marcada, exibir um Select para escolher a role (admin/gestor/agente)
-   - Agrupar por instancia para melhor organizacao visual
-
-### Detalhes tecnicos
-
-A sincronizacao de inboxes sera feita diretamente via Supabase client (nao precisa de edge function), pois o usuario logado e super_admin e ja tem permissao de gerenciar `inbox_users` via RLS.
-
-```typescript
-// Remover inboxes desmarcadas
-const currentIds = new Set(Object.keys(editTeamInboxes));
-const previousIds = editingTeamUser.memberships.map(m => m.inbox_id);
-const toRemove = previousIds.filter(id => !currentIds.has(id));
-for (const inboxId of toRemove) {
-  await supabase.from('inbox_users').delete()
-    .eq('user_id', editingTeamUser.id).eq('inbox_id', inboxId);
-}
-
-// Adicionar/atualizar inboxes marcadas
-for (const [inboxId, role] of Object.entries(editTeamInboxes)) {
-  await supabase.from('inbox_users').upsert({
-    user_id: editingTeamUser.id, inbox_id: inboxId, role
-  }, { onConflict: 'user_id,inbox_id' });
-}
-```
-
-Nao e necessaria migracao de banco, pois a tabela `inbox_users` ja suporta a operacao. O `upsert` precisara de um unique constraint em `(user_id, inbox_id)` - verificarei se ja existe. Se nao existir, usarei insert/update separados com verificacao.
+- Substituicao direta de texto "WsmartQR" por "WhatsPRO" e "wsmartqr" por "whatspro"
+- Nenhuma alteracao de logica ou estrutura
+- PRDs em `/public/` nao serao alterados (documentacao interna)
 
