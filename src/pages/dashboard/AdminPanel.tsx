@@ -80,6 +80,7 @@ import ManageInboxUsersDialog from '@/components/dashboard/ManageInboxUsersDialo
 import ManageUserInstancesDialog from '@/components/dashboard/ManageUserInstancesDialog';
 import CreateInboxUserDialog from '@/components/dashboard/CreateInboxUserDialog';
 import BackupModule from '@/components/dashboard/BackupModule';
+import DepartmentsTab from '@/components/dashboard/DepartmentsTab';
 import type { Database } from '@/integrations/supabase/types';
 
 type InboxRole = Database['public']['Enums']['inbox_role'];
@@ -670,6 +671,10 @@ const AdminPanel = () => {
             <span>Equipe</span>
             <Badge variant="outline" className="ml-1 text-xs h-5 px-1.5">{teamUsers.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="departments" className="gap-2">
+            <Users className="w-4 h-4" />
+            <span>Departamentos</span>
+          </TabsTrigger>
           <TabsTrigger value="backup" className="gap-2">
             <Briefcase className="w-4 h-4" />
             <span>Backup</span>
@@ -1091,6 +1096,12 @@ const AdminPanel = () => {
         </TabsContent>
 
         {/* ══════════════════════════════════════════════════════════════════ */}
+        {/* TAB: Departamentos                                                  */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="departments" className="mt-6">
+          <DepartmentsTab />
+        </TabsContent>
+
         {/* TAB: Backup                                                        */}
         {/* ══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="backup" className="mt-6">

@@ -74,6 +74,7 @@ export const ContactInfoPanel = ({
   const name = contact?.name || contact?.phone || 'Desconhecido';
   const [manageLabelsOpen, setManageLabelsOpen] = useState(false);
   const [agents, setAgents] = useState<InboxAgent[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [aiSummary, setAiSummary] = useState<AiSummary | null>(conversation.ai_summary || null);
   const [summarizing, setSummarizing] = useState(false);
 
@@ -83,6 +84,20 @@ export const ContactInfoPanel = ({
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
   const [generatingSummaryFor, setGeneratingSummaryFor] = useState<string | null>(null);
+
+  // Fetch departments for this inbox
+  useEffect(() => {
+    const fetchDepts = async () => {
+      if (!conversation.inbox_id) return;
+      const { data } = await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('inbox_id', conversation.inbox_id)
+        .order('name');
+      setDepartments((data as any[]) || []);
+    };
+    fetchDepts();
+  }, [conversation.inbox_id]);
 
   // Sync aiSummary when conversation changes
   useEffect(() => {
@@ -242,6 +257,21 @@ export const ContactInfoPanel = ({
     // Update local via callback
     onUpdateConversation(conversation.id, { assigned_to: agentId } as any);
     toast.success(agentId ? `Atribuído a ${agentName}` : 'Agente removido');
+  };
+
+  const handleAssignDepartment = async (value: string) => {
+    const deptId = value === '__none__' ? null : value;
+    const { error } = await supabase
+      .from('conversations')
+      .update({ department_id: deptId } as any)
+      .eq('id', conversation.id);
+    if (error) {
+      toast.error('Erro ao atribuir departamento');
+      return;
+    }
+    onUpdateConversation(conversation.id, { department_id: deptId } as any);
+    const deptName = deptId ? departments.find(d => d.id === deptId)?.name : null;
+    toast.success(deptId ? `Departamento: ${deptName}` : 'Departamento removido');
   };
 
   const toggleSummaryExpanded = (convId: string) => {
@@ -424,6 +454,32 @@ export const ContactInfoPanel = ({
           )}
         </div>
       </div>
+
+      {/* Department Assignment */}
+      {departments.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <Target className="w-3 h-3" />
+            Departamento
+          </label>
+          <Select
+            value={conversation.department_id || '__none__'}
+            onValueChange={handleAssignDepartment}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="Nenhum" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Nenhum —</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* AI Summary — current conversation */}
       <div className="space-y-2 border border-border/50 rounded-lg p-3 bg-muted/30">

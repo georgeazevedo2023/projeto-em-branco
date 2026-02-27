@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { smartDateBR } from '@/lib/dateUtils';
 import { ConversationLabels, type Label } from './ConversationLabels';
-import { UserCheck, StickyNote } from 'lucide-react';
+import { UserCheck, StickyNote, Building2 } from 'lucide-react';
 import type { Conversation } from '@/pages/dashboard/HelpDesk';
 
 interface ConversationItemProps {
@@ -70,8 +70,14 @@ export const ConversationItem = ({ conversation, isSelected, onClick, labels = [
           )}
         </div>
 
-        {(labels.length > 0 || agentName || hasNotes) && (
+        {(labels.length > 0 || agentName || hasNotes || conversation.department_name) && (
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            {conversation.department_name && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-primary bg-primary/10 rounded px-1 py-0.5">
+                <Building2 className="w-2.5 h-2.5" />
+                {conversation.department_name}
+              </span>
+            )}
             {agentName && (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground bg-secondary/50 rounded px-1 py-0.5">
                 <UserCheck className="w-2.5 h-2.5" />

@@ -200,6 +200,7 @@ export type Database = {
           assigned_to: string | null
           contact_id: string
           created_at: string
+          department_id: string | null
           id: string
           inbox_id: string
           is_read: boolean
@@ -216,6 +217,7 @@ export type Database = {
           assigned_to?: string | null
           contact_id: string
           created_at?: string
+          department_id?: string | null
           id?: string
           inbox_id: string
           is_read?: boolean
@@ -232,6 +234,7 @@ export type Database = {
           assigned_to?: string | null
           contact_id?: string
           created_at?: string
+          department_id?: string | null
           id?: string
           inbox_id?: string
           is_read?: boolean
@@ -251,7 +254,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "inboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_members: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_members_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          inbox_id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          inbox_id: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          inbox_id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_inbox_id_fkey"
             columns: ["inbox_id"]
             isOneToOne: false
             referencedRelation: "inboxes"

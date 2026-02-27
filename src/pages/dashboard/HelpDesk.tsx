@@ -28,6 +28,7 @@ export interface Conversation {
   status: string;
   priority: string;
   assigned_to: string | null;
+  department_id: string | null;
   is_read: boolean;
   last_message_at: string | null;
   created_at: string;
@@ -47,6 +48,7 @@ export interface Conversation {
     webhook_outgoing_url?: string | null;
   };
   last_message?: string;
+  department_name?: string;
 }
 
 export interface Message {
@@ -104,6 +106,10 @@ const HelpDesk = () => {
   const [agentNamesMap, setAgentNamesMap] = useState<Record<string, string>>({});
   const [conversationNotesSet, setConversationNotesSet] = useState<Set<string>>(new Set());
 
+  // Departments state
+  const [inboxDepartments, setInboxDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
+
   const { isSuperAdmin } = useAuth();
 
   // Fetch user's inboxes (filtered by access for non-super-admins)
@@ -156,6 +162,21 @@ const HelpDesk = () => {
   useEffect(() => {
     fetchLabels();
   }, [fetchLabels]);
+
+  // Fetch departments for selected inbox
+  const fetchDepartments = useCallback(async () => {
+    if (!selectedInboxId) return;
+    const { data } = await supabase
+      .from('departments')
+      .select('id, name')
+      .eq('inbox_id', selectedInboxId)
+      .order('name');
+    setInboxDepartments((data as any[]) || []);
+  }, [selectedInboxId]);
+
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   // Fetch agent names from all user profiles
   const fetchAgentNames = useCallback(async () => {
@@ -216,7 +237,7 @@ const HelpDesk = () => {
     try {
       let query = supabase
         .from('conversations')
-        .select('*, contacts(*), inboxes(id, name, instance_id, webhook_outgoing_url)')
+        .select('*, contacts(*), inboxes(id, name, instance_id, webhook_outgoing_url), departments(id, name)')
         .eq('inbox_id', selectedInboxId)
         .order('last_message_at', { ascending: false });
 
@@ -241,6 +262,7 @@ const HelpDesk = () => {
         inbox: c.inboxes,
         last_message: c.last_message || null,
         ai_summary: c.ai_summary || null,
+        department_name: c.departments?.name || null,
       }));
 
       setConversations(mapped);
@@ -398,6 +420,7 @@ const HelpDesk = () => {
   const handleInboxChange = (newInboxId: string) => {
     setSelectedConversation(null);
     setLabelFilter(null);
+    setDepartmentFilter(null);
     setSelectedInboxId(newInboxId);
     if (isMobile) setMobileView('list');
   };
@@ -422,6 +445,8 @@ const HelpDesk = () => {
     if (assignmentFilter === 'nao-atribuidas' && c.assigned_to !== null) return false;
     // Priority filter
     if (priorityFilter !== 'todas' && c.priority !== priorityFilter) return false;
+    // Department filter
+    if (departmentFilter && c.department_id !== departmentFilter) return false;
     return true;
   });
 
@@ -516,6 +541,9 @@ const HelpDesk = () => {
     onAssignmentFilterChange: setAssignmentFilter,
     priorityFilter,
     onPriorityFilterChange: setPriorityFilter,
+    inboxDepartments,
+    departmentFilter,
+    onDepartmentFilterChange: setDepartmentFilter,
   };
 
   if (isMobile) {
