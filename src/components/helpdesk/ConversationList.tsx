@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Inbox, UserCheck, AlertCircle } from 'lucide-react';
+import { Search, Inbox, UserCheck, AlertCircle, Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ConversationItem } from './ConversationItem';
@@ -27,6 +27,9 @@ interface ConversationListProps {
   onAssignmentFilterChange?: (v: 'todas' | 'minhas' | 'nao-atribuidas') => void;
   priorityFilter?: 'todas' | 'alta' | 'media' | 'baixa';
   onPriorityFilterChange?: (v: 'todas' | 'alta' | 'media' | 'baixa') => void;
+  inboxDepartments?: { id: string; name: string }[];
+  departmentFilter?: string | null;
+  onDepartmentFilterChange?: (v: string | null) => void;
 }
 
 const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string }[] = [
@@ -61,13 +64,17 @@ export const ConversationList = ({
   onAssignmentFilterChange,
   priorityFilter = 'todas',
   onPriorityFilterChange,
+  inboxDepartments = [],
+  departmentFilter,
+  onDepartmentFilterChange,
 }: ConversationListProps) => {
   const [manageOpen, setManageOpen] = useState(false);
 
   const hasActiveFilters =
     assignmentFilter !== 'todas' ||
     priorityFilter !== 'todas' ||
-    !!labelFilter;
+    !!labelFilter ||
+    !!departmentFilter;
 
   return (
     <>
@@ -165,6 +172,34 @@ export const ConversationList = ({
               </SelectContent>
             </Select>
           )}
+
+          {/* Department select */}
+          {inboxDepartments.length > 0 && onDepartmentFilterChange && (
+            <Select
+              value={departmentFilter || '_all'}
+              onValueChange={v => onDepartmentFilterChange(v === '_all' ? null : v)}
+            >
+              <SelectTrigger
+                className={cn(
+                  'flex-1 h-7 text-xs border-border/30 gap-1 min-w-0',
+                  departmentFilter
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-secondary/40'
+                )}
+              >
+                <Building2 className="w-3 h-3 shrink-0" />
+                <SelectValue placeholder="Depto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all" className="text-xs">Departamento</SelectItem>
+                {inboxDepartments.map(d => (
+                  <SelectItem key={d.id} value={d.id} className="text-xs">
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Active filters indicator */}
@@ -174,6 +209,7 @@ export const ConversationList = ({
               onAssignmentFilterChange?.('todas');
               onPriorityFilterChange?.('todas');
               onLabelFilterChange?.(null);
+              onDepartmentFilterChange?.(null);
             }}
             className="text-[10px] text-primary/80 hover:text-primary transition-colors"
           >
