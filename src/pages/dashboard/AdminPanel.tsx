@@ -74,6 +74,7 @@ import {
   Phone,
   AlertTriangle,
   Briefcase,
+  Building2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ManageInboxUsersDialog from '@/components/dashboard/ManageInboxUsersDialog';
@@ -121,11 +122,19 @@ interface InboxMembership {
   role: InboxRole;
 }
 
+interface UserDepartment {
+  id: string;
+  name: string;
+  inbox_name: string;
+  is_default: boolean;
+}
+
 interface InboxUser {
   id: string;
   email: string;
   full_name: string | null;
   memberships: InboxMembership[];
+  departments: UserDepartment[];
 }
 
 const ROLE_LABELS: Record<InboxRole, string> = {
@@ -326,11 +335,13 @@ const AdminPanel = () => {
   const fetchTeam = useCallback(async () => {
     setTeamLoading(true);
     try {
-      const [profilesRes, inboxUsersRes, inboxesRes, instancesRes] = await Promise.all([
+      const [profilesRes, inboxUsersRes, inboxesRes, instancesRes, deptMembersRes, deptsRes] = await Promise.all([
         supabase.from('user_profiles').select('id, email, full_name'),
         supabase.from('inbox_users').select('user_id, inbox_id, role'),
         supabase.from('inboxes').select('id, name, instance_id'),
         supabase.from('instances').select('id, name'),
+        supabase.from('department_members').select('user_id, department_id'),
+        supabase.from('departments').select('id, name, inbox_id, is_default'),
       ]);
 
       const profiles = profilesRes.data || [];
@@ -338,6 +349,8 @@ const AdminPanel = () => {
       const inboxesList = inboxesRes.data || [];
       const inboxMap = new Map(inboxesList.map(ib => [ib.id, ib]));
       const instanceMap = new Map((instancesRes.data || []).map(i => [i.id, i]));
+      const deptMembers = deptMembersRes.data || [];
+      const deptMap = new Map((deptsRes.data || []).map(d => [d.id, d]));
       const userIdsWithInbox = new Set(inboxUsers.map(iu => iu.user_id));
 
       const result: InboxUser[] = profiles
@@ -358,6 +371,20 @@ const AdminPanel = () => {
                 role: iu.role as InboxRole,
               };
             }),
+          departments: deptMembers
+            .filter(dm => dm.user_id === profile.id)
+            .map(dm => {
+              const dept = deptMap.get(dm.department_id);
+              if (!dept) return null;
+              const inbox = inboxMap.get(dept.inbox_id);
+              return {
+                id: dept.id,
+                name: dept.name,
+                inbox_name: inbox?.name || '',
+                is_default: dept.is_default,
+              };
+            })
+            .filter(Boolean) as UserDepartment[],
         }));
 
       setTeamUsers(result);
@@ -1089,6 +1116,22 @@ const AdminPanel = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Departments */}
+                  {u.departments.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1">Departamentos</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {u.departments.map(d => (
+                          <Badge key={d.id} variant="outline" className="gap-1 text-xs bg-primary/5 text-primary border-primary/20">
+                            <Building2 className="w-3 h-3" />
+                            {d.name}
+                            {d.is_default && <span className="text-[9px] opacity-60">(padrão)</span>}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
