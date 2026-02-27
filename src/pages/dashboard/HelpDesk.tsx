@@ -7,7 +7,7 @@ import { ConversationList } from '@/components/helpdesk/ConversationList';
 import { ChatPanel } from '@/components/helpdesk/ChatPanel';
 import { ContactInfoPanel } from '@/components/helpdesk/ContactInfoPanel';
 import { ManageLabelsDialog } from '@/components/helpdesk/ManageLabelsDialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -109,6 +109,7 @@ const HelpDesk = () => {
 
   // Departments state
   const [inboxDepartments, setInboxDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [allInboxDepts, setAllInboxDepts] = useState<Record<string, { id: string; name: string }[]>>({});
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
 
   const { isSuperAdmin } = useAuth();
@@ -144,9 +145,24 @@ const HelpDesk = () => {
           ? inboxParam
           : inboxData[0].id;
         setSelectedInboxId(targetInbox);
-        // Set department filter from URL param
         if (deptParam) {
           setDepartmentFilter(deptParam);
+        }
+
+        // Fetch departments for all inboxes (for dropdown)
+        const inboxIds = inboxData.map(ib => ib.id);
+        const { data: deptData } = await supabase
+          .from('departments')
+          .select('id, name, inbox_id')
+          .in('inbox_id', inboxIds)
+          .order('name');
+        if (deptData) {
+          const grouped: Record<string, { id: string; name: string }[]> = {};
+          deptData.forEach(d => {
+            if (!grouped[d.inbox_id]) grouped[d.inbox_id] = [];
+            grouped[d.inbox_id].push({ id: d.id, name: d.name });
+          });
+          setAllInboxDepts(grouped);
         }
       }
     };
@@ -422,13 +438,24 @@ const HelpDesk = () => {
     );
   };
 
-  const handleInboxChange = (newInboxId: string) => {
+  const handleInboxChange = (val: string) => {
     setSelectedConversation(null);
     setLabelFilter(null);
-    setDepartmentFilter(null);
-    setSelectedInboxId(newInboxId);
+    if (val.includes('|')) {
+      const [inboxId, deptId] = val.split('|');
+      setSelectedInboxId(inboxId);
+      setDepartmentFilter(deptId);
+    } else {
+      setSelectedInboxId(val);
+      setDepartmentFilter(null);
+    }
     if (isMobile) setMobileView('list');
   };
+
+  // Build composite select value
+  const inboxSelectValue = departmentFilter
+    ? `${selectedInboxId}|${departmentFilter}`
+    : selectedInboxId;
 
   const [assignmentFilter, setAssignmentFilter] = useState<'todas' | 'minhas' | 'nao-atribuidas'>('todas');
   const [priorityFilter, setPriorityFilter] = useState<'todas' | 'alta' | 'media' | 'baixa'>('todas');
@@ -491,16 +518,26 @@ const HelpDesk = () => {
         {inboxes.length > 0 && (
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
             <span className="hidden md:inline text-xs text-muted-foreground">Caixa:</span>
-            <Select value={selectedInboxId} onValueChange={handleInboxChange}>
-              <SelectTrigger className="w-36 md:w-48 h-7 text-xs border-border/30 bg-secondary/50">
+            <Select value={inboxSelectValue} onValueChange={handleInboxChange}>
+              <SelectTrigger className="w-36 md:w-52 h-7 text-xs border-border/30 bg-secondary/50">
                 <SelectValue placeholder="Selecionar inbox" />
               </SelectTrigger>
               <SelectContent>
-                {inboxes.map(inbox => (
-                  <SelectItem key={inbox.id} value={inbox.id}>
-                    {inbox.name}
-                  </SelectItem>
-                ))}
+                {inboxes.map(inbox => {
+                  const depts = allInboxDepts[inbox.id] || [];
+                  return (
+                    <SelectGroup key={inbox.id}>
+                      <SelectItem value={inbox.id}>
+                        {inbox.name}
+                      </SelectItem>
+                      {depts.map(dept => (
+                        <SelectItem key={dept.id} value={`${inbox.id}|${dept.id}`} className="pl-8 text-xs text-muted-foreground">
+                          ↳ {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
