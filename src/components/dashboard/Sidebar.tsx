@@ -17,6 +17,7 @@ import {
   Inbox,
   BrainCircuit,
   Kanban,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -35,10 +36,17 @@ interface Instance {
   status: string;
 }
 
+interface DepartmentItem {
+  id: string;
+  name: string;
+  is_default: boolean;
+}
+
 interface InboxItem {
   id: string;
   name: string;
   instance_id: string;
+  departments: DepartmentItem[];
 }
 
 interface InstanceWithInboxes extends Instance {
@@ -83,16 +91,21 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
   const fetchInstances = async () => {
     try {
       if (isSuperAdmin) {
-        const [instancesRes, inboxesRes] = await Promise.all([
+        const [instancesRes, inboxesRes, deptsRes] = await Promise.all([
           supabase.from('instances').select('id, name, status').eq('disabled', false).order('name'),
           supabase.from('inboxes').select('id, name, instance_id').order('name'),
+          supabase.from('departments').select('id, name, inbox_id, is_default').order('name'),
         ]);
 
         if (instancesRes.error) throw instancesRes.error;
         const allInstances = instancesRes.data || [];
         setInstances(allInstances);
 
-        const allInboxes: InboxItem[] = inboxesRes.data || [];
+        const allDepts = deptsRes.data || [];
+        const allInboxes: InboxItem[] = (inboxesRes.data || []).map(ib => ({
+          ...ib,
+          departments: allDepts.filter(d => d.inbox_id === ib.id),
+        }));
         const grouped: InstanceWithInboxes[] = allInstances
           .map(inst => ({
             ...inst,
@@ -102,14 +115,17 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
         setInstancesWithInboxes(grouped);
       } else {
         // Non-admin: fetch only inboxes user has access to
-        const { data: userInboxes } = await supabase
-          .from('inbox_users')
-          .select('inboxes(id, name, instance_id)')
-          .eq('user_id', user!.id);
+        const [userInboxesRes, deptsRes2] = await Promise.all([
+          supabase.from('inbox_users').select('inboxes(id, name, instance_id)').eq('user_id', user!.id),
+          supabase.from('departments').select('id, name, inbox_id, is_default').order('name'),
+        ]);
 
-        const inboxList: InboxItem[] = (userInboxes || [])
-          .map((d: any) => d.inboxes)
-          .filter(Boolean);
+        const allDepts2 = deptsRes2.data || [];
+        const rawInboxes = (userInboxesRes.data || []).map((d: any) => d.inboxes).filter(Boolean);
+        const inboxList: InboxItem[] = rawInboxes.map((ib: any) => ({
+          ...ib,
+          departments: allDepts2.filter(d => d.inbox_id === ib.id),
+        }));
 
         // Get unique instance IDs from user's inboxes
         const instanceIds = [...new Set(inboxList.map(ib => ib.instance_id))];
@@ -260,20 +276,40 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
                     <span className="truncate">{instance.name}</span>
                   </div>
                   {instance.inboxes.map((inbox) => (
-                    <Link
-                      key={inbox.id}
-                      to={`/dashboard/helpdesk?inbox=${inbox.id}`}
-                      onClick={handleLinkClick}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm pl-6',
-                        location.search.includes(inbox.id)
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'
-                      )}
-                    >
-                      <Inbox className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{inbox.name}</span>
-                    </Link>
+                    <div key={inbox.id} className="space-y-0.5">
+                      <Link
+                        to={`/dashboard/helpdesk?inbox=${inbox.id}`}
+                        onClick={handleLinkClick}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm pl-6',
+                          location.search.includes(inbox.id) && !location.search.includes('dept=')
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'
+                        )}
+                      >
+                        <Inbox className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{inbox.name}</span>
+                      </Link>
+                      {inbox.departments.map((dept) => (
+                        <Link
+                          key={dept.id}
+                          to={`/dashboard/helpdesk?inbox=${inbox.id}&dept=${dept.id}`}
+                          onClick={handleLinkClick}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-1 rounded-lg transition-all text-xs pl-10',
+                            location.search.includes(dept.id)
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-muted-foreground/70 hover:bg-sidebar-accent hover:text-foreground'
+                          )}
+                        >
+                          <Building2 className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{dept.name}</span>
+                          {dept.is_default && (
+                            <span className="text-[9px] opacity-50 shrink-0">padrão</span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
                   ))}
                 </div>
               ))}

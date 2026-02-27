@@ -85,6 +85,7 @@ const HelpDesk = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const inboxParam = searchParams.get('inbox');
+  const deptParam = searchParams.get('dept');
   const isMobile = useIsMobile();
   const [mobileView, setMobileView] = useState<'list' | 'chat' | 'info'>('list');
   const [showContactInfo, setShowContactInfo] = useState(false);
@@ -143,6 +144,10 @@ const HelpDesk = () => {
           ? inboxParam
           : inboxData[0].id;
         setSelectedInboxId(targetInbox);
+        // Set department filter from URL param
+        if (deptParam) {
+          setDepartmentFilter(deptParam);
+        }
       }
     };
     fetchInboxes();
