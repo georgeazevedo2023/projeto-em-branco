@@ -167,12 +167,11 @@ async function processShiftReport(config: any, testMode = false): Promise<{ succ
     return { success: false, error: `Instance is not connected (status: ${instance.status})` };
   }
 
-  // Calculate today's date range (in UTC)
+  // Calculate today's date range in São Paulo timezone (UTC-3)
   const now = new Date();
-  const todayStart = new Date(now);
-  todayStart.setUTCHours(0, 0, 0, 0);
-  const todayEnd = new Date(now);
-  todayEnd.setUTCHours(23, 59, 59, 999);
+  const spDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // YYYY-MM-DD
+  const todayStart = new Date(`${spDateStr}T00:00:00-03:00`);
+  const todayEnd = new Date(`${spDateStr}T23:59:59.999-03:00`);
 
   // Get today's conversations for this inbox
   const { data: todayConvs, error: convError } = await serviceSupabase
