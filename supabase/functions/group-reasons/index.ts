@@ -32,17 +32,20 @@ serve(async (req) => {
 
     const reasonsList = reasons.map((r: any) => `- "${r.reason}" (${r.count}x)`).join("\n");
 
-    const systemPrompt = `Você é um analista de atendimento ao cliente. Agrupe motivos de contato similares em categorias.
+    const systemPrompt = `Você é um analista de atendimento ao cliente especializado em categorização detalhada de motivos de contato.
 
 Regras:
-- Agrupe motivos que são variações do mesmo tema em uma única categoria
-- Use nomes curtos e claros para cada categoria (máximo 5 palavras)
+- Agrupe motivos que são realmente o MESMO tema (ex: "problema login" e "não consigo entrar" = mesmo tema)
+- NÃO agrupe motivos vagamente similares. Seja ESPECÍFICO e DETALHADO nos nomes das categorias
+- Nomes de categoria devem ser descritivos e específicos (ex: "Erro ao Gerar Boleto", "Dúvida sobre Prazo de Entrega", "Alteração de Dados Cadastrais")
+- NUNCA use categorias genéricas como "Informações Gerais", "Solicitações de Informações", "Compartilhamento de Informações" ou "Outros"
+- Se um motivo não se encaixa em nenhum grupo, mantenha-o com seu nome original
 - Some as contagens dos motivos agrupados
-- Retorne no máximo 8 categorias, ordenadas por contagem decrescente
+- Retorne no máximo 10 categorias, ordenadas por contagem decrescente
 - Responda APENAS com JSON válido, sem markdown
 
 Formato de resposta:
-[{"category": "Nome da Categoria", "count": 10, "original_reasons": ["motivo1", "motivo2"]}]`;
+[{"category": "Nome Específico da Categoria", "count": 10, "original_reasons": ["motivo1", "motivo2"]}]`;
 
     const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",

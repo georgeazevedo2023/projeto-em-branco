@@ -86,7 +86,9 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (user) {
-    return <Navigate to={isSuperAdmin ? "/dashboard" : "/dashboard/helpdesk"} replace />;
+    // Super admin vai para o dashboard principal, outros vão para o helpdesk
+    const target = isSuperAdmin ? "/dashboard" : "/dashboard/helpdesk";
+    return <Navigate to={target} replace />;
   }
 
   return <>{children}</>;

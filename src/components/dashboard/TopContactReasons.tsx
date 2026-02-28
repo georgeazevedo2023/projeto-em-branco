@@ -254,11 +254,11 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
                 </Tooltip>
                 <Badge variant="outline" className="text-[10px] shrink-0">{item.count}x</Badge>
               </div>
-              <div className="w-full bg-muted/50 rounded-full h-1.5">
+              <div className="w-full bg-muted/50 rounded-full h-1.5 overflow-hidden">
                 <div
                   className="h-1.5 rounded-full transition-all"
                   style={{
-                    width: `${(item.count / maxCount) * 100}%`,
+                    width: `${Math.min((item.count / maxCount) * 100, 100)}%`,
                     backgroundColor: COLORS[idx % COLORS.length],
                   }}
                 />
