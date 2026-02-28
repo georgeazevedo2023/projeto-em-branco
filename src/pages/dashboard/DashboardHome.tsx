@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Server, Users, Wifi, WifiOff, MessageSquare, UsersRound, RefreshCw, UserPlus, ChevronDown, ChevronUp } from 'lucide-react';
 import HelpdeskMetricsCharts from '@/components/dashboard/HelpdeskMetricsCharts';
 import BusinessHoursChart from '@/components/dashboard/BusinessHoursChart';
+import TopContactReasons from '@/components/dashboard/TopContactReasons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -347,6 +348,14 @@ const DashboardHome = () => {
       {/* Business Hours Chart - Lazy */}
       <LazySection height="340px">
         <BusinessHoursChart inboxId={filters.inboxId} periodDays={filters.period} />
+      </LazySection>
+
+      {/* Top Contact Reasons - Lazy */}
+      <LazySection height="260px">
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold">Principais Motivos de Contato</h2>
+          <TopContactReasons instanceId={filters.instanceId} inboxId={filters.inboxId} periodDays={filters.period} />
+        </div>
       </LazySection>
 
       {/* Instance Groups Breakdown - Collapsible */}
