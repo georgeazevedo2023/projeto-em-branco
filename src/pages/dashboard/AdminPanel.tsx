@@ -75,7 +75,9 @@ import {
   AlertTriangle,
   Briefcase,
   Building2,
+  Mail,
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import ManageInboxUsersDialog from '@/components/dashboard/ManageInboxUsersDialog';
 import ManageUserInstancesDialog from '@/components/dashboard/ManageUserInstancesDialog';
@@ -113,6 +115,8 @@ interface UserWithRole {
   app_role: AppRole;
   instance_count: number;
   instances: { id: string; name: string; phone: string | null }[];
+  inboxMemberships: { inbox_id: string; inbox_name: string; instance_name: string; role: InboxRole }[];
+  departments: { id: string; name: string; inbox_name: string; is_default: boolean }[];
 }
 
 interface InboxMembership {
@@ -220,6 +224,13 @@ const AdminPanel = () => {
   const [manageInstancesUser, setManageInstancesUser] = useState<UserWithRole | null>(null);
   const [isManageInstancesOpen, setIsManageInstancesOpen] = useState(false);
 
+  // Edit user state
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserPassword, setEditUserPassword] = useState('');
+  const [isSavingUser, setIsSavingUser] = useState(false);
+
   // Team state
   const [teamUsers, setTeamUsers] = useState<InboxUser[]>([]);
   const [teamLoading, setTeamLoading] = useState(true);
@@ -291,17 +302,26 @@ const AdminPanel = () => {
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
-      const [profilesRes, rolesRes, accessRes, instRes] = await Promise.all([
+      const [profilesRes, rolesRes, accessRes, instRes, inboxUsersRes, inboxesRes, deptMembersRes, deptsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('user_roles').select('user_id, role'),
         supabase.from('user_instance_access').select('user_id, instance_id'),
         supabase.from('instances').select('id, name, owner_jid'),
+        supabase.from('inbox_users').select('user_id, inbox_id, role'),
+        supabase.from('inboxes').select('id, name, instance_id'),
+        supabase.from('department_members').select('user_id, department_id'),
+        supabase.from('departments').select('id, name, inbox_id, is_default'),
       ]);
 
       const profiles = profilesRes.data || [];
       const roles = rolesRes.data || [];
       const access = accessRes.data || [];
       const instMap = new Map((instRes.data || []).map(i => [i.id, i]));
+      const inboxUsers = inboxUsersRes.data || [];
+      const inboxesList = inboxesRes.data || [];
+      const inboxMap = new Map(inboxesList.map(ib => [ib.id, ib]));
+      const deptMembers = deptMembersRes.data || [];
+      const deptMap = new Map((deptsRes.data || []).map(d => [d.id, d]));
 
       const resolveRole = (userId: string): AppRole => {
         const userRoles = roles.filter(r => r.user_id === userId).map(r => r.role);
@@ -312,16 +332,39 @@ const AdminPanel = () => {
 
       setUsers(profiles.map(p => {
         const userAccess = access.filter(a => a.user_id === p.id);
-        const instances = userAccess
+        const userInstances = userAccess
           .map(a => { const i = instMap.get(a.instance_id); return i ? { id: i.id, name: i.name, phone: i.owner_jid } : null; })
           .filter(Boolean) as UserWithRole['instances'];
         const role = resolveRole(p.id);
+        const inboxMemberships = inboxUsers
+          .filter(iu => iu.user_id === p.id)
+          .map(iu => {
+            const inbox = inboxMap.get(iu.inbox_id);
+            const instance = inbox ? instMap.get(inbox.instance_id) : undefined;
+            return {
+              inbox_id: iu.inbox_id,
+              inbox_name: inbox?.name || 'Desconhecida',
+              instance_name: instance?.name || '',
+              role: iu.role as InboxRole,
+            };
+          });
+        const departments = deptMembers
+          .filter(dm => dm.user_id === p.id)
+          .map(dm => {
+            const dept = deptMap.get(dm.department_id);
+            if (!dept) return null;
+            const inbox = inboxMap.get(dept.inbox_id);
+            return { id: dept.id, name: dept.name, inbox_name: inbox?.name || '', is_default: dept.is_default };
+          })
+          .filter(Boolean) as UserWithRole['departments'];
         return {
           ...p,
           is_super_admin: role === 'super_admin',
           app_role: role,
-          instance_count: instances.length,
-          instances,
+          instance_count: userInstances.length,
+          instances: userInstances,
+          inboxMemberships,
+          departments,
         };
       }));
     } catch {
@@ -505,6 +548,42 @@ const AdminPanel = () => {
       toast.error(e.message || 'Erro ao criar usuário');
     } finally {
       setIsCreatingUser(false);
+    }
+  };
+
+  const openEditUser = (u: UserWithRole) => {
+    setEditingUser(u);
+    setEditUserName(u.full_name || '');
+    setEditUserEmail(u.email);
+    setEditUserPassword('');
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser) return;
+    if (!editUserEmail.trim()) { toast.error('Email é obrigatório'); return; }
+    if (editUserPassword && editUserPassword.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
+    setIsSavingUser(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          user_id: editingUser.id,
+          email: editUserEmail.trim(),
+          full_name: editUserName.trim(),
+          ...(editUserPassword ? { password: editUserPassword } : {}),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
+      toast.success('Usuário atualizado!');
+      setEditingUser(null);
+      fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao atualizar usuário');
+    } finally {
+      setIsSavingUser(false);
     }
   };
 
@@ -864,146 +943,49 @@ const AdminPanel = () => {
         {/* TAB: Usuários                                                      */}
         {/* ══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="users" className="mt-6 space-y-4">
-          {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar usuários..."
-              className="pl-9"
-              value={usersSearch}
-              onChange={e => setUsersSearch(e.target.value)}
-            />
+          {/* Search + count */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar usuários..."
+                className="pl-9"
+                value={usersSearch}
+                onChange={e => setUsersSearch(e.target.value)}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              {filteredUsers.length} {filteredUsers.length === 1 ? 'usuário' : 'usuários'}
+            </span>
           </div>
 
           {usersLoading ? (
-            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
           ) : filteredUsers.length === 0 ? (
             <EmptyState icon={Users} title="Nenhum usuário encontrado" desc="Crie o primeiro usuário" />
           ) : (
-            <div className="rounded-xl border border-border/50 overflow-hidden">
-              {/* Desktop table */}
-              <div className="hidden md:block">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border/50 bg-muted/30">
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Usuário</th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tipo</th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Instâncias</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map((u, idx) => (
-                      <tr key={u.id} className={`border-b border-border/30 last:border-0 hover:bg-muted/10 transition-colors ${idx % 2 === 0 ? '' : 'bg-muted/5'}`}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-9 h-9 shrink-0">
-                              <AvatarImage src={u.avatar_url || undefined} />
-                              <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
-                                {u.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">{u.full_name || 'Sem nome'}</p>
-                              <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          {/* Role badge com select inline */}
-                          <Select value={u.app_role} onValueChange={(v) => handleChangeRole(u.id, v as AppRole)}>
-                            <SelectTrigger className="h-8 w-36 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="super_admin">
-                                <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-primary" /> Super Admin</span>
-                              </SelectItem>
-                              <SelectItem value="gerente">
-                                <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-info" /> Gerente</span>
-                              </SelectItem>
-                              <SelectItem value="user">
-                                <span className="flex items-center gap-1.5"><Headphones className="w-3.5 h-3.5 text-muted-foreground" /> Atendente</span>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-muted-foreground">
-                            {u.instance_count === 0 ? (
-                              <span className="text-xs italic">Nenhuma</span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-xs">
-                                <MonitorSmartphone className="w-3.5 h-3.5" />
-                                {u.instance_count} {u.instance_count === 1 ? 'instância' : 'instâncias'}
-                              </span>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 text-xs"
-                              onClick={() => { setManageInstancesUser(u); setIsManageInstancesOpen(true); }}
-                            >
-                              <Settings className="w-3.5 h-3.5 mr-1" />
-                              Instâncias
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => setUserToDelete(u)}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile cards */}
-              <div className="md:hidden divide-y divide-border/30">
+            <TooltipProvider delayDuration={300}>
+              <div className="space-y-3">
                 {filteredUsers.map(u => (
-                  <div key={u.id} className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="w-10 h-10 shrink-0">
-                          <AvatarImage src={u.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                            {u.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{u.full_name || 'Sem nome'}</p>
-                          <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                        </div>
+                  <div key={u.id} className="group p-4 rounded-xl border border-border/50 bg-card/40 hover:bg-card/60 transition-all duration-200 space-y-3">
+                    {/* Row 1: Avatar + Name + Role + Actions */}
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10 shrink-0 ring-2 ring-background">
+                        <AvatarImage src={u.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {u.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm truncate">{u.full_name || 'Sem nome'}</p>
+                        <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                          <Mail className="w-3 h-3 shrink-0" />
+                          {u.email}
+                        </p>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className={
-                          u.app_role === 'super_admin'
-                            ? 'gap-1 shrink-0 bg-primary/10 text-primary border-primary/20'
-                            : u.app_role === 'gerente'
-                            ? 'gap-1 shrink-0 bg-info/10 text-info border-info/20'
-                            : 'gap-1 shrink-0 bg-muted text-muted-foreground border-border'
-                        }
-                      >
-                        {u.app_role === 'super_admin'
-                          ? <><Shield className="w-3 h-3" /> Admin</>
-                          : u.app_role === 'gerente'
-                          ? <><Briefcase className="w-3 h-3" /> Gerente</>
-                          : <><Headphones className="w-3 h-3" /> Atendente</>}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
+                      {/* Role Select */}
                       <Select value={u.app_role} onValueChange={(v) => handleChangeRole(u.id, v as AppRole)}>
-                        <SelectTrigger className="flex-1 h-9 text-xs">
+                        <SelectTrigger className="h-8 w-32 sm:w-36 text-xs shrink-0">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1011,24 +993,108 @@ const AdminPanel = () => {
                             <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-primary" /> Super Admin</span>
                           </SelectItem>
                           <SelectItem value="gerente">
-                            <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-info" /> Gerente</span>
+                            <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5" /> Gerente</span>
                           </SelectItem>
                           <SelectItem value="user">
-                            <span className="flex items-center gap-1.5"><Headphones className="w-3.5 h-3.5 text-muted-foreground" /> Atendente</span>
+                            <span className="flex items-center gap-1.5"><Headphones className="w-3.5 h-3.5" /> Atendente</span>
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button variant="outline" size="sm" className="flex-1 h-9 text-xs" onClick={() => { setManageInstancesUser(u); setIsManageInstancesOpen(true); }}>
-                        <Settings className="w-3.5 h-3.5 mr-1" /> Instâncias
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10" onClick={() => setUserToDelete(u)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => openEditUser(u)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom"><p>Editar usuário</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setManageInstancesUser(u); setIsManageInstancesOpen(true); }}>
+                              <Settings className="w-3.5 h-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom"><p>Gerenciar instâncias</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive hover:bg-destructive/10" onClick={() => setUserToDelete(u)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom"><p>Excluir usuário</p></TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Stats chips */}
+                    <div className="flex flex-wrap gap-2 pl-[52px]">
+                      {/* Instâncias */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/40 border border-border/30 text-xs text-muted-foreground cursor-default">
+                            <MonitorSmartphone className="w-3 h-3 shrink-0" />
+                            <span>{u.instance_count} {u.instance_count === 1 ? 'instância' : 'instâncias'}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          {u.instances.length === 0 ? <p>Nenhuma instância atribuída</p> : (
+                            <div className="space-y-1">
+                              {u.instances.map(i => <p key={i.id} className="text-xs">{i.name}{i.phone ? ` • ${formatPhone(i.phone)}` : ''}</p>)}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* Caixas de Entrada */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/40 border border-border/30 text-xs text-muted-foreground cursor-default">
+                            <Inbox className="w-3 h-3 shrink-0" />
+                            <span>{u.inboxMemberships.length} {u.inboxMemberships.length === 1 ? 'caixa' : 'caixas'}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          {u.inboxMemberships.length === 0 ? <p>Sem vínculo com caixas</p> : (
+                            <div className="space-y-1">
+                              {u.inboxMemberships.map(m => (
+                                <p key={m.inbox_id} className="text-xs flex items-center gap-1">
+                                  {m.inbox_name} <span className="opacity-60">({ROLE_LABELS[m.role]})</span>
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {/* Departamentos */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/40 border border-border/30 text-xs text-muted-foreground cursor-default">
+                            <Building2 className="w-3 h-3 shrink-0" />
+                            <span>{u.departments.length} {u.departments.length === 1 ? 'departamento' : 'departamentos'}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          {u.departments.length === 0 ? <p>Sem departamentos</p> : (
+                            <div className="space-y-1">
+                              {u.departments.map(d => (
+                                <p key={d.id} className="text-xs">
+                                  {d.name} {d.is_default && <span className="opacity-60">(padrão)</span>}
+                                  {d.inbox_name && <span className="opacity-60"> • {d.inbox_name}</span>}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </TooltipProvider>
           )}
         </TabsContent>
 
@@ -1412,6 +1478,36 @@ const AdminPanel = () => {
             <Button variant="outline" onClick={() => setEditingTeamUser(null)}>Cancelar</Button>
             <Button onClick={handleEditTeamUser} disabled={isSavingTeamUser}>
               {isSavingTeamUser ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User */}
+      <Dialog open={!!editingUser} onOpenChange={open => !open && setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>Altere nome, email ou senha do usuário</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input placeholder="Nome completo" value={editUserName} onChange={e => setEditUserName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input type="email" placeholder="email@exemplo.com" value={editUserEmail} onChange={e => setEditUserEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Nova Senha</Label>
+              <Input type="password" placeholder="Deixe vazio para manter atual" value={editUserPassword} onChange={e => setEditUserPassword(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>Cancelar</Button>
+            <Button onClick={handleEditUser} disabled={isSavingUser}>
+              {isSavingUser ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Salvar'}
             </Button>
           </DialogFooter>
         </DialogContent>
