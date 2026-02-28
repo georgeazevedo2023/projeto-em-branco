@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Server, Users, Wifi, WifiOff, MessageSquare, UsersRound, RefreshCw, UserPlus } from 'lucide-react';
 import HelpdeskMetricsCharts from '@/components/dashboard/HelpdeskMetricsCharts';
+import BusinessHoursChart from '@/components/dashboard/BusinessHoursChart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import InstanceFilterSelect from '@/components/dashboard/InstanceFilterSelect';
@@ -423,6 +424,9 @@ const DashboardHome = () => {
           : undefined
         }
       />
+
+      {/* Business Hours Chart */}
+      <BusinessHoursChart />
 
       {/* Instance Groups Breakdown */}
       <div className="space-y-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
