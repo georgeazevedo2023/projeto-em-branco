@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.admin-update-user]
 verify_jwt = false
+
+[functions.group-reasons]
+verify_jwt = false
