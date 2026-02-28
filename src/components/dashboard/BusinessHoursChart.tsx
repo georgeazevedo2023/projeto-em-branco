@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, PieChart, Pie, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, PieChart, Pie } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -227,32 +227,30 @@ const BusinessHoursChart = () => {
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
           {/* Pie */}
-          <div className="h-[120px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={30}
-                  outerRadius={50}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} stroke="transparent" />
-                  ))}
-                </Pie>
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value) => <span className="font-medium">{value} msgs</span>}
-                    />
-                  }
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer config={chartConfig} className="h-[120px] w-full">
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={30}
+                outerRadius={50}
+                paddingAngle={3}
+                dataKey="value"
+              >
+                {pieData.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} stroke="transparent" />
+                ))}
+              </Pie>
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(value) => <span className="font-medium">{value} msgs</span>}
+                  />
+                }
+              />
+            </PieChart>
+          </ChartContainer>
 
           {/* Stats */}
           <div className="space-y-3">
