@@ -163,6 +163,40 @@ const formatPhone = (jid: string | null): string => {
   return clean;
 };
 
+const InlineCopyableId = ({ label, id, icon: Icon }: { label: string; id: string; icon: React.ElementType }) => {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(id);
+    toast.success(`${label} copiado!`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={handleCopy}
+            className="group inline-flex items-center gap-2 bg-muted/30 hover:bg-primary/10 border border-border/40 hover:border-primary/40 rounded-lg px-3 py-2 transition-all duration-200 cursor-pointer w-full"
+          >
+            <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+            <div className="flex flex-col items-start min-w-0 flex-1">
+              <span className="text-[11px] text-muted-foreground/70 font-medium leading-none mb-0.5">{label}</span>
+              <code className="text-xs font-mono text-foreground/80 group-hover:text-foreground transition-colors truncate max-w-full block">{id}</code>
+            </div>
+            {copied ? (
+              <Check className="w-4 h-4 text-primary shrink-0" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all shrink-0" />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">Clique para copiar</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const AdminPanel = () => {
@@ -790,152 +824,196 @@ const AdminPanel = () => {
         {/* ══════════════════════════════════════════════════════════════════ */}
         {/* TAB: Caixas de Entrada                                            */}
         {/* ══════════════════════════════════════════════════════════════════ */}
-        <TabsContent value="inboxes" className="mt-6 space-y-4">
+        <TabsContent value="inboxes" className="mt-6 space-y-6">
+          {/* Header */}
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-bold tracking-tight">Caixas de Entrada</h2>
+            <p className="text-sm text-muted-foreground">Gerencie suas caixas de atendimento WhatsApp. Os IDs são usados para integrações (n8n, API).</p>
+          </div>
+
           {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar caixas..."
-              className="pl-9"
-              value={inboxSearch}
-              onChange={e => setInboxSearch(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou instância..."
+                className="pl-9 h-11 text-sm"
+                value={inboxSearch}
+                onChange={e => setInboxSearch(e.target.value)}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground hidden sm:inline shrink-0">
+              {filteredInboxes.length} {filteredInboxes.length === 1 ? 'caixa' : 'caixas'}
+            </span>
           </div>
 
           {inboxesLoading ? (
-            <div className="space-y-3">
-              {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            <div className="grid gap-4">
+              {[1,2,3].map(i => <Skeleton key={i} className="h-48 rounded-xl" />)}
             </div>
           ) : filteredInboxes.length === 0 ? (
             <EmptyState icon={Inbox} title="Nenhuma caixa encontrada" desc="Crie a primeira caixa de entrada" />
           ) : (
-            <Accordion type="multiple" className="space-y-2">
-              {filteredInboxes.map(inbox => (
-                <AccordionItem
-                  key={inbox.id}
-                  value={inbox.id}
-                  className="rounded-xl border border-border/50 bg-card/40 px-0 overflow-hidden"
-                >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/20 transition-colors">
-                    <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
-                      {/* Status dot */}
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${inbox.instance_status === 'connected' ? 'bg-emerald-400' : 'bg-muted-foreground/40'}`} />
-                      <div className="min-w-0 text-left">
-                        <p className="font-semibold text-sm truncate">{inbox.name}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MonitorSmartphone className="w-3 h-3" />
-                          {inbox.instance_name}
-                        </p>
+            <TooltipProvider delayDuration={300}>
+              <div className="grid gap-4">
+                {filteredInboxes.map(inbox => (
+                  <div
+                    key={inbox.id}
+                    className="group border border-border/40 bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-card/80 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border/20">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${inbox.instance_status === 'connected' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-muted/30 border-border/30'}`}>
+                          <Inbox className={`w-5 h-5 ${inbox.instance_status === 'connected' ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold text-base truncate">{inbox.name}</h3>
+                            <Badge variant="outline" className={`text-xs h-6 gap-1 shrink-0 ${inbox.instance_status === 'connected' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : 'bg-muted/30 text-muted-foreground border-border/30'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${inbox.instance_status === 'connected' ? 'bg-emerald-400' : 'bg-muted-foreground/40'}`} />
+                              {inbox.instance_status === 'connected' ? 'Online' : 'Offline'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate mt-0.5 flex items-center gap-1.5">
+                            <MonitorSmartphone className="w-3.5 h-3.5 shrink-0" />
+                            {inbox.instance_name}
+                            <span className="mx-1">•</span>
+                            <Users className="w-3.5 h-3.5 shrink-0" />
+                            {inbox.member_count} membro{inbox.member_count !== 1 ? 's' : ''}
+                          </p>
+                        </div>
                       </div>
-                      <Badge variant="outline" className="ml-auto mr-2 shrink-0 gap-1">
-                        <Users className="w-3 h-3" />
-                        {inbox.member_count}
-                      </Badge>
-                    </div>
-                  </AccordionTrigger>
 
-                  <AccordionContent className="px-4 pb-4 space-y-4">
-                    {/* Inbox ID */}
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                        <Settings className="w-3 h-3" /> Inbox ID (para n8n)
-                      </p>
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/30">
-                        <code className="text-xs text-muted-foreground truncate flex-1 font-mono">{inbox.id}</code>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { navigator.clipboard.writeText(inbox.id); toast.success('Inbox ID copiado!'); }}>
-                          <Copy className="w-3 h-3" />
-                        </Button>
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setManageInbox(inbox)}>
+                              <Users className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Gerenciar Membros</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-9 w-9 text-destructive hover:text-destructive"
+                              onClick={() => setInboxToDelete(inbox)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Excluir</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
 
-                    {/* Webhook URL */}
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                        <Link className="w-3 h-3" /> Webhook Entrada (n8n)
-                      </p>
-                      {editingWebhookId === inbox.id ? (
-                        <div className="flex gap-2">
-                          <Input className="h-8 text-xs flex-1" value={editWebhookValue} onChange={e => setEditWebhookValue(e.target.value)} autoFocus placeholder="https://..." />
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" disabled={isSavingWebhook} onClick={() => handleSaveWebhook(inbox.id)}>
-                            {isSavingWebhook ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingWebhookId(null)}>
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
+                    {/* Card Body */}
+                    <div className="px-5 py-4 space-y-4">
+                      {/* IDs Section */}
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">IDs para integração</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <InlineCopyableId label="Caixa de Entrada" id={inbox.id} icon={Inbox} />
+                          <InlineCopyableId label="Instância" id={inbox.instance_id} icon={MonitorSmartphone} />
                         </div>
-                      ) : inbox.webhook_url ? (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/30">
-                          <span className="text-xs text-muted-foreground truncate flex-1">{inbox.webhook_url}</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { navigator.clipboard.writeText(inbox.webhook_url!); toast.success('Copiado!'); }}>
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { setEditingWebhookId(inbox.id); setEditWebhookValue(inbox.webhook_url || ''); }}>
-                            <Pencil className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button variant="outline" size="sm" className="h-8 text-xs w-full" onClick={() => { setEditingWebhookId(inbox.id); setEditWebhookValue(''); }}>
-                          <Plus className="w-3 h-3 mr-1.5" /> Adicionar Webhook
-                        </Button>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Webhook Outgoing */}
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                        <Link className="w-3 h-3" /> Webhook Saída (outgoing)
-                      </p>
-                      {editingOutgoingId === inbox.id ? (
-                        <div className="flex gap-2">
-                          <Input className="h-8 text-xs flex-1" value={editOutgoingValue} onChange={e => setEditOutgoingValue(e.target.value)} autoFocus placeholder="https://..." />
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" disabled={isSavingOutgoing} onClick={() => handleSaveOutgoing(inbox.id)}>
-                            {isSavingOutgoing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingOutgoingId(null)}>
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
+                      {/* Webhooks */}
+                      <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">Webhooks</p>
+                        
+                        {/* Webhook Entrada */}
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <Link className="w-3 h-3" /> Webhook Entrada (n8n)
+                          </p>
+                          {editingWebhookId === inbox.id ? (
+                            <div className="flex gap-2">
+                              <Input className="h-9 text-sm flex-1" value={editWebhookValue} onChange={e => setEditWebhookValue(e.target.value)} autoFocus placeholder="https://..." />
+                              <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" disabled={isSavingWebhook} onClick={() => handleSaveWebhook(inbox.id)}>
+                                {isSavingWebhook ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setEditingWebhookId(null)}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : inbox.webhook_url ? (
+                            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted/30 border border-border/30">
+                              <code className="text-xs text-muted-foreground truncate flex-1 font-mono">{inbox.webhook_url}</code>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { navigator.clipboard.writeText(inbox.webhook_url!); toast.success('Copiado!'); }}>
+                                    <Copy className="w-3.5 h-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copiar URL</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { setEditingWebhookId(inbox.id); setEditWebhookValue(inbox.webhook_url || ''); }}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Editar</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          ) : (
+                            <Button variant="outline" size="sm" className="h-9 text-sm w-full" onClick={() => { setEditingWebhookId(inbox.id); setEditWebhookValue(''); }}>
+                              <Plus className="w-4 h-4 mr-1.5" /> Adicionar Webhook
+                            </Button>
+                          )}
                         </div>
-                      ) : inbox.webhook_outgoing_url ? (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/30">
-                          <span className="text-xs text-muted-foreground truncate flex-1">{inbox.webhook_outgoing_url}</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { navigator.clipboard.writeText(inbox.webhook_outgoing_url!); toast.success('Copiado!'); }}>
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { setEditingOutgoingId(inbox.id); setEditOutgoingValue(inbox.webhook_outgoing_url || ''); }}>
-                            <Pencil className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button variant="outline" size="sm" className="h-8 text-xs w-full" onClick={() => { setEditingOutgoingId(inbox.id); setEditOutgoingValue(''); }}>
-                          <Plus className="w-3 h-3 mr-1.5" /> Adicionar Webhook Saída
-                        </Button>
-                      )}
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2 border-t border-border/30">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => setManageInbox(inbox)}
-                      >
-                        <Users className="w-3.5 h-3.5 mr-1.5" />
-                        Gerenciar Membros
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => setInboxToDelete(inbox)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                        {/* Webhook Saída */}
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <Link className="w-3 h-3" /> Webhook Saída (outgoing)
+                          </p>
+                          {editingOutgoingId === inbox.id ? (
+                            <div className="flex gap-2">
+                              <Input className="h-9 text-sm flex-1" value={editOutgoingValue} onChange={e => setEditOutgoingValue(e.target.value)} autoFocus placeholder="https://..." />
+                              <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" disabled={isSavingOutgoing} onClick={() => handleSaveOutgoing(inbox.id)}>
+                                {isSavingOutgoing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setEditingOutgoingId(null)}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : inbox.webhook_outgoing_url ? (
+                            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted/30 border border-border/30">
+                              <code className="text-xs text-muted-foreground truncate flex-1 font-mono">{inbox.webhook_outgoing_url}</code>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { navigator.clipboard.writeText(inbox.webhook_outgoing_url!); toast.success('Copiado!'); }}>
+                                    <Copy className="w-3.5 h-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copiar URL</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { setEditingOutgoingId(inbox.id); setEditOutgoingValue(inbox.webhook_outgoing_url || ''); }}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Editar</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          ) : (
+                            <Button variant="outline" size="sm" className="h-9 text-sm w-full" onClick={() => { setEditingOutgoingId(inbox.id); setEditOutgoingValue(''); }}>
+                              <Plus className="w-4 h-4 mr-1.5" /> Adicionar Webhook Saída
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+                  </div>
+                ))}
+              </div>
+            </TooltipProvider>
           )}
         </TabsContent>
 
@@ -1101,106 +1179,147 @@ const AdminPanel = () => {
         {/* ══════════════════════════════════════════════════════════════════ */}
         {/* TAB: Equipe                                                        */}
         {/* ══════════════════════════════════════════════════════════════════ */}
-        <TabsContent value="team" className="mt-6 space-y-4">
+        <TabsContent value="team" className="mt-6 space-y-6">
+          {/* Header */}
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-bold tracking-tight">Equipe de Atendimento</h2>
+            <p className="text-sm text-muted-foreground">Membros vinculados a caixas de entrada. Os IDs são usados para integrações (n8n, API).</p>
+          </div>
+
           {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar membros..."
-              className="pl-9"
-              value={teamSearch}
-              onChange={e => setTeamSearch(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou email..."
+                className="pl-9 h-11 text-sm"
+                value={teamSearch}
+                onChange={e => setTeamSearch(e.target.value)}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground hidden sm:inline shrink-0">
+              {filteredTeam.length} {filteredTeam.length === 1 ? 'membro' : 'membros'}
+            </span>
           </div>
 
           {teamLoading ? (
-            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
+            <div className="grid gap-4">{[1,2,3].map(i => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
           ) : filteredTeam.length === 0 ? (
             <EmptyState icon={Headphones} title="Nenhum membro na equipe" desc="Adicione membros às caixas de atendimento" />
           ) : (
-            <div className="space-y-3">
-              {filteredTeam.map(u => (
-                <div key={u.id} className="p-4 rounded-xl border border-border/50 bg-card/40 space-y-3">
-                  {/* User header */}
-                   <div className="flex items-center gap-3">
-                     <Avatar className="w-10 h-10">
-                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                         {u.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                       </AvatarFallback>
-                     </Avatar>
-                     <div className="min-w-0 flex-1">
-                       <p className="font-semibold text-sm truncate">{u.full_name || 'Sem nome'}</p>
-                       <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                       <div className="flex items-center gap-1 mt-0.5">
-                         <span className="text-[10px] font-mono text-muted-foreground truncate">ID: {u.id}</span>
-                         <button
-                           type="button"
-                           className="text-muted-foreground hover:text-foreground transition-colors"
-                           onClick={() => {
-                             navigator.clipboard.writeText(u.id);
-                             toast.success('ID copiado!');
-                           }}
-                         >
-                           <Copy className="w-3 h-3" />
-                         </button>
-                       </div>
-                     </div>
-                     <Button
-                       variant="ghost"
-                       size="icon"
-                       className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
-                       onClick={() => openEditTeamUser(u)}
-                     >
-                       <Pencil className="w-4 h-4" />
-                     </Button>
-                   </div>
-
-                  {/* Memberships */}
-                  <div className="space-y-1.5">
-                    {u.memberships.map(m => (
-                      <div key={m.inbox_id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/20">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Inbox className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-sm truncate">{m.inbox_name}</span>
-                          {m.instance_name && (
-                            <span className="text-xs text-muted-foreground hidden sm:inline">({m.instance_name})</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className={ROLE_COLORS[m.role]}>
-                            {ROLE_LABELS[m.role]}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => setRemoveMembership({ userId: u.id, inboxId: m.inbox_id, userName: u.full_name || u.email, inboxName: m.inbox_name })}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+            <TooltipProvider delayDuration={300}>
+              <div className="grid gap-4">
+                {filteredTeam.map(u => (
+                  <div
+                    key={u.id}
+                    className="group border border-border/40 bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-card/80 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border/20">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="w-11 h-11 ring-2 ring-background shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-base">
+                            {u.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-base truncate">{u.full_name || 'Sem nome'}</h3>
+                          <p className="text-sm text-muted-foreground truncate flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 shrink-0" />
+                            {u.email}
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Departments */}
-                  {u.departments.length > 0 && (
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1">Departamentos</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {u.departments.map(d => (
-                          <Badge key={d.id} variant="outline" className="gap-1 text-xs bg-primary/5 text-primary border-primary/20">
-                            <Building2 className="w-3 h-3" />
-                            {d.name}
-                            {d.is_default && <span className="text-[9px] opacity-60">(padrão)</span>}
-                          </Badge>
-                        ))}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => openEditTeamUser(u)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar atendente</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+
+                    {/* Card Body */}
+                    <div className="px-5 py-4 space-y-4">
+                      {/* User ID */}
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">ID do Atendente</p>
+                        <InlineCopyableId label="User ID" id={u.id} icon={User} />
+                      </div>
+
+                      {/* Memberships */}
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">
+                          Caixas de Entrada ({u.memberships.length})
+                        </p>
+                        <div className="space-y-2">
+                          {u.memberships.map(m => (
+                            <div key={m.inbox_id} className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-muted/30 border border-border/20">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Inbox className="w-4 h-4 text-muted-foreground shrink-0" />
+                                <div className="min-w-0">
+                                  <span className="text-sm font-medium truncate block">{m.inbox_name}</span>
+                                  {m.instance_name && (
+                                    <span className="text-xs text-muted-foreground">{m.instance_name}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Badge variant="outline" className={ROLE_COLORS[m.role]}>
+                                  {ROLE_LABELS[m.role]}
+                                </Badge>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => setRemoveMembership({ userId: u.id, inboxId: m.inbox_id, userName: u.full_name || u.email, inboxName: m.inbox_name })}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Remover desta caixa</TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Departments */}
+                      {u.departments.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">
+                            Departamentos ({u.departments.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {u.departments.map(d => (
+                              <Tooltip key={d.id}>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="gap-1.5 text-sm py-1 px-2.5 bg-primary/5 text-primary border-primary/20 cursor-default">
+                                    <Building2 className="w-3.5 h-3.5" />
+                                    {d.name}
+                                    {d.is_default && <span className="text-[10px] opacity-60">(padrão)</span>}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Caixa: {d.inbox_name}</p>
+                                  <p className="text-xs font-mono opacity-70">ID: {d.id}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TooltipProvider>
           )}
         </TabsContent>
 

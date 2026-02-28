@@ -476,45 +476,45 @@ const BackupModule = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold">Módulo de Backup</h3>
-          <p className="text-sm text-muted-foreground">
-            Exporte a estrutura, dados e configurações do banco de dados
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={format} onValueChange={(v) => setFormat(v as 'sql' | 'csv')}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sql">
-                <span className="flex items-center gap-2">
-                  <Code className="w-3.5 h-3.5" /> SQL
-                </span>
-              </SelectItem>
-              <SelectItem value="csv">
-                <span className="flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5" /> CSV
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={handleExport} disabled={isExporting || selectedSections.size === 0}>
-            {isExporting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Exportando...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Exportar
-              </>
-            )}
-          </Button>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-bold tracking-tight">Módulo de Backup</h2>
+        <p className="text-sm text-muted-foreground">
+          Exporte a estrutura, dados e configurações do banco de dados para migração ou segurança.
+        </p>
+      </div>
+
+      {/* Actions bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <Select value={format} onValueChange={(v) => setFormat(v as 'sql' | 'csv')}>
+          <SelectTrigger className="w-full sm:w-36 h-11">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="sql">
+              <span className="flex items-center gap-2">
+                <Code className="w-4 h-4" /> Formato SQL
+              </span>
+            </SelectItem>
+            <SelectItem value="csv">
+              <span className="flex items-center gap-2">
+                <FileText className="w-4 h-4" /> Formato CSV
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Button onClick={handleExport} disabled={isExporting || selectedSections.size === 0} className="h-11 gap-2 flex-1 sm:flex-none">
+          {isExporting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Exportando...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              Exportar Backup
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Progress */}
@@ -556,10 +556,10 @@ const BackupModule = () => {
           return (
             <div
               key={section.id}
-              className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
+              className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
                 isSelected
-                  ? 'border-primary/30 bg-primary/5'
-                  : 'border-border/50 hover:border-border'
+                  ? 'border-primary/30 bg-primary/5 hover:shadow-primary/5'
+                  : 'border-border/50 bg-card/40 hover:border-border'
               }`}
               onClick={() => toggleSection(section.id)}
             >
@@ -568,13 +568,13 @@ const BackupModule = () => {
                 onCheckedChange={() => toggleSection(section.id)}
                 className="shrink-0"
               />
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                isSelected ? 'bg-primary/10 text-primary' : 'bg-muted/50 text-muted-foreground'
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                isSelected ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-muted/50 text-muted-foreground border border-border/30'
               }`}>
                 <Icon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{section.label}</p>
+                <p className="font-semibold text-sm">{section.label}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
               </div>
               {format === 'sql' && section.id === 'data' && (
