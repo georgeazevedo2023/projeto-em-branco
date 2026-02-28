@@ -1,12 +1,12 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageCircle, TrendingUp } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
+import { MessageCircle, TrendingUp, Sparkles, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TopReasonsChartProps {
   instanceId?: string | null;
@@ -19,15 +19,22 @@ interface ReasonItem {
   count: number;
 }
 
+interface GroupedReason {
+  category: string;
+  count: number;
+  original_reasons?: string[];
+}
+
 interface InboxReasons {
   inboxId: string;
   inboxName: string;
   reasons: ReasonItem[];
+  grouped?: GroupedReason[];
   total: number;
 }
 
 const COLORS = [
-  'hsl(142 70% 45%)',
+  'hsl(var(--primary))',
   'hsl(217 91% 60%)',
   'hsl(262 80% 55%)',
   'hsl(38 92% 50%)',
@@ -37,18 +44,28 @@ const COLORS = [
   'hsl(160 60% 40%)',
 ];
 
-// Normalize reason text for grouping (lowercase, trim, remove trailing punctuation)
 function normalizeReason(reason: string): string {
-  return reason
-    .toLowerCase()
-    .trim()
-    .replace(/[.!?]+$/, '')
-    .replace(/\s+/g, ' ');
+  return reason.toLowerCase().trim().replace(/[.!?]+$/, '').replace(/\s+/g, ' ');
+}
+
+async function groupReasonsWithAI(reasons: ReasonItem[]): Promise<GroupedReason[]> {
+  try {
+    const { data, error } = await supabase.functions.invoke('group-reasons', {
+      body: { reasons },
+    });
+    if (error) throw error;
+    return data?.grouped || reasons.map(r => ({ category: r.reason, count: r.count }));
+  } catch (err) {
+    console.error('Error grouping reasons with AI:', err);
+    return reasons.map(r => ({ category: r.reason, count: r.count }));
+  }
 }
 
 const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsChartProps) => {
   const [loading, setLoading] = useState(true);
+  const [grouping, setGrouping] = useState(false);
   const [inboxReasons, setInboxReasons] = useState<InboxReasons[]>([]);
+  const [useAIGrouping, setUseAIGrouping] = useState(true);
 
   useEffect(() => {
     const fetchReasons = async () => {
@@ -57,7 +74,6 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
         const since = new Date();
         since.setDate(since.getDate() - periodDays);
 
-        // Build query for conversations with ai_summary
         let query = supabase
           .from('conversations')
           .select('ai_summary, inbox_id, inboxes(name, instance_id)')
@@ -78,7 +94,6 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
           return;
         }
 
-        // Filter by instance if needed
         let filtered = data;
         if (instanceId) {
           filtered = data.filter((c: any) => c.inboxes?.instance_id === instanceId);
@@ -105,7 +120,6 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
           entry.total++;
         });
 
-        // Convert to sorted arrays, keep top 5 reasons per inbox
         const result: InboxReasons[] = Array.from(inboxMap.entries())
           .map(([id, val]) => ({
             inboxId: id,
@@ -114,11 +128,33 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
             reasons: Array.from(val.reasons.entries())
               .map(([reason, count]) => ({ reason, count }))
               .sort((a, b) => b.count - a.count)
-              .slice(0, 6),
+              .slice(0, 10),
           }))
           .sort((a, b) => b.total - a.total);
 
         setInboxReasons(result);
+
+        // AI grouping
+        if (useAIGrouping) {
+          setGrouping(true);
+          const allReasons = result.flatMap(ir => ir.reasons);
+          const merged = new Map<string, number>();
+          allReasons.forEach(r => merged.set(r.reason, (merged.get(r.reason) || 0) + r.count));
+          const mergedArr = Array.from(merged.entries())
+            .map(([reason, count]) => ({ reason, count }))
+            .sort((a, b) => b.count - a.count);
+
+          if (mergedArr.length > 3) {
+            const grouped = await groupReasonsWithAI(mergedArr);
+            setInboxReasons(prev =>
+              prev.map(ir => ({
+                ...ir,
+                grouped: grouped,
+              }))
+            );
+          }
+          setGrouping(false);
+        }
       } catch (err) {
         console.error('Error fetching contact reasons:', err);
       } finally {
@@ -127,7 +163,7 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
     };
 
     fetchReasons();
-  }, [instanceId, inboxId, periodDays]);
+  }, [instanceId, inboxId, periodDays, useAIGrouping]);
 
   if (loading) {
     return (
@@ -150,37 +186,72 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
     );
   }
 
-  // If only one inbox or filtered, show flat view
-  const showFlat = inboxReasons.length === 1 || inboxId;
+  // Use AI-grouped data if available
+  const grouped = inboxReasons[0]?.grouped;
+  const displayData: { label: string; count: number; details?: string[] }[] = grouped
+    ? grouped.map(g => ({
+        label: g.category,
+        count: g.count,
+        details: g.original_reasons,
+      }))
+    : inboxReasons
+        .flatMap(ir => ir.reasons)
+        .reduce((acc, r) => {
+          const existing = acc.find(a => a.label === r.reason);
+          if (existing) existing.count += r.count;
+          else acc.push({ label: r.reason, count: r.count });
+          return acc;
+        }, [] as { label: string; count: number; details?: string[] }[])
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
 
-  if (showFlat) {
-    const allReasons = inboxReasons.flatMap(ir => ir.reasons);
-    // Merge duplicates across inboxes
-    const merged = new Map<string, number>();
-    allReasons.forEach(r => merged.set(r.reason, (merged.get(r.reason) || 0) + r.count));
-    const sorted = Array.from(merged.entries())
-      .map(([reason, count]) => ({ reason, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
+  const maxCount = displayData[0]?.count || 1;
 
-    const maxCount = sorted[0]?.count || 1;
-
-    return (
-      <Card className="glass-card-hover">
-        <CardHeader className="pb-2 px-4 pt-4">
+  return (
+    <Card className="glass-card-hover">
+      <CardHeader className="pb-2 px-4 pt-4">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
             Principais Motivos de Contato
+            {grouped && (
+              <Badge variant="secondary" className="text-[9px] gap-1">
+                <Sparkles className="w-2.5 h-2.5" />
+                Agrupado por IA
+              </Badge>
+            )}
           </CardTitle>
-          <p className="text-[11px] text-muted-foreground">
-            Últimos {periodDays} dias · Baseado em resumos IA
-          </p>
-        </CardHeader>
-        <CardContent className="pt-0 px-4 pb-4 space-y-2">
-          {sorted.map((item, idx) => (
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Últimos {periodDays} dias · Baseado em resumos IA
+          {grouping && ' · Agrupando...'}
+        </p>
+      </CardHeader>
+      <CardContent className="pt-0 px-4 pb-4 space-y-2.5">
+        <TooltipProvider>
+          {displayData.map((item, idx) => (
             <div key={idx} className="space-y-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs truncate max-w-[75%] capitalize">{item.reason}</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-xs truncate max-w-[75%] capitalize cursor-default">
+                      {item.label}
+                    </span>
+                  </TooltipTrigger>
+                  {item.details && item.details.length > 0 && (
+                    <TooltipContent side="right" className="max-w-[280px]">
+                      <p className="text-[10px] font-medium mb-1">Motivos agrupados:</p>
+                      <ul className="text-[10px] space-y-0.5">
+                        {item.details.slice(0, 5).map((d, i) => (
+                          <li key={i} className="capitalize">• {d}</li>
+                        ))}
+                        {item.details.length > 5 && (
+                          <li className="text-muted-foreground">+ {item.details.length - 5} mais</li>
+                        )}
+                      </ul>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
                 <Badge variant="outline" className="text-[10px] shrink-0">{item.count}x</Badge>
               </div>
               <div className="w-full bg-muted/50 rounded-full h-1.5">
@@ -194,52 +265,9 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Multiple inboxes - show collapsible per inbox
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {inboxReasons.map((ir) => {
-        const maxCount = ir.reasons[0]?.count || 1;
-        return (
-          <Card key={ir.inboxId} className="glass-card-hover">
-            <CardHeader className="pb-2 px-4 pt-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xs font-medium flex items-center gap-1.5">
-                  <MessageCircle className="w-3.5 h-3.5 text-primary" />
-                  {ir.inboxName}
-                </CardTitle>
-                <Badge variant="outline" className="text-[10px]">
-                  {ir.total} conversas
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0 px-4 pb-3 space-y-1.5">
-              {ir.reasons.slice(0, 5).map((item, idx) => (
-                <div key={idx} className="space-y-0.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] truncate max-w-[70%] capitalize">{item.reason}</span>
-                    <span className="text-[10px] text-muted-foreground font-medium">{item.count}x</span>
-                  </div>
-                  <div className="w-full bg-muted/50 rounded-full h-1">
-                    <div
-                      className="h-1 rounded-full transition-all"
-                      style={{
-                        width: `${(item.count / maxCount) * 100}%`,
-                        backgroundColor: COLORS[idx % COLORS.length],
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+        </TooltipProvider>
+      </CardContent>
+    </Card>
   );
 };
 
