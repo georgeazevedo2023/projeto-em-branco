@@ -19,7 +19,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Search, Plus, Trash2, Pencil, Copy, Star, Users, Inbox, Loader2, Building2, Server, Hash, UserCircle } from 'lucide-react';
+import { Search, Plus, Trash2, Pencil, Copy, Star, Users, Inbox, Loader2, Building2, Server, Hash, UserCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -48,29 +48,45 @@ interface AgentOption {
   inbox_id: string;
 }
 
-const CopyableId = ({ label, id, icon: Icon }: { label: string; id: string; icon: React.ElementType }) => (
-  <TooltipProvider delayDuration={200}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          onClick={() => { navigator.clipboard.writeText(id); toast.success(`${label} copiado!`); }}
-          className="group inline-flex items-center gap-1.5 bg-muted/40 hover:bg-muted/70 border border-border/30 hover:border-primary/30 rounded-md px-2 py-1 transition-all duration-200 cursor-pointer"
-        >
-          <Icon className="w-3 h-3 text-muted-foreground/70 group-hover:text-primary transition-colors" />
-          <code className="text-[10px] font-mono text-muted-foreground/80 group-hover:text-foreground transition-colors max-w-[140px] sm:max-w-[180px] truncate">
-            {id}
-          </code>
-          <Copy className="w-2.5 h-2.5 text-muted-foreground/50 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs">
-        <p className="font-medium">{label}</p>
-        <p className="font-mono text-[10px] text-muted-foreground">{id}</p>
-        <p className="text-muted-foreground mt-0.5">Clique para copiar</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
+const CopyableId = ({ label, id, icon: Icon }: { label: string; id: string; icon: React.ElementType }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(id);
+    toast.success(`${label} copiado!`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={handleCopy}
+            className="group inline-flex items-center gap-2 bg-muted/30 hover:bg-primary/10 border border-border/40 hover:border-primary/40 rounded-lg px-3 py-2 transition-all duration-200 cursor-pointer w-full sm:w-auto"
+          >
+            <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+            <div className="flex flex-col items-start min-w-0 flex-1">
+              <span className="text-[11px] text-muted-foreground/70 font-medium leading-none mb-0.5">{label}</span>
+              <code className="text-xs font-mono text-foreground/80 group-hover:text-foreground transition-colors truncate max-w-full block">
+                {id}
+              </code>
+            </div>
+            {copied ? (
+              <Check className="w-4 h-4 text-primary shrink-0" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all shrink-0" />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          Clique para copiar
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 
 const DepartmentsTab = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -79,7 +95,6 @@ const DepartmentsTab = () => {
   const [inboxes, setInboxes] = useState<InboxOption[]>([]);
   const [agents, setAgents] = useState<AgentOption[]>([]);
 
-  // Dialog state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [saving, setSaving] = useState(false);
@@ -89,7 +104,6 @@ const DepartmentsTab = () => {
   const [formIsDefault, setFormIsDefault] = useState(false);
   const [formMembers, setFormMembers] = useState<Set<string>>(new Set());
 
-  // Delete
   const [deptToDelete, setDeptToDelete] = useState<Department | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -289,19 +303,25 @@ const DepartmentsTab = () => {
   const uniqueInboxAgents = Array.from(new Map(inboxAgents.map(a => [a.user_id, a])).values());
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-bold tracking-tight">Departamentos</h2>
+        <p className="text-sm text-muted-foreground">Organize sua equipe de atendimento por áreas. Os IDs são usados para integrações (n8n, API).</p>
+      </div>
+
       {/* Search + Create */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar departamentos..."
-            className="pl-9"
+            placeholder="Buscar por nome ou caixa de entrada..."
+            className="pl-9 h-11 text-sm"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <Button onClick={openCreate} className="gap-2 shrink-0">
+        <Button onClick={openCreate} className="gap-2 shrink-0 h-11">
           <Plus className="w-4 h-4" />
           Novo Departamento
         </Button>
@@ -309,53 +329,53 @@ const DepartmentsTab = () => {
 
       {/* List */}
       {loading ? (
-        <div className="grid gap-3">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-36 rounded-xl" />)}
+        <div className="grid gap-4">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 rounded-xl" />)}
         </div>
       ) : filteredDepts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-            <Building2 className="w-8 h-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-20 h-20 rounded-2xl bg-muted/20 border border-border/30 flex items-center justify-center mb-5">
+            <Building2 className="w-10 h-10 text-muted-foreground/50" />
           </div>
-          <h3 className="font-semibold mb-1">Nenhum departamento encontrado</h3>
-          <p className="text-sm text-muted-foreground">Crie o primeiro departamento</p>
+          <h3 className="text-lg font-semibold mb-1">Nenhum departamento encontrado</h3>
+          <p className="text-sm text-muted-foreground max-w-xs">Crie departamentos para organizar seus atendentes por área de atuação.</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           {filteredDepts.map(dept => (
             <div
               key={dept.id}
-              className="group border border-border/40 bg-card/50 backdrop-blur-sm rounded-xl p-4 sm:p-5 hover:bg-card/80 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+              className="group border border-border/40 bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden hover:bg-card/80 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
             >
-              {/* Header row */}
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                    <Building2 className="w-4 h-4 text-primary" />
+              {/* Card Header */}
+              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border/20">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                    <Building2 className="w-5 h-5 text-primary" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-sm truncate">{dept.name}</h3>
+                      <h3 className="font-bold text-base truncate">{dept.name}</h3>
                       {dept.is_default && (
-                        <Badge variant="outline" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/30 gap-0.5 shrink-0">
-                          <Star className="w-2.5 h-2.5" />
+                        <Badge variant="outline" className="text-xs h-6 bg-primary/10 text-primary border-primary/30 gap-1 shrink-0">
+                          <Star className="w-3 h-3" />
                           Padrão
                         </Badge>
                       )}
                     </div>
                     {dept.description && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{dept.description}</p>
+                      <p className="text-sm text-muted-foreground truncate mt-0.5">{dept.description}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-0.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 shrink-0">
                   {!dept.is_default && (
                     <TooltipProvider delayDuration={300}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSetDefault(dept)}>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleSetDefault(dept)}>
                             <Star className="w-4 h-4" />
                           </Button>
                         </TooltipTrigger>
@@ -366,11 +386,11 @@ const DepartmentsTab = () => {
                   <TooltipProvider delayDuration={300}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(dept)}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => openEdit(dept)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Editar departamento</TooltipContent>
+                      <TooltipContent>Editar</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                   <TooltipProvider delayDuration={300}>
@@ -378,68 +398,79 @@ const DepartmentsTab = () => {
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost" size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          className="h-9 w-9 text-destructive hover:text-destructive"
                           onClick={() => setDeptToDelete(dept)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Excluir departamento</TooltipContent>
+                      <TooltipContent>Excluir</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
               </div>
 
-              {/* Info chips */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                <span className="inline-flex items-center gap-1">
-                  <Inbox className="w-3 h-3" />
-                  {dept.inbox_name}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {dept.member_count} agente{dept.member_count !== 1 ? 's' : ''}
-                </span>
-              </div>
+              {/* Card Body */}
+              <div className="px-5 py-4 space-y-4">
+                {/* Context: inbox + agents count */}
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Inbox className="w-4 h-4" />
+                    <span className="font-medium text-foreground/80">{dept.inbox_name}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="w-4 h-4" />
+                    <span>{dept.member_count} agente{dept.member_count !== 1 ? 's' : ''}</span>
+                  </span>
+                </div>
 
-              {/* IDs for n8n integration */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                <CopyableId label="ID do Departamento" id={dept.id} icon={Hash} />
-                <CopyableId label="ID da Caixa de Entrada" id={dept.inbox_id} icon={Inbox} />
-                {dept.instance_id && (
-                  <CopyableId label="ID da Instância" id={dept.instance_id} icon={Server} />
-                )}
-              </div>
-
-              {/* Members with IDs */}
-              {dept.members && dept.members.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">Equipe</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {dept.members.map(m => (
-                      <TooltipProvider key={m.user_id} delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => { navigator.clipboard.writeText(m.user_id); toast.success('ID do agente copiado!'); }}
-                              className="group/member inline-flex items-center gap-1.5 bg-secondary/50 hover:bg-secondary border border-border/30 hover:border-primary/30 rounded-md px-2 py-1 transition-all duration-200 cursor-pointer"
-                            >
-                              <UserCircle className="w-3 h-3 text-muted-foreground/70" />
-                              <span className="text-[11px] font-medium">{m.full_name}</span>
-                              <Copy className="w-2.5 h-2.5 text-muted-foreground/40 opacity-0 group-hover/member:opacity-100 transition-opacity" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="text-xs">
-                            <p className="font-medium">{m.full_name}</p>
-                            <p className="font-mono text-[10px] text-muted-foreground">{m.user_id}</p>
-                            <p className="text-muted-foreground mt-0.5">Clique para copiar ID</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
+                {/* IDs Section */}
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">IDs para integração</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <CopyableId label="Departamento" id={dept.id} icon={Hash} />
+                    <CopyableId label="Caixa de Entrada" id={dept.inbox_id} icon={Inbox} />
+                    {dept.instance_id && (
+                      <CopyableId label="Instância" id={dept.instance_id} icon={Server} />
+                    )}
                   </div>
                 </div>
-              )}
+
+                {/* Team Section */}
+                {dept.members && dept.members.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">Equipe</p>
+                    <div className="flex flex-wrap gap-2">
+                      {dept.members.map(m => (
+                        <TooltipProvider key={m.user_id} delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(m.user_id); toast.success('ID do agente copiado!'); }}
+                                className="group/member inline-flex items-center gap-2 bg-secondary/40 hover:bg-primary/10 border border-border/30 hover:border-primary/30 rounded-lg px-3 py-2 transition-all duration-200 cursor-pointer"
+                              >
+                                <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                                  <UserCircle className="w-4 h-4 text-primary/70" />
+                                </div>
+                                <div className="flex flex-col items-start">
+                                  <span className="text-sm font-medium leading-tight">{m.full_name}</span>
+                                  <code className="text-[10px] font-mono text-muted-foreground/60 max-w-[120px] truncate">{m.user_id.slice(0, 8)}...</code>
+                                </div>
+                                <Copy className="w-3 h-3 text-muted-foreground/30 opacity-0 group-hover/member:opacity-100 transition-opacity shrink-0" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              <p className="font-medium">{m.full_name}</p>
+                              <p className="font-mono text-[10px] text-muted-foreground">{m.user_id}</p>
+                              <p className="text-muted-foreground mt-0.5">Clique para copiar ID</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -449,18 +480,18 @@ const DepartmentsTab = () => {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingDept ? 'Editar Departamento' : 'Novo Departamento'}</DialogTitle>
+            <DialogTitle className="text-lg">{editingDept ? 'Editar Departamento' : 'Novo Departamento'}</DialogTitle>
             <DialogDescription>
               {editingDept ? 'Atualize as informações do departamento' : 'Crie um novo departamento para organizar atendimentos'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Nome *</Label>
-              <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Ex: Vendas" />
+              <Label className="text-sm font-medium">Nome *</Label>
+              <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Ex: Vendas" className="h-10" />
             </div>
             <div className="space-y-1.5">
-              <Label>Descrição</Label>
+              <Label className="text-sm font-medium">Descrição</Label>
               <Textarea
                 value={formDescription}
                 onChange={e => setFormDescription(e.target.value)}
@@ -469,9 +500,9 @@ const DepartmentsTab = () => {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Caixa de Entrada *</Label>
+              <Label className="text-sm font-medium">Caixa de Entrada *</Label>
               <Select value={formInboxId} onValueChange={v => { setFormInboxId(v); setFormMembers(new Set()); }}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue placeholder="Selecione a caixa" />
                 </SelectTrigger>
                 <SelectContent>
@@ -487,19 +518,19 @@ const DepartmentsTab = () => {
                 checked={formIsDefault}
                 onCheckedChange={v => setFormIsDefault(v === true)}
               />
-              <Label htmlFor="is-default" className="cursor-pointer">Departamento padrão</Label>
+              <Label htmlFor="is-default" className="cursor-pointer text-sm">Departamento padrão</Label>
             </div>
             {formInboxId && (
               <div className="space-y-1.5">
-                <Label>Agentes ({formMembers.size} selecionado{formMembers.size !== 1 ? 's' : ''})</Label>
+                <Label className="text-sm font-medium">Agentes ({formMembers.size} selecionado{formMembers.size !== 1 ? 's' : ''})</Label>
                 {uniqueInboxAgents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Nenhum agente nesta caixa</p>
+                  <p className="text-sm text-muted-foreground py-3">Nenhum agente nesta caixa</p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto border border-border/50 rounded-lg p-2 space-y-1">
+                  <div className="max-h-48 overflow-y-auto border border-border/50 rounded-lg p-2 space-y-0.5">
                     {uniqueInboxAgents.map(agent => (
                       <label
                         key={agent.user_id}
-                        className="flex items-center gap-2 py-1 px-1 rounded hover:bg-secondary/50 cursor-pointer"
+                        className="flex items-center gap-2.5 py-2 px-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
                       >
                         <Checkbox
                           checked={formMembers.has(agent.user_id)}
@@ -510,7 +541,7 @@ const DepartmentsTab = () => {
                             setFormMembers(next);
                           }}
                         />
-                        <span className="text-sm">{agent.full_name}</span>
+                        <span className="text-sm font-medium">{agent.full_name}</span>
                       </label>
                     ))}
                   </div>
