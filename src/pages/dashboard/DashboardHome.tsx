@@ -100,6 +100,7 @@ const DashboardHome = () => {
       const { data: instancesData, error: instancesError } = await supabase
         .from('instances')
         .select('*')
+        .eq('disabled', false)
         .order('created_at', { ascending: false });
 
       if (instancesError) throw instancesError;
