@@ -4,17 +4,19 @@ import { supabase } from '@/integrations/supabase/client';
 import StatsCard from '@/components/dashboard/StatsCard';
 import InstanceCard from '@/components/dashboard/InstanceCard';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import DashboardFilters, { type DashboardFiltersState } from '@/components/dashboard/DashboardFilters';
+import LazySection from '@/components/dashboard/LazySection';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Server, Users, Wifi, WifiOff, MessageSquare, UsersRound, RefreshCw, UserPlus } from 'lucide-react';
+import { Server, Users, Wifi, WifiOff, MessageSquare, UsersRound, RefreshCw, UserPlus, ChevronDown, ChevronUp } from 'lucide-react';
 import HelpdeskMetricsCharts from '@/components/dashboard/HelpdeskMetricsCharts';
 import BusinessHoursChart from '@/components/dashboard/BusinessHoursChart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import InstanceFilterSelect from '@/components/dashboard/InstanceFilterSelect';
 import { toast } from 'sonner';
 import { startOfDay, subDays } from 'date-fns';
 import { formatBR } from '@/lib/dateUtils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Instance {
   id: string;
@@ -45,6 +47,11 @@ interface HelpdeskLeadsStats {
   dailyData: { day: string; label: string; leads: number }[];
 }
 
+interface InboxOption {
+  id: string;
+  name: string;
+}
+
 const DashboardHome = () => {
   const { profile, isSuperAdmin } = useAuth();
   const [instances, setInstances] = useState<Instance[]>([]);
@@ -53,46 +60,43 @@ const DashboardHome = () => {
   const [loadingStats, setLoadingStats] = useState(false);
   const [instanceStats, setInstanceStats] = useState<InstanceStats[]>([]);
   const [helpdeskLeads, setHelpdeskLeads] = useState<HelpdeskLeadsStats>({ today: 0, yesterday: 0, total: 0, dailyData: [] });
-  const [selectedHelpdeskInstance, setSelectedHelpdeskInstance] = useState<string | null>(null);
+  const [inboxes, setInboxes] = useState<InboxOption[]>([]);
+  const [filters, setFilters] = useState<DashboardFiltersState>({ instanceId: null, inboxId: null, period: 30 });
+  const [showInstanceDetails, setShowInstanceDetails] = useState(false);
 
   useEffect(() => {
     fetchData();
-    fetchHelpdeskLeadsStats();
+    fetchInboxes();
   }, [isSuperAdmin]);
 
   useEffect(() => {
-    fetchHelpdeskLeadsStats(selectedHelpdeskInstance ?? undefined);
-  }, [selectedHelpdeskInstance]);
+    fetchHelpdeskLeadsStats(filters.instanceId ?? undefined);
+  }, [filters.instanceId]);
 
-  // Subscribe to realtime updates for helpdesk leads
+  // Realtime for helpdesk leads
   useEffect(() => {
     const channel = supabase
       .channel('helpdesk-leads-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lead_database_entries',
-          filter: 'source=eq.helpdesk',
-        },
-        (payload) => {
-          // Refresh stats when a new helpdesk lead is added
-          if (payload.eventType === 'INSERT') {
-            fetchHelpdeskLeadsStats(selectedHelpdeskInstance ?? undefined);
-          }
-        }
-      )
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'lead_database_entries',
+        filter: 'source=eq.helpdesk',
+      }, () => {
+        fetchHelpdeskLeadsStats(filters.instanceId ?? undefined);
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedHelpdeskInstance]);
+    return () => { supabase.removeChannel(channel); };
+  }, [filters.instanceId]);
+
+  const fetchInboxes = async () => {
+    const { data } = await supabase.from('inboxes').select('id, name').order('name');
+    setInboxes(data || []);
+  };
 
   const fetchData = async () => {
     try {
-      // Fetch instances
       const { data: instancesData, error: instancesError } = await supabase
         .from('instances')
         .select('*')
@@ -100,7 +104,6 @@ const DashboardHome = () => {
 
       if (instancesError) throw instancesError;
 
-      // Fetch user profiles for each instance
       if (instancesData && instancesData.length > 0) {
         const userIds = [...new Set(instancesData.map((i) => i.user_id))];
         const { data: profilesData } = await supabase
@@ -109,21 +112,17 @@ const DashboardHome = () => {
           .in('id', userIds);
 
         const profilesMap = new Map(profilesData?.map((p) => [p.id, p]) || []);
-
         const instancesWithProfiles = instancesData.map((instance) => ({
           ...instance,
           user_profiles: profilesMap.get(instance.user_id),
         }));
 
         setInstances(instancesWithProfiles as Instance[]);
-        
-        // Fetch groups stats for each connected instance
         await fetchGroupsStats(instancesWithProfiles as Instance[]);
       } else {
         setInstances([]);
       }
 
-      // Fetch total users count if super admin
       if (isSuperAdmin) {
         const { count } = await supabase
           .from('user_profiles')
@@ -144,7 +143,6 @@ const DashboardHome = () => {
       const yesterdayStart = startOfDay(subDays(now, 1)).toISOString();
       const sevenDaysAgo = startOfDay(subDays(now, 6)).toISOString();
 
-      // If filtering by instance, first get the database IDs for that instance
       let databaseIds: string[] | null = null;
       if (instanceId) {
         const { data: dbs } = await supabase
@@ -160,50 +158,17 @@ const DashboardHome = () => {
 
       const buildQuery = (baseQuery: ReturnType<typeof supabase.from>) => {
         let q = baseQuery;
-        if (databaseIds) {
-          q = q.in('database_id', databaseIds);
-        }
+        if (databaseIds) q = q.in('database_id', databaseIds);
         return q;
       };
 
-      // Fetch today, yesterday, total and last 7 days in parallel
       const [todayRes, yesterdayRes, totalRes, weekRes] = await Promise.all([
-        buildQuery(
-          supabase
-            .from('lead_database_entries')
-            .select('id', { count: 'exact', head: true })
-            .eq('source', 'helpdesk')
-            .gte('created_at', todayStart)
-        ),
-        buildQuery(
-          supabase
-            .from('lead_database_entries')
-            .select('id', { count: 'exact', head: true })
-            .eq('source', 'helpdesk')
-            .gte('created_at', yesterdayStart)
-            .lt('created_at', todayStart)
-        ),
-        buildQuery(
-          supabase
-            .from('lead_database_entries')
-            .select('id', { count: 'exact', head: true })
-            .eq('source', 'helpdesk')
-        ),
-        buildQuery(
-          supabase
-            .from('lead_database_entries')
-            .select('created_at')
-            .eq('source', 'helpdesk')
-            .gte('created_at', sevenDaysAgo)
-            .order('created_at', { ascending: true })
-        ),
+        buildQuery(supabase.from('lead_database_entries').select('id', { count: 'exact', head: true }).eq('source', 'helpdesk').gte('created_at', todayStart)),
+        buildQuery(supabase.from('lead_database_entries').select('id', { count: 'exact', head: true }).eq('source', 'helpdesk').gte('created_at', yesterdayStart).lt('created_at', todayStart)),
+        buildQuery(supabase.from('lead_database_entries').select('id', { count: 'exact', head: true }).eq('source', 'helpdesk')),
+        buildQuery(supabase.from('lead_database_entries').select('created_at').eq('source', 'helpdesk').gte('created_at', sevenDaysAgo).order('created_at', { ascending: true })),
       ]);
 
-      const todayCount = todayRes.count || 0;
-      const yesterdayCount = yesterdayRes.count || 0;
-      const totalCount = totalRes.count || 0;
-
-      // Group by day
       const dayMap = new Map<string, number>();
       for (let i = 6; i >= 0; i--) {
         const d = subDays(now, i);
@@ -220,7 +185,12 @@ const DashboardHome = () => {
         leads: count,
       }));
 
-      setHelpdeskLeads({ today: todayCount, yesterday: yesterdayCount, total: totalCount, dailyData });
+      setHelpdeskLeads({
+        today: todayRes.count || 0,
+        yesterday: yesterdayRes.count || 0,
+        total: totalRes.count || 0,
+        dailyData,
+      });
     } catch (error) {
       console.error('Error fetching helpdesk leads stats:', error);
     }
@@ -229,72 +199,38 @@ const DashboardHome = () => {
   const fetchGroupsStats = async (instancesList: Instance[]) => {
     setLoadingStats(true);
     const stats: InstanceStats[] = [];
-
-    const connectedInstances = instancesList.filter(
-      (i) => i.status === 'connected' || i.status === 'online'
-    );
+    const connectedInstances = instancesList.filter((i) => i.status === 'connected' || i.status === 'online');
 
     await Promise.all(
       connectedInstances.map(async (instance) => {
         try {
           const { data, error } = await supabase.functions.invoke('uazapi-proxy', {
-            body: {
-              action: 'groups',
-              token: instance.token,
-            },
+            body: { action: 'groups', token: instance.token },
           });
-
           if (error) throw error;
-
           const groups = Array.isArray(data) ? data : [];
           let totalParticipants = 0;
-
-          // Sum participants from each group
-          // UAZAPI returns fields in PascalCase, check all possible formats
           groups.forEach((group: Record<string, unknown>) => {
-            const participantCount = 
+            totalParticipants +=
               (group.ParticipantCount as number) ||
               (group.Size as number) ||
               (group.size as number) ||
               (Array.isArray(group.Participants) ? group.Participants.length : 0) ||
               (Array.isArray(group.participants) ? group.participants.length : 0) ||
               0;
-            totalParticipants += participantCount;
           });
-
-          stats.push({
-            instanceId: instance.id,
-            instanceName: instance.name,
-            groupsCount: groups.length,
-            participantsCount: totalParticipants,
-            status: instance.status,
-          });
-        } catch (error) {
-          console.error(`Error fetching groups for ${instance.name}:`, error);
-          stats.push({
-            instanceId: instance.id,
-            instanceName: instance.name,
-            groupsCount: 0,
-            participantsCount: 0,
-            status: instance.status,
-          });
+          stats.push({ instanceId: instance.id, instanceName: instance.name, groupsCount: groups.length, participantsCount: totalParticipants, status: instance.status });
+        } catch {
+          stats.push({ instanceId: instance.id, instanceName: instance.name, groupsCount: 0, participantsCount: 0, status: instance.status });
         }
       })
     );
 
-    // Add offline instances with 0 stats
-    const offlineInstances = instancesList.filter(
-      (i) => i.status !== 'connected' && i.status !== 'online'
-    );
-    offlineInstances.forEach((instance) => {
-      stats.push({
-        instanceId: instance.id,
-        instanceName: instance.name,
-        groupsCount: 0,
-        participantsCount: 0,
-        status: instance.status,
+    instancesList
+      .filter((i) => i.status !== 'connected' && i.status !== 'online')
+      .forEach((instance) => {
+        stats.push({ instanceId: instance.id, instanceName: instance.name, groupsCount: 0, participantsCount: 0, status: instance.status });
       });
-    });
 
     setInstanceStats(stats);
     setLoadingStats(false);
@@ -307,232 +243,190 @@ const DashboardHome = () => {
     toast.success('Estatísticas atualizadas!');
   }, [instances]);
 
-  const connectedInstances = useMemo(() => 
-    instances.filter((i) => i.status === 'connected' || i.status === 'online'),
-    [instances]
-  );
-  
-  const disconnectedInstances = useMemo(() => 
-    instances.filter((i) => i.status !== 'connected' && i.status !== 'online'),
-    [instances]
-  );
-
+  const connectedInstances = useMemo(() => instances.filter((i) => i.status === 'connected' || i.status === 'online'), [instances]);
+  const disconnectedInstances = useMemo(() => instances.filter((i) => i.status !== 'connected' && i.status !== 'online'), [instances]);
   const totalGroups = useMemo(() => instanceStats.reduce((acc, s) => acc + s.groupsCount, 0), [instanceStats]);
   const totalParticipants = useMemo(() => instanceStats.reduce((acc, s) => acc + s.participantsCount, 0), [instanceStats]);
 
+  // Filter inboxes by selected instance
+  const filteredInboxes = useMemo(() => {
+    // We don't have instance_id on inboxes loaded here, so show all
+    return inboxes;
+  }, [inboxes]);
+
   if (loading) {
     return (
-      <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64" />
+      <div className="space-y-4 max-w-7xl mx-auto px-1">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-full rounded-xl" />
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
+        <Skeleton className="h-[280px] rounded-xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto">
       {/* Header */}
       <div className="animate-fade-in">
-        <h1 className="text-xl md:text-2xl font-display font-bold">
+        <h1 className="text-lg md:text-2xl font-display font-bold">
           Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}! 👋
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {isSuperAdmin
-            ? 'Visão geral de todas as instâncias do sistema'
-            : 'Gerencie suas instâncias do WhatsApp'}
+        <p className="text-xs md:text-sm text-muted-foreground">
+          {isSuperAdmin ? 'Visão geral de todas as instâncias' : 'Gerencie suas instâncias do WhatsApp'}
         </p>
       </div>
 
-      {/* Main Stats Grid */}
-      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
-        <StatsCard
-          title="Total de Instâncias"
-          value={instances.length}
-          icon={Server}
-        />
-        <StatsCard
-          title="Instâncias Online"
-          value={connectedInstances.length}
-          icon={Wifi}
-        />
-        <StatsCard
-          title="Total de Grupos"
-          value={loadingStats ? '...' : totalGroups}
-          icon={MessageSquare}
-        />
-        <StatsCard
-          title="Total de Participantes"
-          value={loadingStats ? '...' : totalParticipants.toLocaleString('pt-BR')}
-          icon={UsersRound}
+      {/* Unified Filters */}
+      <div className="animate-fade-in" style={{ animationDelay: '50ms' }}>
+        <DashboardFilters
+          instances={instances.map(i => ({ id: i.id, name: i.name, status: i.status }))}
+          inboxes={filteredInboxes}
+          filters={filters}
+          onFiltersChange={setFilters}
         />
       </div>
 
-      {/* Secondary Stats */}
-      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: '150ms' }}>
+      {/* KPI Cards - Compact mobile grid */}
+      <div className="grid gap-2 md:gap-3 grid-cols-2 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        <StatsCard title="Instâncias" value={instances.length} icon={Server} className="min-h-0" />
+        <StatsCard title="Online" value={connectedInstances.length} icon={Wifi} className="min-h-0" />
+        <StatsCard title="Grupos" value={loadingStats ? '...' : totalGroups} icon={MessageSquare} className="min-h-0" />
         <StatsCard
-          title="Instâncias Offline"
-          value={disconnectedInstances.length}
-          icon={WifiOff}
+          title="Leads Hoje"
+          value={helpdeskLeads.today}
+          icon={UserPlus}
+          description={`${helpdeskLeads.total} total`}
+          trend={helpdeskLeads.yesterday > 0 ? {
+            value: Math.round(((helpdeskLeads.today - helpdeskLeads.yesterday) / helpdeskLeads.yesterday) * 100),
+            positive: helpdeskLeads.today >= helpdeskLeads.yesterday,
+          } : undefined}
+          className="min-h-0"
         />
-        {isSuperAdmin && (
-          <StatsCard
-            title="Total de Usuários"
-            value={totalUsers}
-            icon={Users}
-          />
-        )}
-        <div className="col-span-2 lg:col-span-2 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium text-muted-foreground">Filtrar por instância</span>
-            <InstanceFilterSelect
-              instances={instances.map(i => ({ id: i.id, name: i.name, status: i.status }))}
-              selectedId={selectedHelpdeskInstance}
-              onSelect={setSelectedHelpdeskInstance}
-            />
+      </div>
+
+      {/* Secondary KPIs - Progressive Disclosure */}
+      <Collapsible open={showInstanceDetails} onOpenChange={setShowInstanceDetails}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5 h-7 px-2">
+            {showInstanceDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {showInstanceDetails ? 'Menos detalhes' : 'Mais detalhes'}
+            <Badge variant="outline" className="text-[10px] ml-1">
+              {disconnectedInstances.length} off · {totalParticipants.toLocaleString('pt-BR')} participantes
+              {isSuperAdmin ? ` · ${totalUsers} usuários` : ''}
+            </Badge>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">
+          <div className="grid gap-2 md:gap-3 grid-cols-2 lg:grid-cols-4 animate-fade-in">
+            <StatsCard title="Offline" value={disconnectedInstances.length} icon={WifiOff} className="min-h-0" />
+            <StatsCard title="Participantes" value={loadingStats ? '...' : totalParticipants.toLocaleString('pt-BR')} icon={UsersRound} className="min-h-0" />
+            {isSuperAdmin && <StatsCard title="Usuários" value={totalUsers} icon={Users} className="min-h-0" />}
           </div>
-          <StatsCard
-            title={selectedHelpdeskInstance
-              ? `Leads Helpdesk Hoje — ${instances.find(i => i.id === selectedHelpdeskInstance)?.name || ''}`
-              : 'Leads Helpdesk Hoje'}
-            value={helpdeskLeads.today}
-            icon={UserPlus}
-            description={`${helpdeskLeads.total} leads capturados no total`}
-            trend={helpdeskLeads.yesterday > 0 ? {
-              value: Math.round(((helpdeskLeads.today - helpdeskLeads.yesterday) / helpdeskLeads.yesterday) * 100),
-              positive: helpdeskLeads.today >= helpdeskLeads.yesterday,
-            } : undefined}
-          />
-        </div>
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-      {/* Charts Section */}
-      <DashboardCharts
-        instanceStats={instanceStats}
-        connectedCount={connectedInstances.length}
-        disconnectedCount={disconnectedInstances.length}
-        loading={loadingStats}
-        helpdeskLeadsDailyData={helpdeskLeads.dailyData}
-        helpdeskChartTitle={selectedHelpdeskInstance
-          ? `Leads Helpdesk — ${instances.find(i => i.id === selectedHelpdeskInstance)?.name || ''} — 7 dias`
-          : undefined
-        }
-      />
+      {/* Charts - Instance & Groups */}
+      <LazySection height="300px">
+        <DashboardCharts
+          instanceStats={instanceStats}
+          connectedCount={connectedInstances.length}
+          disconnectedCount={disconnectedInstances.length}
+          loading={loadingStats}
+          helpdeskLeadsDailyData={helpdeskLeads.dailyData}
+          helpdeskChartTitle={filters.instanceId
+            ? `Leads — ${instances.find(i => i.id === filters.instanceId)?.name || ''} — 7 dias`
+            : undefined
+          }
+        />
+      </LazySection>
 
-      {/* Business Hours Chart */}
-      <BusinessHoursChart />
+      {/* Business Hours Chart - Lazy */}
+      <LazySection height="340px">
+        <BusinessHoursChart inboxId={filters.inboxId} periodDays={filters.period} />
+      </LazySection>
 
-      {/* Instance Groups Breakdown */}
-      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
+      {/* Instance Groups Breakdown - Collapsible */}
+      <Collapsible>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Grupos por Instância</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefreshStats}
-            disabled={loadingStats}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loadingStats ? 'animate-spin' : ''}`} />
-            Atualizar
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-sm font-semibold gap-1.5 px-1">
+              <ChevronDown className="w-4 h-4" />
+              Grupos por Instância
+              <Badge variant="outline" className="text-[10px] ml-1">{instanceStats.length}</Badge>
+            </Button>
+          </CollapsibleTrigger>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleRefreshStats} disabled={loadingStats}>
+            <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin' : ''}`} />
           </Button>
         </div>
-        
-        {loadingStats ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
-        ) : instanceStats.length === 0 ? (
-          <Card className="glass-card">
-            <CardContent className="py-8 text-center text-muted-foreground">
-              <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-50" />
-              <p>Nenhuma estatística disponível</p>
-              <p className="text-sm mt-1">Conecte uma instância para ver os dados</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {instanceStats.map((stat) => (
-              <Card 
-                key={stat.instanceId} 
-                className="glass-card-hover"
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium truncate">
-                      {stat.instanceName}
-                    </CardTitle>
-                    <Badge 
-                      variant={stat.status === 'connected' || stat.status === 'online' ? 'default' : 'secondary'}
-                      className={
-                        stat.status === 'connected' || stat.status === 'online'
-                          ? 'bg-green-500/10 text-green-600 border-green-500/20'
-                          : ''
-                      }
-                    >
-                      {stat.status === 'connected' || stat.status === 'online' ? 'Online' : 'Offline'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Grupos</span>
+        <CollapsibleContent className="pt-2">
+          {loadingStats ? (
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+            </div>
+          ) : instanceStats.length === 0 ? (
+            <Card className="glass-card">
+              <CardContent className="py-6 text-center text-muted-foreground">
+                <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhuma estatística disponível</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {instanceStats.map((stat) => (
+                <Card key={stat.instanceId} className="glass-card-hover">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-medium truncate max-w-[70%]">{stat.instanceName}</span>
+                      <Badge
+                        variant={stat.status === 'connected' || stat.status === 'online' ? 'default' : 'secondary'}
+                        className={`text-[9px] px-1.5 py-0 ${
+                          stat.status === 'connected' || stat.status === 'online'
+                            ? 'bg-green-500/10 text-green-600 border-green-500/20'
+                            : ''
+                        }`}
+                      >
+                        {stat.status === 'connected' || stat.status === 'online' ? 'On' : 'Off'}
+                      </Badge>
                     </div>
-                    <span className="font-semibold">{stat.groupsCount}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <UsersRound className="w-4 h-4" />
-                      <span>Participantes</span>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {stat.groupsCount} grupos</span>
+                      <span className="flex items-center gap-1"><UsersRound className="w-3 h-3" /> {stat.participantsCount.toLocaleString('pt-BR')}</span>
                     </div>
-                    <span className="font-semibold">{stat.participantsCount.toLocaleString('pt-BR')}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
 
-      {/* Helpdesk Metrics Section */}
-      <div className="animate-fade-in" style={{ animationDelay: '250ms' }}>
+      {/* Helpdesk Metrics - Lazy */}
+      <LazySection height="300px">
         <HelpdeskMetricsCharts />
-      </div>
+      </LazySection>
 
-      {/* Recent Instances */}
-      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '300ms' }}>
-        <h2 className="text-lg font-semibold">Instâncias Recentes</h2>
-        {instances.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Server className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma instância encontrada</p>
-            {isSuperAdmin && (
-              <p className="text-sm mt-2">
-                Acesse o menu "Instâncias" para criar uma nova
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {instances.slice(0, 6).map((instance) => (
-              <InstanceCard
-                key={instance.id}
-                instance={instance}
-                showOwner={isSuperAdmin}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Recent Instances - Lazy */}
+      <LazySection height="200px">
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold">Instâncias Recentes</h2>
+          {instances.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Server className="w-10 h-10 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Nenhuma instância encontrada</p>
+            </div>
+          ) : (
+            <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {instances.slice(0, 6).map((instance) => (
+                <InstanceCard key={instance.id} instance={instance} showOwner={isSuperAdmin} />
+              ))}
+            </div>
+          )}
+        </div>
+      </LazySection>
     </div>
   );
 };

@@ -18,18 +18,18 @@ interface StatsCardProps {
 const StatsCard = ({ title, value, icon: Icon, description, trend, className }: StatsCardProps) => {
   return (
     <Card className={cn('glass-card-hover', className)}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-3xl font-display font-bold">{value}</p>
+      <CardContent className="p-3 md:p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-[11px] md:text-xs text-muted-foreground truncate">{title}</p>
+            <p className="text-xl md:text-2xl font-display font-bold leading-tight">{value}</p>
             {description && (
-              <p className="text-xs text-muted-foreground">{description}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground truncate">{description}</p>
             )}
             {trend && (
               <p
                 className={cn(
-                  'text-xs font-medium',
+                  'text-[10px] md:text-xs font-medium',
                   trend.positive ? 'text-success' : 'text-destructive'
                 )}
               >
@@ -37,8 +37,8 @@ const StatsCard = ({ title, value, icon: Icon, description, trend, className }: 
               </p>
             )}
           </div>
-          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Icon className="w-6 h-6 text-primary" />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+            <Icon className="w-4 h-4 md:w-5 md:h-5 text-primary" />
           </div>
         </div>
       </CardContent>
