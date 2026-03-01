@@ -13,7 +13,7 @@ import { ScheduleMessageDialog, ScheduleConfig } from './ScheduleMessageDialog';
 import type { Participant } from '@/pages/dashboard/SendToGroup';
 
 interface SendMessageFormProps {
-  instanceToken: string;
+  instanceToken: string; // now used as instance_id
   groupJid: string;
   groupName?: string;
   participants?: Participant[];
@@ -48,7 +48,7 @@ const SendMessageForm = ({ instanceToken, groupJid, groupName, participants, onM
         },
         body: JSON.stringify({
           action: 'send-message',
-          token: instanceToken,
+          instance_id: instanceToken,
           groupjid: number,
           message: text,
         }),

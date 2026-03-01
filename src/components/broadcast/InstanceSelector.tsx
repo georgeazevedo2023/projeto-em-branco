@@ -9,7 +9,6 @@ import { Server, CheckCircle2, XCircle } from 'lucide-react';
 export interface Instance {
   id: string;
   name: string;
-  token: string;
   status: string;
   profile_pic_url?: string | null;
 }
@@ -44,7 +43,7 @@ const InstanceSelector = ({ selectedInstance, onSelect }: InstanceSelectorProps)
     try {
       const { data, error } = await supabase
         .from('instances')
-        .select('id, name, token, status, profile_pic_url')
+        .select('id, name, status, profile_pic_url')
         .order('name');
 
       if (error) throw error;

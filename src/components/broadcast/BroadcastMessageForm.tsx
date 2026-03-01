@@ -467,7 +467,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
         },
         body: JSON.stringify({
           action: 'send-message',
-          token: instance.token,
+          instance_id: instance.id,
           groupjid: number,
           message: text,
         }),
@@ -500,7 +500,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
         },
         body: JSON.stringify({
           action: 'send-media',
-          token: instance.token,
+          instance_id: instance.id,
           groupjid: number,
           mediaUrl: mediaData,
           mediaType: type,
@@ -551,7 +551,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
         },
         body: JSON.stringify({
           action: 'send-carousel',
-          token: instance.token,
+          instance_id: instance.id,
           groupjid: number,
           message: carousel.message,
           carousel: processedCards,
