@@ -28,7 +28,7 @@ interface Group {
 interface Instance {
   id: string;
   name: string;
-  token: string;
+  token?: string;
   status: string;
 }
 

@@ -26,7 +26,6 @@ interface Instance {
   owner_jid: string | null;
   profile_pic_url: string | null;
   user_id: string;
-  token: string;
   user_profiles?: {
     full_name: string | null;
     email: string;
@@ -207,7 +206,7 @@ const DashboardHome = () => {
       connectedInstances.map(async (instance) => {
         try {
           const { data, error } = await supabase.functions.invoke('uazapi-proxy', {
-            body: { action: 'groups', token: instance.token },
+            body: { action: 'groups', instance_id: instance.id },
           });
           if (error) throw error;
           const groups = Array.isArray(data) ? data : [];

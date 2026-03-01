@@ -42,7 +42,7 @@ interface Instance {
   id: string;
   name: string;
   status: string;
-  token: string;
+  token?: string;
   owner_jid: string | null;
   profile_pic_url: string | null;
   user_id: string;
@@ -394,7 +394,7 @@ const Instances = () => {
             },
             body: JSON.stringify({
               action: 'status',
-              token: instance.token,
+              instance_id: instance.id,
             }),
           }
         );
@@ -437,7 +437,7 @@ const Instances = () => {
         body: JSON.stringify({
           action: 'connect',
           instanceName: instance.name,
-          token: instance.token,
+          instance_id: instance.id,
         }),
       });
 

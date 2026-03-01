@@ -533,7 +533,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
         },
         body: JSON.stringify({
           action: 'send-message',
-          token: instance.token,
+          instance_id: instance.id,
           groupjid: jid,
           message: text,
         }),
@@ -566,7 +566,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
         },
         body: JSON.stringify({
           action: 'send-media',
-          token: instance.token,
+          instance_id: instance.id,
           groupjid: jid,
           mediaUrl: mediaData,
           mediaType: type,
@@ -616,7 +616,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
         },
         body: JSON.stringify({
           action: 'send-carousel',
-          token: instance.token,
+          instance_id: instance.id,
           groupjid: jid,
           message: carousel.message,
           carousel: processedCards,

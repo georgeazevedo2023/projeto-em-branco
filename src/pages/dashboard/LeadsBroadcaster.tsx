@@ -336,7 +336,7 @@ const LeadsBroadcaster = () => {
         const response = await supabase.functions.invoke('uazapi-proxy', {
           body: {
             action: 'check-numbers',
-            token: selectedInstance.token,
+            instance_id: selectedInstance.id,
             phones: batch,
           },
         });

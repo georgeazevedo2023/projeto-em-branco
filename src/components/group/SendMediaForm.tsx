@@ -15,7 +15,7 @@ import { ScheduleMessageDialog, ScheduleConfig } from './ScheduleMessageDialog';
 import type { Participant } from '@/pages/dashboard/SendToGroup';
 
 interface SendMediaFormProps {
-  instanceToken: string;
+  instanceToken: string; // now used as instance_id
   groupJid: string;
   groupName?: string;
   participants?: Participant[];
@@ -115,7 +115,7 @@ const SendMediaForm = ({ instanceToken, groupJid, groupName, participants, onMed
   const sendMediaToNumber = async (number: string, finalMediaUrl: string, accessToken: string) => {
     const payload: Record<string, unknown> = {
       action: 'send-media',
-      token: instanceToken,
+      instance_id: instanceToken,
       groupjid: number,
       mediaUrl: finalMediaUrl,
       mediaType: mediaType === 'image' 

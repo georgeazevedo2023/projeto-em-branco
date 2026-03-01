@@ -28,7 +28,7 @@ interface Group {
 interface Instance {
   id: string;
   name: string;
-  token: string;
+  token?: string;
   status: string;
 }
 
@@ -219,7 +219,7 @@ const SendToGroup = () => {
             
             <TabsContent value="text">
               <SendMessageForm
-                instanceToken={instance.token}
+                instanceToken={instance.id}
                 groupJid={group.id}
                 groupName={group.name}
                 participants={participants}
@@ -228,7 +228,7 @@ const SendToGroup = () => {
             
             <TabsContent value="media">
               <SendMediaForm
-                instanceToken={instance.token}
+                instanceToken={instance.id}
                 groupJid={group.id}
                 groupName={group.name}
                 participants={participants}

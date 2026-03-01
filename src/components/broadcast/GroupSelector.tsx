@@ -62,7 +62,7 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
           },
           body: JSON.stringify({
             action: 'groups',
-            token: instance.token,
+            instance_id: instance.id,
           }),
         }
       );

@@ -35,7 +35,7 @@ interface Instance {
   id: string;
   name: string;
   status: string;
-  token: string;
+  token?: string;
   owner_jid: string | null;
   profile_pic_url: string | null;
   user_id: string;
@@ -116,8 +116,7 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
   }, [showQrDialog]);
 
   const copyToken = () => {
-    navigator.clipboard.writeText(instance.token);
-    toast.success('Token copiado para a área de transferência');
+    toast.info('Tokens são gerenciados de forma segura no servidor');
   };
 
   const startPolling = async () => {
@@ -141,7 +140,7 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
             },
             body: JSON.stringify({
               action: 'status',
-              token: instance.token,
+              instance_id: instance.id,
             }),
           }
         );
@@ -190,7 +189,7 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
           body: JSON.stringify({
             action: 'connect',
             instanceName: instance.name,
-            token: instance.token,
+            instance_id: instance.id,
           }),
         }
       );
@@ -300,36 +299,32 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
         </CardContent>
       </Card>
 
-      {/* Token e Segurança */}
+      {/* Segurança */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="w-5 h-5" />
             Token de Acesso
           </CardTitle>
-          <CardDescription>Token para autenticação na API</CardDescription>
+          <CardDescription>Token gerenciado de forma segura no servidor</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs uppercase">Token</Label>
             <div className="flex gap-2">
               <Input
-                type={showToken ? 'text' : 'password'}
-                value={instance.token}
+                type="password"
+                value="••••••••••••••••••••"
                 readOnly
                 className="font-mono text-sm"
               />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowToken(!showToken)}
-              >
-                {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
               <Button variant="outline" size="icon" onClick={copyToken}>
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              O token é utilizado internamente pelo servidor e não é mais exposto ao navegador.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -242,13 +242,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
 
     setSending(true);
     try {
-      const { data: instanceData } = await supabase
-        .from('instances')
-        .select('token')
-        .eq('id', conversation.inbox?.instance_id || '')
-        .maybeSingle();
-
-      if (!instanceData?.token) {
+      const instanceId = conversation.inbox?.instance_id || '';
+      if (!instanceId) {
         toast.error('Instância não encontrada');
         return;
       }
@@ -284,7 +279,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
           },
           body: JSON.stringify({
             action: 'send-audio',
-            instanceToken: instanceData.token,
+            instance_id: instanceId,
             jid: contactJid,
             audio: base64Audio,
           }),
@@ -354,13 +349,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
     if (!user) return;
     setSendingFile(true);
     try {
-      const { data: instanceData } = await supabase
-        .from('instances')
-        .select('token')
-        .eq('id', conversation.inbox?.instance_id || '')
-        .maybeSingle();
-
-      if (!instanceData?.token) {
+      const instanceId = conversation.inbox?.instance_id || '';
+      if (!instanceId) {
         toast.error('Instância não encontrada');
         return;
       }
@@ -408,7 +398,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
           },
           body: JSON.stringify({
             action: 'send-media',
-            instanceToken: instanceData.token,
+            instance_id: instanceId,
             jid: contactJid,
             mediaUrl: dataUri,
             mediaType,
@@ -494,13 +484,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
         });
         if (error) throw error;
       } else {
-        const { data: instanceData } = await supabase
-          .from('instances')
-          .select('token')
-          .eq('id', conversation.inbox?.instance_id || '')
-          .maybeSingle();
-
-        if (!instanceData?.token) {
+        const instanceId = conversation.inbox?.instance_id || '';
+        if (!instanceId) {
           toast.error('Instância não encontrada');
           return;
         }
@@ -522,7 +507,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
             },
             body: JSON.stringify({
               action: 'send-chat',
-              instanceToken: instanceData.token,
+              instance_id: instanceId,
               jid: contactJid,
               message: text.trim(),
             }),
