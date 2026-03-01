@@ -5,6 +5,7 @@ import { ImageIcon, ExternalLink, FileText, Download, Loader2, LayoutGrid, Link,
 import { AudioPlayer } from './AudioPlayer';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useSignedUrl } from '@/hooks/useSignedUrl';
 import type { Message } from '@/pages/dashboard/HelpDesk';
 
 interface MessageBubbleProps {
@@ -18,6 +19,11 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
   const isNote = message.direction === 'private_note';
   const [imgError, setImgError] = useState(false);
   const [downloading, setDownloading] = useState(false);
+
+  // Resolve Supabase storage URLs to signed URLs for private buckets
+  const needsSignedUrl = ['image', 'audio', 'video', 'document', 'sticker'].includes(message.media_type);
+  const resolvedMediaUrl = useSignedUrl(needsSignedUrl ? message.media_url : null);
+  const mediaUrl = needsSignedUrl ? (resolvedMediaUrl || message.media_url) : message.media_url;
 
   // Parse carousel data from media_url when media_type is 'carousel'
   const carouselData = useMemo(() => {
@@ -65,17 +71,17 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
   }, [message.media_type, message.media_url]);
 
   const handleDocumentOpen = async () => {
-    if (!message.media_url) return;
+    if (!mediaUrl) return;
     setDownloading(true);
     try {
       const { fileName } = getDocumentInfo();
       
-      // Try fetch + programmatic download (bypasses adblocker)
-      const isPublicUrl = message.media_url.includes('supabase.co/storage') || 
-                          message.media_url.includes('lovable.dev/storage');
+      // Try fetch + programmatic download using signed/resolved URL
+      const isStorageUrl = mediaUrl.includes('supabase.co/storage') || 
+                          mediaUrl.includes('lovable.dev/storage');
       
-      if (isPublicUrl) {
-        const response = await fetch(message.media_url);
+      if (isStorageUrl) {
+        const response = await fetch(mediaUrl);
         if (!response.ok) throw new Error('Download failed');
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
@@ -92,7 +98,7 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
       // Fallback: proxy for legacy UAZAPI URLs
       if (!instanceId) return;
       const { data, error } = await supabase.functions.invoke('uazapi-proxy', {
-        body: { action: 'download-media', fileUrl: message.media_url, instanceId },
+        body: { action: 'download-media', fileUrl: mediaUrl, instanceId },
       });
       if (error) throw error;
       const blob = data instanceof Blob ? data : new Blob([JSON.stringify(data)], { type: 'application/octet-stream' });
@@ -106,7 +112,7 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('Error downloading document:', err);
-      window.open(message.media_url, '_blank');
+      window.open(mediaUrl, '_blank');
     } finally {
       setDownloading(false);
     }
@@ -156,11 +162,11 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
         )}
 
         {/* Sticker - transparent background, fixed size */}
-        {message.media_type === 'sticker' && message.media_url && (
+        {message.media_type === 'sticker' && mediaUrl && (
           <div className="mb-1">
             {!imgError ? (
               <img
-                src={message.media_url}
+                src={mediaUrl}
                 alt="Figurinha"
                 className="max-w-[180px] max-h-[180px] object-contain"
                 onError={() => setImgError(true)}
@@ -174,12 +180,12 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
         )}
 
         {/* Image with error fallback */}
-        {message.media_type === 'image' && message.media_url && (
+        {message.media_type === 'image' && mediaUrl && (
           <div className="mb-1">
             {!imgError ? (
-              <a href={message.media_url} target="_blank" rel="noopener noreferrer">
+              <a href={mediaUrl} target="_blank" rel="noopener noreferrer">
                 <img
-                  src={message.media_url}
+                  src={mediaUrl}
                   alt="Imagem"
                   className="rounded-lg max-w-full cursor-pointer hover:opacity-90 transition-opacity"
                   onError={() => setImgError(true)}
@@ -189,7 +195,7 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
               <div className="rounded-lg bg-muted/50 border border-border flex flex-col items-center justify-center py-6 px-4 gap-2">
                 <ImageIcon className="h-8 w-8 text-muted-foreground" />
                 <a
-                  href={message.media_url}
+                  href={mediaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -199,22 +205,12 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
                 </a>
               </div>
             )}
-            <a
-              href={message.media_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-muted-foreground hover:text-primary hover:underline break-all block mt-0.5"
-            >
-              {message.media_url.length > 60
-                ? message.media_url.substring(0, 60) + '...'
-                : message.media_url}
-            </a>
           </div>
         )}
 
-        {message.media_type === 'audio' && message.media_url && (
+        {message.media_type === 'audio' && mediaUrl && (
           <div>
-            <AudioPlayer src={message.media_url} direction={message.direction} />
+            <AudioPlayer src={mediaUrl} direction={message.direction} />
             {message.transcription ? (
               <p className="text-[11px] text-muted-foreground italic mt-1 whitespace-pre-wrap">
                 📝 {message.transcription}
@@ -227,13 +223,13 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
             ) : null}
           </div>
         )}
-        {message.media_type === 'video' && message.media_url && (
+        {message.media_type === 'video' && mediaUrl && (
           <video controls className="rounded-lg max-w-full mb-1">
-            <source src={message.media_url} />
+            <source src={mediaUrl} />
           </video>
         )}
 
-        {message.media_type === 'document' && message.media_url && (() => {
+        {message.media_type === 'document' && mediaUrl && (() => {
           const { fileName, ext } = getDocumentInfo();
           return (
             <button
