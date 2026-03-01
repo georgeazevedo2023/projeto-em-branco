@@ -1277,6 +1277,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      backup_query: {
+        Args: { _action: string; _table_name?: string }
+        Returns: Json
+      }
       can_access_kanban_board: {
         Args: { _board_id: string; _user_id: string }
         Returns: boolean
@@ -1285,7 +1289,6 @@ export type Database = {
         Args: { _card_id: string; _user_id: string }
         Returns: boolean
       }
-      exec_sql: { Args: { query: string }; Returns: Json }
       get_inbox_role: {
         Args: { _inbox_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["inbox_role"]
