@@ -1,30 +1,66 @@
 
 
-## Renomear "WsmartQR" para "WhatsPRO"
+## Módulo de Documentação no Admin Panel
 
-### Resumo
+### Objetivo
+Criar uma nova aba "Documentação" no painel administrativo com PRDs detalhados e completos de cada módulo do sistema, começando pelo módulo de Instâncias. Cada documento incluirá funcionalidades, endpoints, design, modelo de dados e permissões -- tudo com opção de download em Markdown.
 
-Substituir todas as ocorrencias do nome "WsmartQR" por "WhatsPRO" em toda a aplicacao visivel ao usuario. Documentos PRD nao serao alterados por serem arquivos de referencia interna.
+### Escopo Inicial
+- Nova aba "Docs" no AdminPanel com listagem de módulos documentados
+- Página de visualização de PRD com renderização Markdown
+- Botão de download (.md)
+- Primeiro documento: **Módulo de Instâncias** (baseado no PRD existente em `public/PRD_Modulo_Instancias.md`, atualizado com as mudanças de segurança recentes como `instance_id` no lugar de `token`)
 
-### Arquivos a alterar
+---
 
-1. **`index.html`** — Titulo da aba e meta tags (og:title, twitter:title, og:description, twitter:description)
-2. **`src/components/dashboard/Sidebar.tsx`** (linha 190) — Nome no menu lateral
-3. **`src/components/dashboard/MobileHeader.tsx`** (linha 17) — Nome no header mobile
-4. **`src/pages/Login.tsx`** (linha 48) — Nome na tela de login
-5. **`src/pages/Index.tsx`** (linhas 33, 59) — Nome no header e footer da landing page
-6. **`src/pages/dashboard/Settings.tsx`** (linha 216) — Subtitulo da pagina de configuracoes
-7. **`src/components/landing/HeroSection.tsx`** (linhas 38, 65) — Texto do CTA e URL mockup
-8. **`src/components/landing/UseCasesSection.tsx`** (linha 176) — Titulo da secao
-9. **`src/components/landing/TransformationSection.tsx`** (linha 37) — Descricao da secao
-10. **`src/components/landing/FAQSection.tsx`** (linha 13) — Resposta do FAQ
-11. **`src/components/landing/TestimonialsSection.tsx`** (linha 10) — Depoimento
-12. **`src/components/landing/FinalCTASection.tsx`** — Texto do CTA (se houver referencia)
-13. **`src/index.css`** (linha 7) — Comentario do design system
+### Detalhes Técnicos
 
-### Escopo
+#### 1. Novo componente: `src/components/admin/DocumentationTab.tsx`
+- Lista de módulos documentados em cards (ícone, nome, versão, data, status)
+- Cada card abre o documento completo em um dialog/sheet
+- Módulos planejados: Instâncias, Helpdesk, Broadcast, Agendamentos, CRM/Kanban, Admin, Dashboard
+- Badge de status: "Completo" / "Em breve"
 
-- Substituicao direta de texto "WsmartQR" por "WhatsPRO" e "wsmartqr" por "whatspro"
-- Nenhuma alteracao de logica ou estrutura
-- PRDs em `/public/` nao serao alterados (documentacao interna)
+#### 2. Novo componente: `src/components/admin/DocumentViewer.tsx`
+- Recebe conteúdo Markdown como string
+- Renderiza com formatação básica (headings, tabelas, code blocks) usando componentes shadcn
+- Botão "Download .md" que gera arquivo e dispara download via `Blob` + `URL.createObjectURL`
+- Não usará lib externa de Markdown -- renderização manual com `split` por seções para manter o bundle leve
+
+#### 3. Dados dos documentos: `src/data/docs/instances-prd.ts`
+- Exporta o conteúdo do PRD como template literal string
+- Atualizado para refletir a mudança de segurança (tokens resolvidos server-side via `instance_id`)
+- Baseado no `public/PRD_Modulo_Instancias.md` existente (751 linhas)
+
+#### 4. Alterações no `AdminPanel.tsx`
+- Adicionar nova tab "Docs" ao `TabsList` (ícone `FileText`)
+- Adicionar `TabsContent value="docs"` que renderiza `<DocumentationTab />`
+
+#### 5. Download
+- Botão gera arquivo `.md` com nome formatado (ex: `PRD_Modulo_Instancias_v1.0.md`)
+- Usa API nativa do browser (`Blob`, `createElement('a')`, `click()`)
+
+---
+
+### Estrutura dos cards de módulos
+
+| Módulo | Status | Ícone |
+|--------|--------|-------|
+| Instâncias WhatsApp | Completo | Server |
+| Helpdesk / Atendimento | Em breve | Headphones |
+| Broadcast (Grupos) | Em breve | Send |
+| Broadcast (Leads) | Em breve | Users |
+| Agendamentos | Em breve | Clock |
+| CRM / Kanban | Em breve | Kanban |
+| Dashboard / Analytics | Em breve | BarChart |
+| Administração | Em breve | ShieldCheck |
+
+---
+
+### Arquivos a criar/editar
+
+1. **Criar** `src/data/docs/instances-prd.ts` -- conteúdo PRD atualizado
+2. **Criar** `src/components/admin/DocumentationTab.tsx` -- listagem de módulos
+3. **Criar** `src/components/admin/DocumentViewer.tsx` -- visualização + download
+4. **Editar** `src/pages/dashboard/AdminPanel.tsx` -- adicionar aba "Docs"
 
