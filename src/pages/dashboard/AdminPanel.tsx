@@ -76,6 +76,7 @@ import {
   Briefcase,
   Building2,
   Mail,
+  FileText,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -84,6 +85,7 @@ import ManageUserInstancesDialog from '@/components/dashboard/ManageUserInstance
 import CreateInboxUserDialog from '@/components/dashboard/CreateInboxUserDialog';
 import BackupModule from '@/components/dashboard/BackupModule';
 import DepartmentsTab from '@/components/dashboard/DepartmentsTab';
+import DocumentationTab from '@/components/admin/DocumentationTab';
 import type { Database } from '@/integrations/supabase/types';
 
 type InboxRole = Database['public']['Enums']['inbox_role'];
@@ -819,6 +821,10 @@ const AdminPanel = () => {
             <Briefcase className="w-4 h-4" />
             <span>Backup</span>
           </TabsTrigger>
+          <TabsTrigger value="docs" className="gap-2">
+            <FileText className="w-4 h-4" />
+            <span>Docs</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* ══════════════════════════════════════════════════════════════════ */}
@@ -1334,6 +1340,13 @@ const AdminPanel = () => {
         {/* ══════════════════════════════════════════════════════════════════ */}
         <TabsContent value="backup" className="mt-6">
           <BackupModule />
+        </TabsContent>
+
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        {/* TAB: Documentação                                                 */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        <TabsContent value="docs" className="mt-6">
+          <DocumentationTab />
         </TabsContent>
       </Tabs>
 
