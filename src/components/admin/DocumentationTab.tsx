@@ -5,6 +5,7 @@ import { Server, Headphones, Send, Users, Clock, BarChart, ShieldCheck, Columns3
 import DocumentViewer from './DocumentViewer';
 import { instancesPrdContent } from '@/data/docs/instances-prd';
 import { adminPrdContent } from '@/data/docs/admin-prd';
+import { helpdeskPrdContent } from '@/data/docs/helpdesk-prd';
 
 interface DocModule {
   id: string;
@@ -33,9 +34,10 @@ const modules: DocModule[] = [
     name: 'Helpdesk / Atendimento',
     description: 'Chat em tempo real, conversas, labels, departamentos, IA, webhooks',
     icon: Headphones,
-    status: 'coming_soon',
-    version: '-',
-    date: '-',
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-03',
+    content: helpdeskPrdContent,
   },
   {
     id: 'broadcast-groups',
