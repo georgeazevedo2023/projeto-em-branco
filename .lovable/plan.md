@@ -1,99 +1,127 @@
 
 
-## PRD do Modulo Helpdesk / Atendimento
+## PRD do Modulo CRM / Kanban
 
 ### Objetivo
-Criar um PRD completo e detalhado do modulo de Helpdesk do WsmartQR, cobrindo todo o fluxo de atendimento: conversas, mensagens (texto, audio, imagem, documento, video, sticker, vCard, carrossel), labels, departamentos, IA, webhooks de entrada/saida, sincronizacao, transcricao de audio, resumos por IA, e notas privadas.
+Criar um PRD completo e detalhado do modulo CRM/Kanban do WsmartQR, documentando boards, colunas (funil), cards, campos dinamicos, entidades reutilizaveis, controle de acesso (membros diretos + heranca via inbox), visibilidade (shared/private), drag-and-drop, automacoes por coluna, e filtros.
 
 ### Arquivos a Modificar
 
-1. **Criar** `src/data/docs/helpdesk-prd.ts` -- PRD completo (~500 linhas) com todas as secoes abaixo
-2. **Editar** `src/components/admin/DocumentationTab.tsx` -- Atualizar o modulo "Helpdesk / Atendimento" de `coming_soon` para `complete`, importar e vincular o conteudo
+1. **Criar** `src/data/docs/kanban-prd.ts` -- PRD completo (~450 linhas)
+2. **Editar** `src/components/admin/DocumentationTab.tsx` -- Atualizar modulo "CRM / Kanban" de `coming_soon` para `complete`, importar e vincular conteudo
 
 ### Estrutura do PRD
 
-1. **Visao Geral** -- Objetivo do modulo, multi-inbox, multi-departamento, atendimento em tempo real via WhatsApp
+1. **Visao Geral**
+   - CRM baseado em Kanban com boards personalizaveis, colunas representando etapas do funil, cards como leads/oportunidades
+   - Multi-board, multi-inbox, campos dinamicos, entidades reutilizaveis
+   - Acesso: super_admin cria/gerencia boards; membros diretos ou via inbox visualizam/editam
 
-2. **Modelo de Dados** -- 7 tabelas documentadas com colunas, tipos e defaults:
-   - `conversations` (inbox_id, contact_id, status, priority, assigned_to, department_id, is_read, last_message, ai_summary, status_ia)
-   - `conversation_messages` (conversation_id, direction, content, media_type, media_url, sender_id, external_id, transcription)
-   - `contacts` (jid, phone, name, profile_pic_url)
-   - `labels` (name, color, inbox_id)
-   - `conversation_labels` (conversation_id, label_id)
-   - `departments` (name, inbox_id, is_default, description)
-   - `department_members` (department_id, user_id)
+2. **Modelo de Dados** -- 7 tabelas:
+   - `kanban_boards` (name, description, visibility shared/private, inbox_id, instance_id, created_by)
+   - `kanban_columns` (board_id, name, color, position, automation_enabled, automation_message)
+   - `kanban_cards` (board_id, column_id, title, assigned_to, created_by, tags[], position, notes)
+   - `kanban_card_data` (card_id, field_id, value)
+   - `kanban_fields` (board_id, name, field_type enum, options, is_primary, required, show_on_card, entity_id, position)
+   - `kanban_entities` (board_id, name, position)
+   - `kanban_entity_values` (entity_id, label, position)
+   - `kanban_board_members` (board_id, user_id, role editor/viewer)
 
-3. **Politicas RLS** -- Documentar as politicas de cada tabela:
-   - Conversations: acesso por inbox + filtro por departamento (agentes so veem seus departamentos, admin/gestor veem tudo)
-   - Messages: acesso via conversa -> inbox
-   - Labels/conversation_labels: acesso por inbox
-   - Contacts: acesso via conversas que o usuario pode ver
-   - Departments/department_members: SELECT por inbox, CRUD por super_admin
+3. **Enums**:
+   - `kanban_visibility`: shared, private
+   - `kanban_field_type`: text, currency, date, select, entity_select
 
-4. **Funcoes de Seguranca** -- Documentar funcoes usadas:
-   - `has_inbox_access`, `get_inbox_role`, `is_inbox_member`, `is_super_admin`
+4. **Funcoes de Seguranca (SECURITY DEFINER)**:
+   - `can_access_kanban_board(_user_id, _board_id)`: retorna true se super_admin, membro direto, ou membro de inbox vinculada
+   - `can_access_kanban_card(_user_id, _card_id)`: verifica board access + visibilidade (private: so criador/atribuido)
 
-5. **Status e Fluxo de Conversas**:
-   - Status: aberta, pendente, resolvida
-   - Prioridade: alta, media, baixa
-   - Fluxo: webhook cria conversa -> agente atende -> muda status -> trigger auto-summarize ao resolver
+5. **Politicas RLS** -- por tabela:
+   - `kanban_boards`: super_admin CRUD total; SELECT para criador, membro direto, ou membro de inbox vinculada
+   - `kanban_columns`: super_admin ALL; SELECT via `can_access_kanban_board`
+   - `kanban_cards`: super_admin ALL; SELECT com filtro de visibilidade (shared: board access; private: criador ou atribuido); UPDATE/DELETE por criador/atribuido/board owner; INSERT por board access
+   - `kanban_card_data`: super_admin ALL; CRUD via `can_access_kanban_card`
+   - `kanban_fields`: super_admin ALL; SELECT via `can_access_kanban_board`
+   - `kanban_entities` / `kanban_entity_values`: super_admin ALL; SELECT via board access
 
-6. **Edge Functions** -- 6 funcoes documentadas com endpoints, payloads e logica:
-   - `whatsapp-webhook`: Recebe mensagens UAZAPI, normaliza payload, resolve instancia/inbox/contato, cria/atualiza conversa, salva mensagem, faz upload de midia para Storage, broadcast realtime, dispara transcricao de audio
-   - `sync-conversations`: Sincroniza conversas existentes do UAZAPI para o banco, busca chats + mensagens em batch
-   - `fire-outgoing-webhook`: Proxy seguro para enviar webhooks de saida (validacao SSRF), usado para notificar n8n/IA externa
-   - `transcribe-audio`: Baixa audio, envia para Groq Whisper API, salva transcricao no banco, broadcast realtime
-   - `summarize-conversation`: Gera resumo por IA (Groq LLaMA 3.3 70B), retorna JSON estruturado (reason, summary, resolution), persiste com expiracao de 60 dias
-   - `auto-summarize`: Trigger automatico ao resolver conversa, backfill e processamento de conversas inativas
+6. **Visibilidade dos Boards**:
+   - `shared`: todos os membros (diretos + inbox) veem todos os cards
+   - `private`: cada usuario so ve cards que criou ou que estao atribuidos a ele
+   - Filtro aplicado no frontend (UX) e enforced pelo backend (RLS)
 
-7. **Tipos de Midia Suportados**:
-   - text, image, video, audio, document, sticker, contact (vCard), carousel
-   - Upload para Storage: `helpdesk-media` (imagem, video, documento), `audio-messages` (audio)
-   - Resolucao de URL: signed URLs para buckets privados, download persistente via UAZAPI
+7. **Campos Dinamicos (Fields)**:
+   - Tipos: text (texto curto), currency (moeda BRL formatada), date (calendario), select (opcoes fixas), entity_select (referencia a entidade reutilizavel)
+   - Propriedades: is_primary (valor principal exibido no card), required (obrigatorio ao salvar), show_on_card (exibir valor na listagem)
+   - Valores armazenados em `kanban_card_data` (card_id + field_id -> value)
 
-8. **Canais Realtime (Supabase Broadcast)**:
-   - `helpdesk-realtime`: eventos `new-message`, `transcription-updated` (usado pelo ChatPanel)
-   - `helpdesk-conversations`: eventos `new-message`, `assigned-agent`, `conversation_updated` (usado pela lista de conversas)
+8. **Entidades Reutilizaveis**:
+   - Tabelas de valores compartilhados entre cards (ex: Origem do Lead, Produto, Etapa)
+   - CRUD via EditBoardDialog aba "Entidades"
+   - Vinculo: field com field_type=entity_select aponta para entity_id
+   - Resolucao de labels: ao exibir card, converte UUID do value para label legivel
 
-9. **Interface do Usuario** -- Componentes documentados:
-   - `HelpDesk.tsx`: Pagina principal com filtros (status, inbox, departamento, label, atribuicao, prioridade, busca)
-   - `ConversationList.tsx`: Lista de conversas com badges de departamento, agente, notas
-   - `ConversationItem.tsx`: Card individual com avatar, prioridade, labels, ultimo preview
-   - `ChatPanel.tsx`: Painel de chat com header (status, IA, notas), lista de mensagens, input
-   - `ChatInput.tsx`: Compositor com envio de texto, notas privadas, audio, imagem, documento, labels, status, emoji
-   - `MessageBubble.tsx`: Renderizacao de mensagens (todas as midias, carrossel, vCard, transcricao)
-   - `ContactInfoPanel.tsx`: Painel lateral com dados do contato, labels, status, prioridade, agente, departamento, resumo IA, historico
-   - `NotesPanel.tsx`: Drawer lateral com notas privadas
-   - `ManageLabelsDialog.tsx`: CRUD de labels por inbox
-   - `LabelPicker.tsx`: Popover para atribuir labels a conversas
-   - `AudioPlayer.tsx`: Player customizado para audio
+9. **Automacoes por Coluna**:
+   - Cada coluna pode ter `automation_enabled` + `automation_message`
+   - Ao mover card para coluna com automacao ativa, sistema exibe toast informativo
+   - Preparado para disparo futuro via instancia WhatsApp (instance_id do board)
 
-10. **Integracao com IA**:
-    - `status_ia`: Campo na conversa que controla estado da IA (ligada/desligada)
-    - Ativacao via webhook: ChatPanel chama `fire-outgoing-webhook` com `pausar_agente: 'nao'`
-    - Desativacao automatica ao enviar mensagem manual (define `status_ia: 'desligada'`)
-    - Resumos automaticos: trigger `trigger_auto_summarize` ao marcar conversa como resolvida
+10. **Controle de Acesso e Membros**:
+    - Heranca via inbox: se board tem inbox_id, todos os inbox_users tem acesso
+    - Membros diretos: `kanban_board_members` com role `editor` ou `viewer`
+    - Permissoes efetivas:
+      - super_admin/gerente: sempre podem adicionar cards
+      - editor (direto): pode adicionar cards
+      - viewer (direto): visualizacao apenas
+      - membro via inbox: acesso como editor (pode adicionar cards)
+    - Aba "Acesso" no EditBoardDialog: mostra membros inbox + diretos, CRUD de membros diretos
 
-11. **Fluxos Operacionais**:
-    - Fluxo de mensagem de entrada: UAZAPI -> webhook -> resolve inbox -> upsert contato -> find/create conversa -> salva mensagem -> upload midia -> broadcast -> transcricao
-    - Fluxo de mensagem de saida: ChatInput -> uazapi-proxy -> salva no banco -> broadcast -> fire-outgoing-webhook
-    - Auto-assign: Primeiro agente a responder e automaticamente atribuido
-    - Sincronizacao: Botao na UI -> sync-conversations -> importa chats/mensagens do UAZAPI
+11. **Drag and Drop**:
+    - Biblioteca: @dnd-kit/core + @dnd-kit/sortable
+    - Reordenacao de cards dentro da mesma coluna (vertical)
+    - Mover cards entre colunas (drag over + drop)
+    - Persistencia: atualiza column_id e position no Supabase apos drop
+    - Sensors: PointerSensor (distance: 5px), TouchSensor (delay: 200ms, tolerance: 8px)
+    - DragOverlay para feedback visual durante arraste
 
-12. **Secrets e Variaveis Necessarias**:
-    - `GROQ_API_KEY` (transcricao e resumos)
-    - `UAZAPI_SERVER_URL` (servidor UAZAPI)
-    - `SUPABASE_SERVICE_ROLE_KEY` (operacoes privilegiadas)
-    - `SUPABASE_ANON_KEY` (broadcast realtime)
+12. **Interface do Usuario** -- Componentes:
+    - `KanbanCRM.tsx`: Lista de boards com busca, contagem de colunas/cards/membros, botao "Novo Quadro" (super_admin)
+    - `BoardCard.tsx`: Card do board com badges (visibilidade, inbox, membros), acoes (editar, duplicar, excluir)
+    - `KanbanBoard.tsx`: Visualizacao do board com header, busca, filtro por responsavel, scroll horizontal, DnD context
+    - `KanbanColumn.tsx`: Coluna do funil com header colorido, contagem, area droppable, botao adicionar card inline
+    - `KanbanCardItem.tsx`: Card individual com campo primario, campos show_on_card, tags coloridas, avatar do responsavel, botoes prev/next
+    - `CardDetailSheet.tsx`: Sheet lateral para editar card (titulo, coluna, responsavel, tags, notas, campos dinamicos com DynamicFormField)
+    - `DynamicFormField.tsx`: Renderizador generico de campos (text/currency/date/select/entity_select)
+    - `CreateBoardDialog.tsx`: Dialog de criacao com nome, descricao, visibilidade, inbox
+    - `EditBoardDialog.tsx`: Dialog completo com 5 abas (Geral, Colunas, Campos, Entidades, Acesso)
 
-13. **Storage Buckets**:
-    - `helpdesk-media` (privado): imagens, videos, documentos
-    - `audio-messages` (privado): audios enviados pelos atendentes
-    - `carousel-images` (publico): imagens de carrossel
+13. **Fluxos Operacionais**:
+    - Criar board: super_admin -> CreateBoardDialog -> insere kanban_boards -> redireciona para lista
+    - Configurar funil: EditBoardDialog aba Colunas -> adicionar/remover/reordenar colunas com cores
+    - Definir campos: EditBoardDialog aba Campos -> tipos, opcoes, entidade, primary, required, show_on_card
+    - Criar entidades: EditBoardDialog aba Entidades -> nome + lista de valores
+    - Gerenciar acesso: EditBoardDialog aba Acesso -> vincular inbox ou adicionar membros diretos com role
+    - Adicionar card: inline na coluna -> titulo -> insere com position e auto-assign (private)
+    - Editar card: clique -> CardDetailSheet -> campos dinamicos, responsavel, tags, notas -> salva com upsert
+    - Mover card: drag-and-drop ou botoes prev/next -> atualiza column_id + position
+    - Duplicar board: BoardCard menu -> copia board + colunas + entidades + values + campos (com remapeamento de entity_id)
+    - Excluir board: BoardCard menu -> confirmacao -> deleta board (cascade)
 
-### Detalhes Tecnicos da Implementacao
+14. **Filtros e Busca**:
+    - Busca global: filtra cards por titulo, tags, nome do responsavel
+    - Filtro por responsavel: chips de membros que possuem cards atribuidos, clique para filtrar
+    - Aplicados em tempo real no frontend (sem re-fetch)
 
-- O arquivo `helpdesk-prd.ts` exportara uma constante `helpdeskPrdContent` como template literal string em Markdown
-- O `DocumentationTab.tsx` sera atualizado para importar `helpdeskPrdContent`, mudar status para `complete`, versao `v1.0`, data `2026-03-03`
-- O conteudo seguira o mesmo padrao de formatacao dos PRDs existentes (instances-prd, admin-prd)
+15. **Regras de Negocio**:
+    - Apenas super_admin pode criar, editar e excluir boards
+    - Boards privados: auto-assign ao criar card (atribui ao usuario logado)
+    - Campo primario: apenas um por board; exibido como titulo principal do card (substitui title)
+    - Duplicacao: copia toda a estrutura exceto cards
+    - Entidade referenciada por campo: ao excluir entidade, campo volta para tipo "text"
+    - Cores de colunas: 10 opcoes pre-definidas ciclicas
+    - Tags: hash-based color (5 cores Tailwind)
+
+### Detalhes de Implementacao
+
+- `kanban-prd.ts` exporta `kanbanPrdContent` como template literal Markdown
+- `DocumentationTab.tsx`: importar `kanbanPrdContent`, mudar status para `complete`, versao `v1.0`, data `2026-03-03`
+- Seguir mesmo padrao de formatacao dos PRDs existentes
 
