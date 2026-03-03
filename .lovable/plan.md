@@ -1,127 +1,106 @@
 
-
-## PRD do Modulo CRM / Kanban
+## PRD do Modulo Broadcast (Leads)
 
 ### Objetivo
-Criar um PRD completo e detalhado do modulo CRM/Kanban do WsmartQR, documentando boards, colunas (funil), cards, campos dinamicos, entidades reutilizaveis, controle de acesso (membros diretos + heranca via inbox), visibilidade (shared/private), drag-and-drop, automacoes por coluna, e filtros.
+Criar um PRD completo e detalhado do modulo Broadcast de Leads do WsmartQR, documentando todo o fluxo de envio em massa para contatos individuais: selecao de instancia, gestao de bases de leads, importacao (colar, CSV/Excel, grupos, manual), verificacao de numeros, composicao e envio de mensagens (texto, midia, carrossel), templates, reenvio, persistencia de logs e integracao com HelpDesk.
 
 ### Arquivos a Modificar
 
-1. **Criar** `src/data/docs/kanban-prd.ts` -- PRD completo (~450 linhas)
-2. **Editar** `src/components/admin/DocumentationTab.tsx` -- Atualizar modulo "CRM / Kanban" de `coming_soon` para `complete`, importar e vincular conteudo
+1. **Criar** `src/data/docs/broadcast-leads-prd.ts` -- PRD completo (~450 linhas) exportando `broadcastLeadsPrdContent`
+2. **Editar** `src/components/admin/DocumentationTab.tsx` -- Atualizar modulo "Broadcast (Leads)" de `coming_soon` para `complete`, importar e vincular conteudo
 
 ### Estrutura do PRD
 
 1. **Visao Geral**
-   - CRM baseado em Kanban com boards personalizaveis, colunas representando etapas do funil, cards como leads/oportunidades
-   - Multi-board, multi-inbox, campos dinamicos, entidades reutilizaveis
-   - Acesso: super_admin cria/gerencia boards; membros diretos ou via inbox visualizam/editam
+   - Envio em massa para contatos individuais via WhatsApp (diferente do broadcast para grupos)
+   - Wizard de 3 etapas: Instancia -> Contatos/Base -> Mensagem
+   - Suporte a reenvio a partir do historico
 
-2. **Modelo de Dados** -- 7 tabelas:
-   - `kanban_boards` (name, description, visibility shared/private, inbox_id, instance_id, created_by)
-   - `kanban_columns` (board_id, name, color, position, automation_enabled, automation_message)
-   - `kanban_cards` (board_id, column_id, title, assigned_to, created_by, tags[], position, notes)
-   - `kanban_card_data` (card_id, field_id, value)
-   - `kanban_fields` (board_id, name, field_type enum, options, is_primary, required, show_on_card, entity_id, position)
-   - `kanban_entities` (board_id, name, position)
-   - `kanban_entity_values` (entity_id, label, position)
-   - `kanban_board_members` (board_id, user_id, role editor/viewer)
+2. **Modelo de Dados** -- 3 tabelas principais:
+   - `lead_databases` (id, name, description, user_id, instance_id, leads_count, created_at, updated_at)
+   - `lead_database_entries` (id, database_id, phone, name, jid, source, group_name, is_verified, verified_name, verification_status)
+   - `broadcast_logs` (id, user_id, instance_id, instance_name, message_type, content, media_url, carousel_data, groups_targeted, recipients_targeted/success/failed, exclude_admins, random_delay, status, error_message, started_at, completed_at, duration_seconds)
+   - Tabelas auxiliares: `message_templates` (templates reutilizaveis)
 
-3. **Enums**:
-   - `kanban_visibility`: shared, private
-   - `kanban_field_type`: text, currency, date, select, entity_select
+3. **Politicas RLS** -- por tabela:
+   - `lead_databases`: owner (user_id) tem ALL; super_admin tem SELECT
+   - `lead_database_entries`: acesso via ownership da lead_database pai; super_admin SELECT
+   - `broadcast_logs`: owner INSERT/SELECT/DELETE; super_admin SELECT/DELETE
+   - `message_templates`: owner CRUD completo
 
-4. **Funcoes de Seguranca (SECURITY DEFINER)**:
-   - `can_access_kanban_board(_user_id, _board_id)`: retorna true se super_admin, membro direto, ou membro de inbox vinculada
-   - `can_access_kanban_card(_user_id, _card_id)`: verifica board access + visibilidade (private: so criador/atribuido)
+4. **Interface do Usuario -- Componentes**:
+   - `LeadsBroadcaster.tsx`: Pagina principal com wizard de 3 etapas, gestao de estado, reenvio via sessionStorage
+   - `InstanceSelector.tsx`: Selecao de instancia WhatsApp conectada
+   - `LeadImporter.tsx`: Importacao via 4 abas (colar numeros, CSV/Excel com mapeamento de colunas, extrair de grupos, adicionar manual)
+   - `LeadList.tsx`: Lista paginada com busca, filtro por status de verificacao, selecao individual/em massa
+   - `LeadDatabaseSelector.tsx`: Lista de bases salvas com acoes (selecionar, editar, gerenciar, excluir)
+   - `LeadMessageForm.tsx`: Compositor de mensagem com 3 abas (texto, midia, carrossel), templates, delay configuravel, progresso com pause/cancel
+   - `EditDatabaseDialog.tsx`: Edicao de nome/descricao da base
+   - `ManageLeadDatabaseDialog.tsx`: Gestao de entradas (adicionar, buscar, paginar, excluir contatos)
+   - `CreateLeadDatabaseDialog.tsx`: Criar base a partir de grupos selecionados (extrai nao-admins)
+   - `MessagePreview.tsx`: Preview da mensagem formatada
+   - `CarouselEditor.tsx` / `CarouselPreview.tsx`: Edicao e preview de carrossel
+   - `TemplateSelector.tsx`: Selecao e salvamento de templates
 
-5. **Politicas RLS** -- por tabela:
-   - `kanban_boards`: super_admin CRUD total; SELECT para criador, membro direto, ou membro de inbox vinculada
-   - `kanban_columns`: super_admin ALL; SELECT via `can_access_kanban_board`
-   - `kanban_cards`: super_admin ALL; SELECT com filtro de visibilidade (shared: board access; private: criador ou atribuido); UPDATE/DELETE por criador/atribuido/board owner; INSERT por board access
-   - `kanban_card_data`: super_admin ALL; CRUD via `can_access_kanban_card`
-   - `kanban_fields`: super_admin ALL; SELECT via `can_access_kanban_board`
-   - `kanban_entities` / `kanban_entity_values`: super_admin ALL; SELECT via board access
+5. **Importacao de Leads (LeadImporter)**:
+   - **Colar numeros**: Textarea com numeros separados por quebra de linha, normaliza para JID
+   - **CSV/Excel**: Upload com deteccao de delimitador, mapeamento de colunas (telefone obrigatorio, nome opcional), preview tabular
+   - **Extrair de grupos**: Busca grupos da instancia via uazapi-proxy, seleciona grupos, extrai participantes nao-admin com deduplicacao
+   - **Manual**: Formulario com telefone + nome opcional
+   - Normalizacao: `parsePhoneToJid(phone)` -> remove caracteres, aplica prefixo 55, gera JID `{digits}@s.whatsapp.net`
+   - Deduplicacao por telefone ao importar
 
-6. **Visibilidade dos Boards**:
-   - `shared`: todos os membros (diretos + inbox) veem todos os cards
-   - `private`: cada usuario so ve cards que criou ou que estao atribuidos a ele
-   - Filtro aplicado no frontend (UX) e enforced pelo backend (RLS)
+6. **Verificacao de Numeros**:
+   - Chamada `supabase.functions.invoke('uazapi-proxy', { action: 'check-numbers', instance_id, phones })` em batches de 50
+   - Atualiza status: `valid`, `invalid`, `error`
+   - Acoes pos-verificacao: "Remover invalidos", "Selecionar apenas validos"
+   - Progresso visual durante verificacao
 
-7. **Campos Dinamicos (Fields)**:
-   - Tipos: text (texto curto), currency (moeda BRL formatada), date (calendario), select (opcoes fixas), entity_select (referencia a entidade reutilizavel)
-   - Propriedades: is_primary (valor principal exibido no card), required (obrigatorio ao salvar), show_on_card (exibir valor na listagem)
-   - Valores armazenados em `kanban_card_data` (card_id + field_id -> value)
+7. **Gestao de Bases de Leads**:
+   - Criar nova base: importar leads -> nomear -> salvar (insere lead_databases + lead_database_entries)
+   - Selecionar base existente: carrega entries com deduplicacao por phone
+   - Multi-selecao de bases: combina entries de varias bases
+   - Atualizar base: substitui todas entries e atualiza leads_count
+   - Editar metadados: nome e descricao via EditDatabaseDialog
+   - Gerenciar entradas: ManageLeadDatabaseDialog com busca, paginacao (30/pagina), adicionar contato, excluir contato
+   - Excluir base: confirmacao com AlertDialog, cascade para entries
 
-8. **Entidades Reutilizaveis**:
-   - Tabelas de valores compartilhados entre cards (ex: Origem do Lead, Produto, Etapa)
-   - CRUD via EditBoardDialog aba "Entidades"
-   - Vinculo: field com field_type=entity_select aponta para entity_id
-   - Resolucao de labels: ao exibir card, converte UUID do value para label legivel
+8. **Composicao e Envio de Mensagens (LeadMessageForm)**:
+   - **Texto**: Textarea com contador de caracteres (max 4096), emoji picker
+   - **Midia**: Upload de arquivo ou URL, tipos suportados (image/jpeg/png/gif/webp, video/mp4, audio/mpeg/ogg/mp3/wav), max 10MB, caption opcional
+   - **Carrossel**: Editor visual com cards (imagem + texto + botoes URL/REPLY/CALL), upload de imagem por card
+   - **Templates**: Carregar template salvo (texto/midia/carrossel), salvar novo template com nome e categoria
+   - **Delay configuravel**: Presets de delay entre envios para anti-bloqueio
+   - **Envio**: Loop pelos leads selecionados, chamada uazapi-proxy por numero (send-message, send-media, send-carousel)
+   - **Progresso**: Card modal com barra de progresso, nome do contato atual, tempo decorrido/restante, pause/resume/cancel
+   - **Persistencia**: Salva broadcast_log apos conclusao; salva no HelpDesk (saveToHelpdesk) cada mensagem enviada
 
-9. **Automacoes por Coluna**:
-   - Cada coluna pode ter `automation_enabled` + `automation_message`
-   - Ao mover card para coluna com automacao ativa, sistema exibe toast informativo
-   - Preparado para disparo futuro via instancia WhatsApp (instance_id do board)
+9. **Reenvio (ResendOptionsDialog + BroadcastHistoryPage)**:
+   - Historico de envios: BroadcastHistory lista logs com filtros
+   - Reenvio: clique "Reenviar" -> ResendOptionsDialog (escolher destino: grupos ou leads, excluir admins)
+   - Dados salvos em sessionStorage -> LeadsBroadcaster restaura instanceId, messageType, content, mediaUrl, carouselData
+   - Banner visual indica reenvio ativo
 
-10. **Controle de Acesso e Membros**:
-    - Heranca via inbox: se board tem inbox_id, todos os inbox_users tem acesso
-    - Membros diretos: `kanban_board_members` com role `editor` ou `viewer`
-    - Permissoes efetivas:
-      - super_admin/gerente: sempre podem adicionar cards
-      - editor (direto): pode adicionar cards
-      - viewer (direto): visualizacao apenas
-      - membro via inbox: acesso como editor (pode adicionar cards)
-    - Aba "Acesso" no EditBoardDialog: mostra membros inbox + diretos, CRUD de membros diretos
+10. **Edge Functions Utilizadas**:
+    - `uazapi-proxy` com actions: `check-numbers` (verificacao), `send-message` (texto), `send-media` (midia), `send-carousel` (carrossel), `groups` (listar grupos para importacao)
+    - Autenticacao JWT + resolucao de token da instancia via `resolveInstanceToken`
 
-11. **Drag and Drop**:
-    - Biblioteca: @dnd-kit/core + @dnd-kit/sortable
-    - Reordenacao de cards dentro da mesma coluna (vertical)
-    - Mover cards entre colunas (drag over + drop)
-    - Persistencia: atualiza column_id e position no Supabase apos drop
-    - Sensors: PointerSensor (distance: 5px), TouchSensor (delay: 200ms, tolerance: 8px)
-    - DragOverlay para feedback visual durante arraste
+11. **Fluxos Operacionais**:
+    - Envio completo: Selecionar instancia -> Selecionar/criar base -> Importar leads -> Verificar numeros -> Compor mensagem -> Enviar -> Log salvo
+    - Reenvio: Historico -> Reenviar -> Selecionar instancia/base -> Mensagem pre-preenchida -> Enviar
+    - Criar base de grupos: Broadcaster de Grupos -> Step 2 -> "Criar Base" -> CreateLeadDatabaseDialog -> Extrai nao-admins -> Salva
 
-12. **Interface do Usuario** -- Componentes:
-    - `KanbanCRM.tsx`: Lista de boards com busca, contagem de colunas/cards/membros, botao "Novo Quadro" (super_admin)
-    - `BoardCard.tsx`: Card do board com badges (visibilidade, inbox, membros), acoes (editar, duplicar, excluir)
-    - `KanbanBoard.tsx`: Visualizacao do board com header, busca, filtro por responsavel, scroll horizontal, DnD context
-    - `KanbanColumn.tsx`: Coluna do funil com header colorido, contagem, area droppable, botao adicionar card inline
-    - `KanbanCardItem.tsx`: Card individual com campo primario, campos show_on_card, tags coloridas, avatar do responsavel, botoes prev/next
-    - `CardDetailSheet.tsx`: Sheet lateral para editar card (titulo, coluna, responsavel, tags, notas, campos dinamicos com DynamicFormField)
-    - `DynamicFormField.tsx`: Renderizador generico de campos (text/currency/date/select/entity_select)
-    - `CreateBoardDialog.tsx`: Dialog de criacao com nome, descricao, visibilidade, inbox
-    - `EditBoardDialog.tsx`: Dialog completo com 5 abas (Geral, Colunas, Campos, Entidades, Acesso)
-
-13. **Fluxos Operacionais**:
-    - Criar board: super_admin -> CreateBoardDialog -> insere kanban_boards -> redireciona para lista
-    - Configurar funil: EditBoardDialog aba Colunas -> adicionar/remover/reordenar colunas com cores
-    - Definir campos: EditBoardDialog aba Campos -> tipos, opcoes, entidade, primary, required, show_on_card
-    - Criar entidades: EditBoardDialog aba Entidades -> nome + lista de valores
-    - Gerenciar acesso: EditBoardDialog aba Acesso -> vincular inbox ou adicionar membros diretos com role
-    - Adicionar card: inline na coluna -> titulo -> insere com position e auto-assign (private)
-    - Editar card: clique -> CardDetailSheet -> campos dinamicos, responsavel, tags, notas -> salva com upsert
-    - Mover card: drag-and-drop ou botoes prev/next -> atualiza column_id + position
-    - Duplicar board: BoardCard menu -> copia board + colunas + entidades + values + campos (com remapeamento de entity_id)
-    - Excluir board: BoardCard menu -> confirmacao -> deleta board (cascade)
-
-14. **Filtros e Busca**:
-    - Busca global: filtra cards por titulo, tags, nome do responsavel
-    - Filtro por responsavel: chips de membros que possuem cards atribuidos, clique para filtrar
-    - Aplicados em tempo real no frontend (sem re-fetch)
-
-15. **Regras de Negocio**:
-    - Apenas super_admin pode criar, editar e excluir boards
-    - Boards privados: auto-assign ao criar card (atribui ao usuario logado)
-    - Campo primario: apenas um por board; exibido como titulo principal do card (substitui title)
-    - Duplicacao: copia toda a estrutura exceto cards
-    - Entidade referenciada por campo: ao excluir entidade, campo volta para tipo "text"
-    - Cores de colunas: 10 opcoes pre-definidas ciclicas
-    - Tags: hash-based color (5 cores Tailwind)
+12. **Regras de Negocio**:
+    - Bases de leads sao por usuario (RLS por user_id)
+    - Deduplicacao por telefone ao importar e ao combinar bases
+    - Normalizacao de telefone: remove +, espacos, hifens; aplica prefixo 55 para numeros curtos
+    - Verificacao em batches de 50 numeros por chamada
+    - Delay entre envios configuravel para evitar bloqueio do WhatsApp
+    - Carrossel: upload de imagens para bucket `carousel-images` (publico)
+    - HelpDesk: cada mensagem enviada e persistida como mensagem de saida na conversa do contato
 
 ### Detalhes de Implementacao
 
-- `kanban-prd.ts` exporta `kanbanPrdContent` como template literal Markdown
-- `DocumentationTab.tsx`: importar `kanbanPrdContent`, mudar status para `complete`, versao `v1.0`, data `2026-03-03`
-- Seguir mesmo padrao de formatacao dos PRDs existentes
-
+- `broadcast-leads-prd.ts` exporta `broadcastLeadsPrdContent` como template literal Markdown
+- `DocumentationTab.tsx`: importar `broadcastLeadsPrdContent`, mudar status do modulo "Broadcast (Leads)" para `complete`, versao `v1.0`, data `2026-03-03`
+- Seguir mesmo padrao de formatacao dos PRDs existentes (admin-prd, helpdesk-prd, kanban-prd)
