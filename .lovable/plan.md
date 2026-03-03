@@ -1,66 +1,52 @@
 
 
-## Módulo de Documentação no Admin Panel
+## Fix: Dashboard travado no loading
 
-### Objetivo
-Criar uma nova aba "Documentação" no painel administrativo com PRDs detalhados e completos de cada módulo do sistema, começando pelo módulo de Instâncias. Cada documento incluirá funcionalidades, endpoints, design, modelo de dados e permissões -- tudo com opção de download em Markdown.
+### Problema Raiz
+O `fetchData()` faz `await fetchGroupsStats(...)` na linha 122 antes de chamar `setLoading(false)`. Como `fetchGroupsStats` faz chamadas `uazapi-proxy` para TODAS as instancias conectadas via `Promise.all`, se qualquer chamada demorar ou travar, o dashboard inteiro fica no skeleton de loading indefinidamente.
 
-### Escopo Inicial
-- Nova aba "Docs" no AdminPanel com listagem de módulos documentados
-- Página de visualização de PRD com renderização Markdown
-- Botão de download (.md)
-- Primeiro documento: **Módulo de Instâncias** (baseado no PRD existente em `public/PRD_Modulo_Instancias.md`, atualizado com as mudanças de segurança recentes como `instance_id` no lugar de `token`)
+### Correções
 
----
+#### 1. Separar loading principal do loading de stats
+**Arquivo:** `src/pages/dashboard/DashboardHome.tsx`
 
-### Detalhes Técnicos
+- Remover o `await` do `fetchGroupsStats` dentro de `fetchData` -- chamar sem await para que `setLoading(false)` execute imediatamente após carregar as instancias
+- O dashboard renderiza com os dados de instancias/KPIs enquanto os stats dos grupos carregam em background (já controlados por `loadingStats`)
 
-#### 1. Novo componente: `src/components/admin/DocumentationTab.tsx`
-- Lista de módulos documentados em cards (ícone, nome, versão, data, status)
-- Cada card abre o documento completo em um dialog/sheet
-- Módulos planejados: Instâncias, Helpdesk, Broadcast, Agendamentos, CRM/Kanban, Admin, Dashboard
-- Badge de status: "Completo" / "Em breve"
+```text
+Antes:
+  setInstances(...)
+  await fetchGroupsStats(...)   <-- bloqueia tudo
+  ...
+  finally { setLoading(false) } <-- só roda quando TODAS as chamadas proxy terminam
 
-#### 2. Novo componente: `src/components/admin/DocumentViewer.tsx`
-- Recebe conteúdo Markdown como string
-- Renderiza com formatação básica (headings, tabelas, code blocks) usando componentes shadcn
-- Botão "Download .md" que gera arquivo e dispara download via `Blob` + `URL.createObjectURL`
-- Não usará lib externa de Markdown -- renderização manual com `split` por seções para manter o bundle leve
+Depois:
+  setInstances(...)
+  fetchGroupsStats(...)         <-- fire-and-forget (erros já tratados internamente)
+  ...
+  finally { setLoading(false) } <-- roda imediatamente após carregar instancias
+```
 
-#### 3. Dados dos documentos: `src/data/docs/instances-prd.ts`
-- Exporta o conteúdo do PRD como template literal string
-- Atualizado para refletir a mudança de segurança (tokens resolvidos server-side via `instance_id`)
-- Baseado no `public/PRD_Modulo_Instancias.md` existente (751 linhas)
+#### 2. Adicionar timeout nas chamadas do proxy
+**Arquivo:** `src/pages/dashboard/DashboardHome.tsx`
 
-#### 4. Alterações no `AdminPanel.tsx`
-- Adicionar nova tab "Docs" ao `TabsList` (ícone `FileText`)
-- Adicionar `TabsContent value="docs"` que renderiza `<DocumentationTab />`
+- Adicionar `AbortController` com timeout de 15s para cada chamada `uazapi-proxy` no `fetchGroupsStats`
+- Se uma instancia demorar demais, falha graciosamente (já existe catch que coloca 0 grupos)
 
-#### 5. Download
-- Botão gera arquivo `.md` com nome formatado (ex: `PRD_Modulo_Instancias_v1.0.md`)
-- Usa API nativa do browser (`Blob`, `createElement('a')`, `click()`)
+#### 3. Corrigir LazySection IntersectionObserver
+**Arquivo:** `src/components/dashboard/LazySection.tsx`
 
----
+- O `IntersectionObserver` usa `root: null` (viewport), mas o scroll acontece dentro do `<main>` com `overflow-y-auto`
+- Corrigir para detectar o ancestral scrollável ou usar `rootMargin` mais generoso como fallback
+- Alternativa pragmatica: usar um timeout de 2s como fallback para forçar renderização
 
-### Estrutura dos cards de módulos
+### Arquivos a Editar
 
-| Módulo | Status | Ícone |
-|--------|--------|-------|
-| Instâncias WhatsApp | Completo | Server |
-| Helpdesk / Atendimento | Em breve | Headphones |
-| Broadcast (Grupos) | Em breve | Send |
-| Broadcast (Leads) | Em breve | Users |
-| Agendamentos | Em breve | Clock |
-| CRM / Kanban | Em breve | Kanban |
-| Dashboard / Analytics | Em breve | BarChart |
-| Administração | Em breve | ShieldCheck |
+1. `src/pages/dashboard/DashboardHome.tsx` -- remover await do fetchGroupsStats, adicionar timeout
+2. `src/components/dashboard/LazySection.tsx` -- fallback timeout para IntersectionObserver
 
----
-
-### Arquivos a criar/editar
-
-1. **Criar** `src/data/docs/instances-prd.ts` -- conteúdo PRD atualizado
-2. **Criar** `src/components/admin/DocumentationTab.tsx` -- listagem de módulos
-3. **Criar** `src/components/admin/DocumentViewer.tsx` -- visualização + download
-4. **Editar** `src/pages/dashboard/AdminPanel.tsx` -- adicionar aba "Docs"
+### Impacto
+- Dashboard carrega instantaneamente com instancias e KPIs
+- Gráficos de grupos carregam progressivamente em background
+- Seções lazy renderizam mesmo se o observer não detectar interseção
 
