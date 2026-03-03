@@ -119,7 +119,7 @@ const DashboardHome = () => {
         }));
 
         setInstances(instancesWithProfiles as Instance[]);
-        await fetchGroupsStats(instancesWithProfiles as Instance[]);
+        fetchGroupsStats(instancesWithProfiles as Instance[]);
       } else {
         setInstances([]);
       }
@@ -205,9 +205,12 @@ const DashboardHome = () => {
     await Promise.all(
       connectedInstances.map(async (instance) => {
         try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
           const { data, error } = await supabase.functions.invoke('uazapi-proxy', {
             body: { action: 'groups', instance_id: instance.id },
           });
+          clearTimeout(timeout);
           if (error) throw error;
           const groups = Array.isArray(data) ? data : [];
           let totalParticipants = 0;

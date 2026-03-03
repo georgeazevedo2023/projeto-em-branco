@@ -15,18 +15,25 @@ const LazySection = ({ children, height = '280px', className }: LazySectionProps
     const el = ref.current;
     if (!el) return;
 
+    // Fallback: force render after 2s if observer doesn't trigger
+    const fallback = setTimeout(() => setVisible(true), 2000);
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setVisible(true);
+          clearTimeout(fallback);
           observer.disconnect();
         }
       },
-      { rootMargin: '100px' }
+      { rootMargin: '200px' }
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(fallback);
+      observer.disconnect();
+    };
   }, []);
 
   if (!visible) {
