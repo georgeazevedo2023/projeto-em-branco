@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Server, Headphones, Send, Users, Clock, BarChart, ShieldCheck, Columns3 } from 'lucide-react';
 import DocumentViewer from './DocumentViewer';
 import { instancesPrdContent } from '@/data/docs/instances-prd';
+import { adminPrdContent } from '@/data/docs/admin-prd';
 
 interface DocModule {
   id: string;
@@ -84,11 +85,12 @@ const modules: DocModule[] = [
   {
     id: 'admin',
     name: 'Administração',
-    description: 'Caixas de entrada, usuários, equipe, departamentos, backup',
+    description: 'Caixas de entrada, usuários, equipe, departamentos, permissões, herança de acesso',
     icon: ShieldCheck,
-    status: 'coming_soon',
-    version: '-',
-    date: '-',
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-03',
+    content: adminPrdContent,
   },
 ];
 
