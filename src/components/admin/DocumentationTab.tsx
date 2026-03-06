@@ -11,6 +11,7 @@ import { broadcastLeadsPrdContent } from '@/data/docs/broadcast-leads-prd';
 import { broadcastGroupsPrdContent } from '@/data/docs/broadcast-groups-prd';
 import { helpdeskMediaPrdContent } from '@/data/docs/helpdesk-media-prd';
 import { helpdeskChatFeaturesPrdContent } from '@/data/docs/helpdesk-chat-features-prd';
+import { helpdeskFiltersContactPrdContent } from '@/data/docs/helpdesk-filters-contact-prd';
 
 interface DocModule {
   id: string;
@@ -63,6 +64,16 @@ const modules: DocModule[] = [
     version: 'v1.0',
     date: '2026-03-06',
     content: helpdeskChatFeaturesPrdContent,
+  },
+  {
+    id: 'helpdesk-filters-contact',
+    name: 'Helpdesk: Filtros e Cartão de Contato',
+    description: 'Filtros avançados, abas de status, cartão de contato, etiquetas, prioridade, agente, departamento, resumo IA e histórico',
+    icon: Headphones,
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-06',
+    content: helpdeskFiltersContactPrdContent,
   },
   {
     id: 'broadcast-groups',
