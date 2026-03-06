@@ -498,14 +498,14 @@ const HelpDesk = () => {
       <div className="flex items-center gap-3 px-4 py-2.5">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-            <Inbox className="w-4 h-4 text-primary" />
+            <InboxIcon className="w-4 h-4 text-primary" />
           </div>
           <div className="min-w-0">
             <h2 className="font-display font-bold text-sm leading-tight truncate">Atendimento</h2>
             {inboxes.length > 0 && (
               <Select value={inboxSelectValue} onValueChange={handleInboxChange}>
                 <SelectTrigger className="h-5 text-[10px] border-0 bg-transparent p-0 gap-1 text-muted-foreground hover:text-foreground shadow-none focus:ring-0 w-auto max-w-[180px]">
-                  <Inbox className="w-2.5 h-2.5 shrink-0 opacity-60" />
+                  <InboxIcon className="w-2.5 h-2.5 shrink-0 opacity-60" />
                   <SelectValue placeholder="Selecionar inbox" />
                 </SelectTrigger>
                 <SelectContent>
