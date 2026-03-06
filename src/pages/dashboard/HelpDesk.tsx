@@ -485,82 +485,83 @@ const HelpDesk = () => {
   const [manageLabelsOpen, setManageLabelsOpen] = useState(false);
 
   const statusTabs = [
-    { value: 'aberta', label: 'Atendendo' },
-    { value: 'pendente', label: 'Aguardando' },
-    { value: 'resolvida', label: 'Resolvidas' },
-    { value: 'todas', label: 'Todas' },
+    { value: 'aberta', label: 'Atendendo', icon: '🟢', count: conversations.filter(c => c.status === 'aberta').length },
+    { value: 'pendente', label: 'Aguardando', icon: '🟡', count: conversations.filter(c => c.status === 'pendente').length },
+    { value: 'resolvida', label: 'Resolvidas', icon: '✅', count: conversations.filter(c => c.status === 'resolvida').length },
+    { value: 'todas', label: 'Todas', icon: '📋', count: conversations.length },
   ];
 
   const unifiedHeader = (
-    <div className="shrink-0 bg-card/50 backdrop-blur-sm border-b border-border/50">
-      {/* Linha principal: título + tabs (desktop) + seletor */}
-      <div className="flex items-center gap-2 px-4 h-11">
-        <h2 className="font-display font-bold text-base shrink-0">Atendimento</h2>
+    <div className="shrink-0">
+      {/* Top bar */}
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+            <Inbox className="w-4 h-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-display font-bold text-sm leading-tight truncate">Atendimento</h2>
+            {inboxes.length > 0 && (
+              <Select value={inboxSelectValue} onValueChange={handleInboxChange}>
+                <SelectTrigger className="h-5 text-[10px] border-0 bg-transparent p-0 gap-1 text-muted-foreground hover:text-foreground shadow-none focus:ring-0 w-auto max-w-[180px]">
+                  <Inbox className="w-2.5 h-2.5 shrink-0 opacity-60" />
+                  <SelectValue placeholder="Selecionar inbox" />
+                </SelectTrigger>
+                <SelectContent>
+                  {inboxes.map(inbox => {
+                    const depts = allInboxDepts[inbox.id] || [];
+                    return (
+                      <SelectGroup key={inbox.id}>
+                        <SelectItem value={inbox.id}>
+                          {inbox.name}
+                        </SelectItem>
+                        {depts.map(dept => (
+                          <SelectItem key={dept.id} value={`${inbox.id}|${dept.id}`} className="pl-8 text-xs text-muted-foreground">
+                            ↳ {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </div>
+      </div>
 
-        {/* Status tabs — visíveis só no desktop */}
-        <div className="hidden md:flex items-center gap-0.5 flex-1 overflow-x-auto no-scrollbar">
+      {/* Status tabs — segmented control style */}
+      <div className="px-3 pb-2.5">
+        <div className="flex items-center bg-secondary/30 rounded-xl p-0.5 gap-0.5">
           {statusTabs.map(tab => (
             <button
               key={tab.value}
               onClick={() => setStatusFilter(tab.value)}
               className={cn(
-                'px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
+                'flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-[10px] text-[11px] font-medium transition-all duration-200 whitespace-nowrap',
                 statusFilter === tab.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-secondary'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {tab.label}
+              <span className="text-[10px]">{tab.icon}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
+              {tab.count > 0 && (
+                <span className={cn(
+                  'text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1',
+                  statusFilter === tab.value
+                    ? 'bg-primary-foreground/20'
+                    : 'bg-secondary/80'
+                )}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
-
-        {inboxes.length > 0 && (
-          <div className="ml-auto flex items-center gap-1.5 shrink-0">
-            <span className="hidden md:inline text-xs text-muted-foreground">Caixa:</span>
-            <Select value={inboxSelectValue} onValueChange={handleInboxChange}>
-              <SelectTrigger className="w-36 md:w-52 h-7 text-xs border-border/30 bg-secondary/50">
-                <SelectValue placeholder="Selecionar inbox" />
-              </SelectTrigger>
-              <SelectContent>
-                {inboxes.map(inbox => {
-                  const depts = allInboxDepts[inbox.id] || [];
-                  return (
-                    <SelectGroup key={inbox.id}>
-                      <SelectItem value={inbox.id}>
-                        {inbox.name}
-                      </SelectItem>
-                      {depts.map(dept => (
-                        <SelectItem key={dept.id} value={`${inbox.id}|${dept.id}`} className="pl-8 text-xs text-muted-foreground">
-                          ↳ {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
       </div>
 
-      {/* Status tabs — apenas no mobile, linha separada com scroll horizontal */}
-      <div className="md:hidden flex items-center gap-0.5 px-3 pb-2 overflow-x-auto no-scrollbar">
-        {statusTabs.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setStatusFilter(tab.value)}
-            className={cn(
-              'px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap shrink-0',
-              statusFilter === tab.value
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-secondary'
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <div className="h-px bg-border/30" />
     </div>
   );
 
