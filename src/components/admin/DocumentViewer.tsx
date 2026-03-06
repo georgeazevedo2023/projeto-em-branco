@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Download, X } from 'lucide-react';
+import { Download, FileText, Loader2, X } from 'lucide-react';
 
 interface DocumentViewerProps {
   open: boolean;
@@ -181,7 +181,10 @@ const renderMarkdown = (content: string) => {
 };
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({ open, onOpenChange, title, version, content }) => {
-  const handleDownload = () => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const handleDownloadMd = () => {
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -191,6 +194,49 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ open, onOpenChange, tit
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!contentRef.current) return;
+    setGeneratingPdf(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#1a1a2e',
+      });
+
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+
+      let position = 0;
+      let heightLeft = imgHeight;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`PRD_${title.replace(/[\s\/]+/g, '_')}_${version}.pdf`);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   return (
@@ -204,14 +250,20 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ open, onOpenChange, tit
                 Versão {version} — PRD completo do módulo
               </SheetDescription>
             </div>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleDownload}>
-              <Download className="w-4 h-4" />
-              Download .md
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadMd}>
+                <Download className="w-4 h-4" />
+                .md
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadPdf} disabled={generatingPdf}>
+                {generatingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                .pdf
+              </Button>
+            </div>
           </div>
         </SheetHeader>
         <ScrollArea className="flex-1 p-6">
-          <div className="prose-sm max-w-none">
+          <div ref={contentRef} className="prose-sm max-w-none">
             {renderMarkdown(content)}
           </div>
         </ScrollArea>
