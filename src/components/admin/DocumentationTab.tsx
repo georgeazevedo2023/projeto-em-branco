@@ -55,6 +55,16 @@ const modules: DocModule[] = [
     content: helpdeskMediaPrdContent,
   },
   {
+    id: 'helpdesk-chat-features',
+    name: 'Helpdesk: Chat e Interações',
+    description: 'Emojis, status, envio de imagem/documento, notas privadas, notificações, gravação de áudio, endpoints e payloads',
+    icon: Headphones,
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-06',
+    content: helpdeskChatFeaturesPrdContent,
+  },
+  {
     id: 'broadcast-groups',
     name: 'Broadcast (Grupos)',
     description: 'Envio em massa para grupos, carrossel, templates, histórico',
