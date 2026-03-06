@@ -52,6 +52,7 @@ const modules: DocModule[] = [
     version: 'v1.0',
     date: '2026-03-06',
     content: helpdeskMediaPrdContent,
+  },
   {
     id: 'broadcast-groups',
     name: 'Broadcast (Grupos)',
