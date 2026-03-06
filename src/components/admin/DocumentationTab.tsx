@@ -10,6 +10,7 @@ import { kanbanPrdContent } from '@/data/docs/kanban-prd';
 import { broadcastLeadsPrdContent } from '@/data/docs/broadcast-leads-prd';
 import { broadcastGroupsPrdContent } from '@/data/docs/broadcast-groups-prd';
 import { helpdeskMediaPrdContent } from '@/data/docs/helpdesk-media-prd';
+import { helpdeskChatFeaturesPrdContent } from '@/data/docs/helpdesk-chat-features-prd';
 
 interface DocModule {
   id: string;
@@ -52,6 +53,16 @@ const modules: DocModule[] = [
     version: 'v1.0',
     date: '2026-03-06',
     content: helpdeskMediaPrdContent,
+  },
+  {
+    id: 'helpdesk-chat-features',
+    name: 'Helpdesk: Chat e Interações',
+    description: 'Emojis, status, envio de imagem/documento, notas privadas, notificações, gravação de áudio, endpoints e payloads',
+    icon: Headphones,
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-06',
+    content: helpdeskChatFeaturesPrdContent,
   },
   {
     id: 'broadcast-groups',
