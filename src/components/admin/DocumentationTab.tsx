@@ -9,6 +9,7 @@ import { helpdeskPrdContent } from '@/data/docs/helpdesk-prd';
 import { kanbanPrdContent } from '@/data/docs/kanban-prd';
 import { broadcastLeadsPrdContent } from '@/data/docs/broadcast-leads-prd';
 import { broadcastGroupsPrdContent } from '@/data/docs/broadcast-groups-prd';
+import { helpdeskMediaPrdContent } from '@/data/docs/helpdesk-media-prd';
 
 interface DocModule {
   id: string;
@@ -41,6 +42,16 @@ const modules: DocModule[] = [
     version: 'v1.0',
     date: '2026-03-03',
     content: helpdeskPrdContent,
+  },
+  {
+    id: 'helpdesk-media',
+    name: 'Helpdesk: Mídia e Payloads',
+    description: 'Recebimento, processamento e renderização de texto, imagem, áudio, vídeo, documento, sticker, contato e carrossel',
+    icon: Headphones,
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-06',
+    content: helpdeskMediaPrdContent,
   },
   {
     id: 'broadcast-groups',
