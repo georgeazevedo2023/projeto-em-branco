@@ -412,8 +412,11 @@ Deno.serve(async (req) => {
         // Reclassify media type based on actual mimetype (UAZAPI may send videos as documentMessage)
         if (mime.startsWith('video/') && mediaType !== 'video') {
           console.log('Reclassifying media from', mediaType, 'to video based on mimetype:', mime)
-          // Override mediaType variable used downstream
-          ;(message as any)._reclassifiedMediaType = 'video'
+          mediaType = 'video'
+        }
+        if (mime.startsWith('image/') && mediaType !== 'image') {
+          console.log('Reclassifying media from', mediaType, 'to image based on mimetype:', mime)
+          mediaType = 'image'
         }
 
         // Generate friendly name for documents without caption/fileName
