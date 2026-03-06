@@ -224,7 +224,12 @@ export const MessageBubble = ({ message, instanceId, agentNamesMap }: MessageBub
           </div>
         )}
         {message.media_type === 'video' && mediaUrl && (
-          <video controls className="rounded-lg max-w-full mb-1">
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            className="rounded-lg max-w-full mb-1"
+          >
             <source src={mediaUrl} />
           </video>
         )}

@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
     const owner = payload.owner || chatId.split('@')[0] || ''
 
     // Extract content and media
-    const mediaType = normalizeMediaType(message.mediaType || message.messageType || message.type || '')
+    let mediaType = normalizeMediaType(message.mediaType || message.messageType || message.type || '')
     let mediaUrl = message.fileURL || message.mediaUrl || ''
     if (!mediaUrl && message.content && typeof message.content === 'object') {
       mediaUrl = message.content.URL || message.content.url || ''
@@ -394,6 +394,11 @@ Deno.serve(async (req) => {
       'image/webp': 'webp',
       'image/gif': 'gif',
       'video/mp4': 'mp4',
+      'video/quicktime': 'mov',
+      'video/x-msvideo': 'avi',
+      'video/x-matroska': 'mkv',
+      'video/webm': 'webm',
+      'video/3gpp': '3gp',
     }
 
     if (mediaType !== 'text' && mediaType !== 'contact' && externalId && instance.token) {
@@ -404,8 +409,18 @@ Deno.serve(async (req) => {
         console.log('Got persistent media URL:', mediaUrl.substring(0, 80))
         const mime = persistentResult.mimetype || ''
 
+        // Reclassify media type based on actual mimetype (UAZAPI may send videos as documentMessage)
+        if (mime.startsWith('video/') && mediaType !== 'video') {
+          console.log('Reclassifying media from', mediaType, 'to video based on mimetype:', mime)
+          mediaType = 'video'
+        }
+        if (mime.startsWith('image/') && mediaType !== 'image') {
+          console.log('Reclassifying media from', mediaType, 'to image based on mimetype:', mime)
+          mediaType = 'image'
+        }
+
         // Generate friendly name for documents without caption/fileName
-        if (mediaType === 'document' && !content) {
+        if (mediaType === 'document' && !mime.startsWith('video/') && !content) {
           const ext = mimeExtMap[mime] || mime.split('/').pop() || 'pdf'
           content = `Documento.${ext}`
           console.log('Generated document name:', content, 'from mimetype:', mime)
