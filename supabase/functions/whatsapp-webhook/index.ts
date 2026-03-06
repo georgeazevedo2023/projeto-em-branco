@@ -486,21 +486,25 @@ Deno.serve(async (req) => {
     const contactName = fromMe
       ? (chat?.wa_contactName || chat?.name || contactPhone)
       : (chat?.wa_contactName || chat?.name || message.senderName || contactPhone)
+    const contactProfilePic = chat?.imagePreview || chat?.image || message.profilePicUrl || message.profilePic || null
 
     // Upsert contact — preserve existing name to avoid overwriting manual edits
     let { data: contact } = await supabase
       .from('contacts')
-      .select('id')
+      .select('id, profile_pic_url')
       .eq('jid', contactJid)
       .maybeSingle()
 
     if (!contact) {
       const { data: newContact } = await supabase
         .from('contacts')
-        .insert({ jid: contactJid, phone: contactPhone, name: contactName })
+        .insert({ jid: contactJid, phone: contactPhone, name: contactName, profile_pic_url: contactProfilePic ? String(contactProfilePic) : null })
         .select('id')
         .single()
       contact = newContact
+    } else if (contactProfilePic && !contact.profile_pic_url) {
+      // Update profile pic if we have one and the contact doesn't
+      await supabase.from('contacts').update({ profile_pic_url: String(contactProfilePic) }).eq('id', contact.id)
     }
 
     if (!contact) {
