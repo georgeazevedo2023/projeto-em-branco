@@ -66,6 +66,16 @@ const modules: DocModule[] = [
     content: helpdeskChatFeaturesPrdContent,
   },
   {
+    id: 'helpdesk-filters-contact',
+    name: 'Helpdesk: Filtros e Cartão de Contato',
+    description: 'Filtros avançados, abas de status, cartão de contato, etiquetas, prioridade, agente, departamento, resumo IA e histórico',
+    icon: Headphones,
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-06',
+    content: helpdeskFiltersContactPrdContent,
+  },
+  {
     id: 'broadcast-groups',
     name: 'Broadcast (Grupos)',
     description: 'Envio em massa para grupos, carrossel, templates, histórico',
