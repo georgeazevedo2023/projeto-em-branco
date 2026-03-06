@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Download, X } from 'lucide-react';
+import { Download, FileText, Loader2, X } from 'lucide-react';
 
 interface DocumentViewerProps {
   open: boolean;
