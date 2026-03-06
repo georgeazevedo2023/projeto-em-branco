@@ -11,6 +11,7 @@ import { broadcastLeadsPrdContent } from '@/data/docs/broadcast-leads-prd';
 import { broadcastGroupsPrdContent } from '@/data/docs/broadcast-groups-prd';
 import { helpdeskMediaPrdContent } from '@/data/docs/helpdesk-media-prd';
 import { helpdeskChatFeaturesPrdContent } from '@/data/docs/helpdesk-chat-features-prd';
+import { helpdeskFiltersContactPrdContent } from '@/data/docs/helpdesk-filters-contact-prd';
 
 interface DocModule {
   id: string;
