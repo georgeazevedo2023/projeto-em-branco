@@ -163,14 +163,34 @@ Deno.serve(async (req) => {
         const jid = String(chat.wa_chatid || chat.wa_fastid || chat.jid || chat.id || '')
         const chatName = String(chat.wa_contactName || chat.wa_name || chat.name || chat.pushName || '')
         const phone = jid.split('@')[0]
-        const profilePic = chat.imagePreview || chat.image || null
+        let profilePic = chat.imagePreview || chat.image || null
+
+        // If no profile pic from chat data, try fetching via UAZAPI API
+        if (!profilePic && jid) {
+          try {
+            const picRes = await fetch(`${uazapiUrl}/contact/getProfilePic`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'token': instanceToken },
+              body: JSON.stringify({ id: jid }),
+            })
+            if (picRes.ok) {
+              const picData = await picRes.json()
+              const picUrl = picData?.profilePicUrl || picData?.imgUrl || picData?.url || picData?.eurl || null
+              if (picUrl && typeof picUrl === 'string' && picUrl.startsWith('http')) {
+                profilePic = picUrl
+              }
+            }
+          } catch (picErr) {
+            console.log(`Failed to fetch profile pic for ${jid}:`, picErr)
+          }
+        }
 
         if (!jid || !phone) continue
 
         // 5a. Upsert contact
         const { data: existingContact } = await supabase
           .from('contacts')
-          .select('id')
+          .select('id, profile_pic_url')
           .eq('jid', jid)
           .maybeSingle()
 
@@ -181,6 +201,10 @@ Deno.serve(async (req) => {
           const updateData: Record<string, unknown> = {}
           if (chatName) updateData.name = chatName
           if (profilePic) updateData.profile_pic_url = String(profilePic)
+          // Always try to update profile pic if contact doesn't have one
+          if (!existingContact.profile_pic_url && profilePic) {
+            updateData.profile_pic_url = String(profilePic)
+          }
           if (Object.keys(updateData).length > 0) {
             await supabase.from('contacts').update(updateData).eq('id', contactId)
           }
