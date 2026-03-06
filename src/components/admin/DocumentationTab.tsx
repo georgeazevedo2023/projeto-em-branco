@@ -10,6 +10,7 @@ import { kanbanPrdContent } from '@/data/docs/kanban-prd';
 import { broadcastLeadsPrdContent } from '@/data/docs/broadcast-leads-prd';
 import { broadcastGroupsPrdContent } from '@/data/docs/broadcast-groups-prd';
 import { helpdeskMediaPrdContent } from '@/data/docs/helpdesk-media-prd';
+import { helpdeskChatFeaturesPrdContent } from '@/data/docs/helpdesk-chat-features-prd';
 
 interface DocModule {
   id: string;
