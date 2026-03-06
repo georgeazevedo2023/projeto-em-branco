@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Inbox, UserCheck, AlertCircle, Building2 } from 'lucide-react';
+import { Search, Inbox, UserCheck, AlertCircle, Building2, SlidersHorizontal, Tag, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ConversationItem } from './ConversationItem';
@@ -32,14 +32,14 @@ interface ConversationListProps {
   onDepartmentFilterChange?: (v: string | null) => void;
 }
 
-const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string }[] = [
+const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string; icon?: string }[] = [
   { value: 'todas', label: 'Todas' },
   { value: 'minhas', label: 'Minhas' },
   { value: 'nao-atribuidas', label: 'Não atribuídas' },
 ];
 
 const priorityOptions: { value: 'todas' | 'alta' | 'media' | 'baixa'; label: string }[] = [
-  { value: 'todas', label: 'Prioridade' },
+  { value: 'todas', label: 'Todas' },
   { value: 'alta', label: '🔴 Alta' },
   { value: 'media', label: '🟡 Média' },
   { value: 'baixa', label: '🔵 Baixa' },
@@ -69,6 +69,7 @@ export const ConversationList = ({
   onDepartmentFilterChange,
 }: ConversationListProps) => {
   const [manageOpen, setManageOpen] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const hasActiveFilters =
     assignmentFilter !== 'todas' ||
@@ -76,147 +77,184 @@ export const ConversationList = ({
     !!labelFilter ||
     !!departmentFilter;
 
+  const activeFilterCount = [
+    assignmentFilter !== 'todas',
+    priorityFilter !== 'todas',
+    !!labelFilter,
+    !!departmentFilter,
+  ].filter(Boolean).length;
+
   return (
     <>
-      {/* Filters */}
-      <div className="p-2.5 border-b border-border/50 space-y-2">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-          <Input
-            value={searchQuery}
-            onChange={e => onSearchChange(e.target.value)}
-            placeholder="Buscar conversa..."
-            className="pl-8 h-8 text-sm bg-secondary/40 border-border/30 focus-visible:ring-1"
-          />
-        </div>
-
-        {/* Compact filter row */}
-        <div className="flex gap-1.5">
-          {/* Assignment select */}
-          <Select
-            value={assignmentFilter}
-            onValueChange={(v) => onAssignmentFilterChange?.(v as 'todas' | 'minhas' | 'nao-atribuidas')}
-          >
-            <SelectTrigger
-              className={cn(
-                'flex-1 h-7 text-xs border-border/30 gap-1 min-w-0',
-                assignmentFilter !== 'todas'
-                  ? 'bg-primary/10 border-primary/30 text-primary'
-                  : 'bg-secondary/40'
-              )}
-            >
-              <UserCheck className="w-3 h-3 shrink-0" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {assignmentOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Priority select */}
-          <Select
-            value={priorityFilter}
-            onValueChange={(v) => onPriorityFilterChange?.(v as 'todas' | 'alta' | 'media' | 'baixa')}
-          >
-            <SelectTrigger
-              className={cn(
-                'flex-1 h-7 text-xs border-border/30 gap-1 min-w-0',
-                priorityFilter !== 'todas'
-                  ? 'bg-primary/10 border-primary/30 text-primary'
-                  : 'bg-secondary/40'
-              )}
-            >
-              <AlertCircle className="w-3 h-3 shrink-0" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {priorityOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Label select — só se houver etiquetas */}
-          {inboxLabels.length > 0 && onLabelFilterChange && (
-            <Select
-              value={labelFilter || '_all'}
-              onValueChange={v => onLabelFilterChange(v === '_all' ? null : v)}
-            >
-              <SelectTrigger
-                className={cn(
-                  'flex-1 h-7 text-xs border-border/30 gap-1 min-w-0',
-                  labelFilter
-                    ? 'bg-primary/10 border-primary/30 text-primary'
-                    : 'bg-secondary/40'
-                )}
-              >
-                <SelectValue placeholder="Etiqueta" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_all" className="text-xs">Etiquetas</SelectItem>
-                {inboxLabels.map(l => (
-                  <SelectItem key={l.id} value={l.id} className="text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
-                      {l.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Department select */}
-          {inboxDepartments.length > 0 && onDepartmentFilterChange && (
-            <Select
-              value={departmentFilter || '_all'}
-              onValueChange={v => onDepartmentFilterChange(v === '_all' ? null : v)}
-            >
-              <SelectTrigger
-                className={cn(
-                  'flex-1 h-7 text-xs border-border/30 gap-1 min-w-0',
-                  departmentFilter
-                    ? 'bg-primary/10 border-primary/30 text-primary'
-                    : 'bg-secondary/40'
-                )}
-              >
-                <Building2 className="w-3 h-3 shrink-0" />
-                <SelectValue placeholder="Depto" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_all" className="text-xs">Departamento</SelectItem>
-                {inboxDepartments.map(d => (
-                  <SelectItem key={d.id} value={d.id} className="text-xs">
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {/* Active filters indicator */}
-        {hasActiveFilters && (
+      {/* Search + Filter Toggle */}
+      <div className="px-3 pt-3 pb-2 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              value={searchQuery}
+              onChange={e => onSearchChange(e.target.value)}
+              placeholder="Buscar conversa..."
+              className="pl-9 h-9 text-sm bg-secondary/30 border-border/20 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/40"
+            />
+          </div>
           <button
-            onClick={() => {
-              onAssignmentFilterChange?.('todas');
-              onPriorityFilterChange?.('todas');
-              onLabelFilterChange?.(null);
-              onDepartmentFilterChange?.(null);
-            }}
-            className="text-[10px] text-primary/80 hover:text-primary transition-colors"
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            className={cn(
+              'relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 shrink-0',
+              filtersExpanded || hasActiveFilters
+                ? 'bg-primary/10 border-primary/30 text-primary'
+                : 'bg-secondary/30 border-border/20 text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            )}
           >
-            ✕ Limpar filtros
+            <SlidersHorizontal className="w-4 h-4" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
-        )}
+        </div>
+
+        {/* Expandable filter pills */}
+        <div
+          className={cn(
+            'grid transition-all duration-200 ease-in-out',
+            filtersExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-wrap gap-1.5 pb-1">
+              {/* Assignment */}
+              <Select
+                value={assignmentFilter}
+                onValueChange={(v) => onAssignmentFilterChange?.(v as 'todas' | 'minhas' | 'nao-atribuidas')}
+              >
+                <SelectTrigger
+                  className={cn(
+                    'h-7 text-[11px] rounded-lg border gap-1 px-2.5 w-auto',
+                    assignmentFilter !== 'todas'
+                      ? 'bg-primary/15 border-primary/30 text-primary font-medium'
+                      : 'bg-secondary/40 border-border/20 text-muted-foreground'
+                  )}
+                >
+                  <UserCheck className="w-3 h-3 shrink-0" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignmentOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Priority */}
+              <Select
+                value={priorityFilter}
+                onValueChange={(v) => onPriorityFilterChange?.(v as 'todas' | 'alta' | 'media' | 'baixa')}
+              >
+                <SelectTrigger
+                  className={cn(
+                    'h-7 text-[11px] rounded-lg border gap-1 px-2.5 w-auto',
+                    priorityFilter !== 'todas'
+                      ? 'bg-primary/15 border-primary/30 text-primary font-medium'
+                      : 'bg-secondary/40 border-border/20 text-muted-foreground'
+                  )}
+                >
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <SelectValue placeholder="Prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorityOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Labels */}
+              {inboxLabels.length > 0 && onLabelFilterChange && (
+                <Select
+                  value={labelFilter || '_all'}
+                  onValueChange={v => onLabelFilterChange(v === '_all' ? null : v)}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      'h-7 text-[11px] rounded-lg border gap-1 px-2.5 w-auto',
+                      labelFilter
+                        ? 'bg-primary/15 border-primary/30 text-primary font-medium'
+                        : 'bg-secondary/40 border-border/20 text-muted-foreground'
+                    )}
+                  >
+                    <Tag className="w-3 h-3 shrink-0" />
+                    <SelectValue placeholder="Etiqueta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all" className="text-xs">Todas</SelectItem>
+                    {inboxLabels.map(l => (
+                      <SelectItem key={l.id} value={l.id} className="text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
+                          {l.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Department */}
+              {inboxDepartments.length > 0 && onDepartmentFilterChange && (
+                <Select
+                  value={departmentFilter || '_all'}
+                  onValueChange={v => onDepartmentFilterChange(v === '_all' ? null : v)}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      'h-7 text-[11px] rounded-lg border gap-1 px-2.5 w-auto',
+                      departmentFilter
+                        ? 'bg-primary/15 border-primary/30 text-primary font-medium'
+                        : 'bg-secondary/40 border-border/20 text-muted-foreground'
+                    )}
+                  >
+                    <Building2 className="w-3 h-3 shrink-0" />
+                    <SelectValue placeholder="Depto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all" className="text-xs">Todos</SelectItem>
+                    {inboxDepartments.map(d => (
+                      <SelectItem key={d.id} value={d.id} className="text-xs">
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Clear all */}
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    onAssignmentFilterChange?.('todas');
+                    onPriorityFilterChange?.('todas');
+                    onLabelFilterChange?.(null);
+                    onDepartmentFilterChange?.(null);
+                  }}
+                  className="h-7 px-2.5 rounded-lg text-[11px] text-destructive/80 hover:text-destructive bg-destructive/10 border border-destructive/20 flex items-center gap-1 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Limpar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div className="h-px bg-border/30 mx-3" />
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
