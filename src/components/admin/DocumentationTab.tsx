@@ -44,6 +44,15 @@ const modules: DocModule[] = [
     content: helpdeskPrdContent,
   },
   {
+    id: 'helpdesk-media',
+    name: 'Helpdesk: Mídia e Payloads',
+    description: 'Recebimento, processamento e renderização de texto, imagem, áudio, vídeo, documento, sticker, contato e carrossel',
+    icon: Headphones,
+    status: 'complete',
+    version: 'v1.0',
+    date: '2026-03-06',
+    content: helpdeskMediaPrdContent,
+  {
     id: 'broadcast-groups',
     name: 'Broadcast (Grupos)',
     description: 'Envio em massa para grupos, carrossel, templates, histórico',
