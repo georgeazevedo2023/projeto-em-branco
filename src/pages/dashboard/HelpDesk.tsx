@@ -485,8 +485,8 @@ const HelpDesk = () => {
   const [manageLabelsOpen, setManageLabelsOpen] = useState(false);
 
   const statusTabs = [
-    { value: 'aberta', label: 'Abertas' },
-    { value: 'pendente', label: 'Pendentes' },
+    { value: 'aberta', label: 'Atendendo' },
+    { value: 'pendente', label: 'Aguardando' },
     { value: 'resolvida', label: 'Resolvidas' },
     { value: 'todas', label: 'Todas' },
   ];
