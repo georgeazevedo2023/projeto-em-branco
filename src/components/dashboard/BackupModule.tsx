@@ -398,7 +398,7 @@ const BackupModule = () => {
       if (section.id === 'schema') {
         const columns = await callBackupApi('schema');
         if (columns?.length) {
-          csvFiles.push({ name: 'schema_tables.csv', content: `table_name,columns_def\n${columns.map((c: any) => `"${c.table_name}","${(c.columns_def || '').replace(/"/g, '""')}"`).join('\n')}` });
+          csvFiles.push({ name: 'schema_tables.csv', content: `table_name,columns_def\n${columns.map((c: Record<string, unknown>) => `"${c.table_name}","${(String(c.columns_def || '')).replace(/"/g, '""')}"`).join('\n')}` });
         }
       }
 
