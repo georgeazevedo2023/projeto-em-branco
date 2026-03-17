@@ -48,6 +48,24 @@ const HelpdeskMetricsCharts = () => {
   const [loading, setLoading] = useState(true);
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
   const { namesMap: agentNamesMap } = useUserProfiles({ userIds: assignedIds, enabled: assignedIds.length > 0 });
+  const [rawAgentData, setRawAgentData] = useState<Map<string, { inbox: string; agentId: string; minutes: number[] }> | null>(null);
+
+  // Derive agentData from rawAgentData + resolved names
+  const agentData = useMemo<AgentGroup[]>(() => {
+    if (!rawAgentData) return [];
+    const inboxGroups = new Map<string, AgentGroup>();
+    rawAgentData.forEach((val) => {
+      const avg = val.minutes.reduce((a, b) => a + b, 0) / val.minutes.length;
+      const agentName = agentNamesMap[val.agentId] || 'Desconhecido';
+      const existing = inboxGroups.get(val.inbox) || { inbox_name: val.inbox, agents: [] };
+      existing.agents.push({ name: agentName, minutes: Math.round(avg * 10) / 10, count: val.minutes.length });
+      inboxGroups.set(val.inbox, existing);
+    });
+    return Array.from(inboxGroups.values()).map(g => ({
+      ...g,
+      agents: g.agents.sort((a, b) => a.minutes - b.minutes),
+    }));
+  }, [rawAgentData, agentNamesMap]);
 
   useEffect(() => {
     fetchMetrics();
