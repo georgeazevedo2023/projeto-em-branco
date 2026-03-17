@@ -41,7 +41,7 @@ interface HelpdeskLeadsStats {
 const DashboardHome = () => {
   const { profile, isSuperAdmin } = useAuth();
   const { inboxes } = useInboxes();
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [rawInstances, setInstances] = useState<Instance[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingStats, setLoadingStats] = useState(false);
