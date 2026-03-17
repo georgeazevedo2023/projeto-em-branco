@@ -80,7 +80,7 @@ const Settings = () => {
       }));
       return enriched;
     },
-    enabled: !!inboxes && !!instances,
+    enabled: inboxes.length > 0 && instances.length > 0,
   });
 
   // Create config
