@@ -189,27 +189,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     return `${minHours}h${minMins > 0 ? minMins + 'min' : ''} - ${maxHours}h${maxMins > 0 ? maxMins + 'min' : ''}`;
   };
 
-  // Compress and resize image to a smaller thumbnail for storage
-  const compressImageToThumbnail = (file: File, maxWidth = 200, quality = 0.6): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new window.Image();
-      
-      img.onload = () => {
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const objectUrl = img.src;
-        URL.revokeObjectURL(objectUrl);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      
-      img.onerror = () => resolve('');
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  // compressImageToThumbnail imported from broadcastSender
 
   const saveBroadcastLog = async (params: {
     messageType: string;
