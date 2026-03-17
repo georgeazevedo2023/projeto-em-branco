@@ -184,7 +184,7 @@ const HelpDesk = () => {
         fetchConversationNotes(convIds),
       ]);
 
-      const mapped: Conversation[] = (data || []).map((c: any) => ({
+      const mapped: Conversation[] = (data || []).map((c: Record<string, unknown>) => ({
         ...c,
         contact: c.contacts,
         inbox: c.inboxes,
