@@ -19,18 +19,6 @@ import BroadcastSendControls from './BroadcastSendControls';
 import type { MessageTemplate } from '@/hooks/useMessageTemplates';
 import type { Instance } from './InstanceSelector';
 import type { Group } from './GroupSelector';
-import { EmojiPicker } from '@/components/ui/emoji-picker';
-import { toast } from 'sonner';
-import { ScheduleMessageDialog, ScheduleConfig } from '@/components/group/ScheduleMessageDialog';
-import { TemplateSelector } from './TemplateSelector';
-import ParticipantSelector from './ParticipantSelector';
-import MessagePreview from './MessagePreview';
-import { CarouselEditor, CarouselData, createEmptyCard } from './CarouselEditor';
-import { uploadCarouselImage, base64ToFile } from '@/lib/uploadCarouselImage';
-import { saveToHelpdesk } from '@/lib/saveToHelpdesk';
-import type { MessageTemplate } from '@/hooks/useMessageTemplates';
-import type { Instance } from './InstanceSelector';
-import type { Group } from './GroupSelector';
 
 import {
   InitialData, MediaType, ActiveTab,
@@ -45,17 +33,6 @@ interface BroadcastMessageFormProps {
   selectedGroups: Group[];
   onComplete?: () => void;
   initialData?: InitialData;
-}
-
-interface SendProgress {
-  currentGroup: number;
-  totalGroups: number;
-  currentMember: number;
-  totalMembers: number;
-  groupName: string;
-  status: 'idle' | 'sending' | 'paused' | 'success' | 'error' | 'cancelled';
-  results: { groupName: string; success: boolean; error?: string }[];
-  startedAt: number | null;
 }
 
 const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialData }: BroadcastMessageFormProps) => {
