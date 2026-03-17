@@ -146,8 +146,7 @@ const UsersManagement = () => {
 
       setUsers(usersWithRoles);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Erro ao carregar usuários');
+      handleError(error, 'Erro ao carregar usuários', 'Fetch users');
     } finally {
       setLoading(false);
     }
