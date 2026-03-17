@@ -73,7 +73,7 @@ const extractQrCode = (data: Record<string, unknown>): string | null => {
 };
 
 // Verifica se a instância está conectada na resposta
-const checkIfConnected = (data: any): boolean => {
+const checkIfConnected = (data: Record<string, unknown>): boolean => {
   return (
     data?.instance?.status === 'connected' ||
     data?.status === 'connected' ||
