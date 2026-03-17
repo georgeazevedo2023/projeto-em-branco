@@ -10,6 +10,24 @@ import { toast } from 'sonner';
 import { Search, Users, CheckSquare, Square, MessageSquare } from 'lucide-react';
 import type { Instance } from './InstanceSelector';
 
+/** Raw UAZAPI group shape (camelCase + PascalCase variants) */
+interface RawUazapiGroup {
+  JID?: string; jid?: string; id?: string;
+  Name?: string; name?: string; Subject?: string; Topic?: string; subject?: string;
+  Size?: number; size?: number; ParticipantCount?: number;
+  profilePicUrl?: string; pictureUrl?: string; PictureUrl?: string;
+  Participants?: RawUazapiParticipant[];
+  participants?: RawUazapiParticipant[];
+}
+
+interface RawUazapiParticipant {
+  JID?: string; jid?: string; id?: string;
+  PushName?: string; pushName?: string; DisplayName?: string; Name?: string; name?: string;
+  PhoneNumber?: string; phoneNumber?: string;
+  IsAdmin?: boolean; isAdmin?: boolean;
+  IsSuperAdmin?: boolean; isSuperAdmin?: boolean;
+}
+
 export interface Participant {
   jid: string;
   isAdmin: boolean;
