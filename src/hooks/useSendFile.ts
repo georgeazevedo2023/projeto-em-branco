@@ -108,7 +108,7 @@ export function useSendFile(): UseSendFileReturn {
             last_message_at: new Date().toISOString(),
             last_message: mediaType === 'image' ? '📷 Foto' : '📎 Documento',
             status_ia: 'desligada',
-          } as any)
+          })
           .eq('id', conversationId);
 
         // Broadcast for realtime

@@ -58,7 +58,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
     content: string | null;
     media_url: string | null;
   }) => {
-    const inbox = conversation.inbox as any;
+    const inbox = conversation.inbox;
     const webhookUrl = inbox?.webhook_outgoing_url;
     if (!webhookUrl || !user) return;
     try {
@@ -184,7 +184,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
 
       await supabase
         .from('conversations')
-        .update({ last_message_at: new Date().toISOString(), last_message: '🎵 Áudio', status_ia: 'desligada' } as any)
+        .update({ last_message_at: new Date().toISOString(), last_message: '🎵 Áudio', status_ia: 'desligada' })
         .eq('id', conversation.id);
 
       await supabase.channel('helpdesk-realtime').send({
@@ -282,7 +282,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
 
         await supabase
           .from('conversations')
-          .update({ last_message_at: new Date().toISOString(), last_message: text.trim(), status_ia: 'desligada' } as any)
+          .update({ last_message_at: new Date().toISOString(), last_message: text.trim(), status_ia: 'desligada' })
           .eq('id', conversation.id);
 
         await supabase.channel('helpdesk-realtime').send({

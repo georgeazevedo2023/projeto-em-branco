@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Inbox } from '@/types';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -135,8 +136,8 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
       setFields(fieldRes.data.map(f => ({
         ...f,
         options: f.options ? (f.options as string[]) : null,
-        show_on_card: (f as any).show_on_card ?? false,
-        entity_id: (f as any).entity_id ?? null,
+        show_on_card: f.show_on_card ?? false,
+        entity_id: f.entity_id ?? null,
       })) as KanbanField[]);
     }
 
@@ -412,7 +413,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
     // Sync columns
     const existingColIds = columns.filter(c => !c.id.startsWith('new_')).map(c => c.id);
     const { data: dbCols } = await supabase.from('kanban_columns').select('id').eq('board_id', board.id);
-    const dbColIds = (dbCols || []).map((c: any) => c.id);
+    const dbColIds = (dbCols || []).map((c) => c.id);
     const toDelete = dbColIds.filter((id: string) => !existingColIds.includes(id));
     if (toDelete.length > 0) await supabase.from('kanban_columns').delete().in('id', toDelete);
 
@@ -432,7 +433,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
     // Sync fields (after entities so we can resolve IDs)
     const existingFieldIds = fields.filter(f => !f.id.startsWith('new_')).map(f => f.id);
     const { data: dbFields } = await supabase.from('kanban_fields').select('id').eq('board_id', board.id);
-    const dbFieldIds = (dbFields || []).map((f: any) => f.id);
+    const dbFieldIds = (dbFields || []).map((f) => f.id);
     const fieldsToDelete = dbFieldIds.filter((id: string) => !existingFieldIds.includes(id));
     if (fieldsToDelete.length > 0) await supabase.from('kanban_fields').delete().in('id', fieldsToDelete);
 
@@ -443,7 +444,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
       const resolvedEntityId = field.field_type === 'entity_select' && field.entity_id
         ? (entityIdMap[field.entity_id] || field.entity_id)
         : null;
-      const payload: any = {
+      const payload: TablesInsert<'kanban_fields'> = {
         board_id: board.id,
         name: field.name,
         field_type: field.field_type,
@@ -470,7 +471,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
   const saveEntities = async (): Promise<Record<string, string>> => {
     // Get existing entity IDs from DB
     const { data: dbEntities } = await supabase.from('kanban_entities').select('id').eq('board_id', board.id);
-    const dbEntityIds = (dbEntities || []).map((e: any) => e.id);
+    const dbEntityIds = (dbEntities || []).map((e) => e.id);
     const currentEntityIds = entities.filter(e => !e.id.startsWith('new_')).map(e => e.id);
     const entitiesToDelete = dbEntityIds.filter((id: string) => !currentEntityIds.includes(id));
     if (entitiesToDelete.length > 0) {
@@ -502,7 +503,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
 
       // Sync values
       const { data: dbValues } = await supabase.from('kanban_entity_values').select('id').eq('entity_id', realEntityId);
-      const dbValueIds = (dbValues || []).map((v: any) => v.id);
+      const dbValueIds = (dbValues || []).map((v) => v.id);
       const currentValueIds = entity.values.filter(v => !v.id.startsWith('new_')).map(v => v.id);
       const valuesToDelete = dbValueIds.filter((id: string) => !currentValueIds.includes(id));
       if (valuesToDelete.length > 0) await supabase.from('kanban_entity_values').delete().in('id', valuesToDelete);

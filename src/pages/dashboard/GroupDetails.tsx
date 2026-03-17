@@ -73,7 +73,7 @@ const GroupDetails = () => {
 
       // Encontrar o grupo específico
       const decodedGroupId = decodeURIComponent(groupId || '');
-      const targetGroup = rawGroups.find((g: any) => {
+      const targetGroup = rawGroups.find((g) => {
         const gId = g.JID || g.jid || g.id;
         return gId === decodedGroupId;
       });
