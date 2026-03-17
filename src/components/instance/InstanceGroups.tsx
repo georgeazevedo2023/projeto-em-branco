@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,29 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
-import { uazapiProxy } from '@/lib/uazapiClient';
 import type { Instance } from '@/types';
 import { toast } from 'sonner';
 import { Users, Search, RefreshCw, MessageSquare, WifiOff, ChevronRight } from 'lucide-react';
-import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
-import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
-import { extractGroupsArray } from '@/types/uazapi';
-
-interface Group {
-  id: string;
-  name: string;
-  subject: string;
-  pictureUrl?: string;
-  participants: Participant[];
-  size: number;
-}
-
-interface Participant {
-  id: string;
-  name?: string;
-  admin?: 'admin' | 'superadmin';
-}
+import { useInstanceGroups } from '@/hooks/useInstanceGroups';
 
 interface InstanceGroupsProps {
   instance: Instance;
@@ -36,120 +17,49 @@ interface InstanceGroupsProps {
 
 const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
   const navigate = useNavigate();
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isConnected = instance.status === 'connected' || instance.status === 'online';
+
+  const { groups, loading, refetch } = useInstanceGroups({
+    instanceId: instance.id,
+    enabled: isConnected,
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [syncAttempt, setSyncAttempt] = useState(0);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  const isConnected = instance.status === 'connected' || instance.status === 'online';
-
-  useEffect(() => {
-    if (isConnected) {
-      fetchGroups().then(() => setLastUpdate(new Date()));
-    } else {
-      setLoading(false);
-    }
-  }, [instance.id, isConnected]);
-
-  const fetchGroups = async (): Promise<number> => {
-    try {
-      setLoading(true);
-
-      const data = await uazapiProxy({
-        action: 'groups',
-        instance_id: instance.id,
-      });
-      console.log('Groups API response:', data);
-      console.log('Response type:', typeof data, 'Is array:', Array.isArray(data));
-      
-      // Normalizar resposta - backend já deve enviar array, mas ser tolerante
-      const rawGroups: RawUazapiGroup[] = extractGroupsArray(data);
-      
-      console.log('Raw groups count:', rawGroups.length);
-      
-      if (rawGroups.length > 0) {
-        const formattedGroups: Group[] = rawGroups.map((group: RawUazapiGroup) => {
-          const rawParticipants = group.Participants || group.participants || [];
-          
-          const participants = rawParticipants.map((p: RawUazapiParticipant) => {
-            // PhoneNumber contém o número real (ex: 558199669495@s.whatsapp.net)
-            // JID/LID são IDs internos do WhatsApp (ex: 135300193980622@lid)
-            const phoneNumber = p.PhoneNumber || p.phoneNumber || '';
-            const jid = p.JID || p.jid || p.id || '';
-            
-            // Priorizar PhoneNumber (número real), usar JID como fallback
-            const phoneId = phoneNumber || jid;
-            
-            // PushName é o nome que o usuário configurou no WhatsApp
-            const name = p.PushName || p.pushName || p.DisplayName || p.Name || p.name || undefined;
-            
-            return {
-              id: phoneId,
-              name: name,
-              admin: (p.IsAdmin || p.isAdmin)
-                ? ((p.IsSuperAdmin || p.isSuperAdmin) ? 'superadmin' as const : 'admin' as const)
-                : undefined,
-            };
-          });
-          
-          return {
-            id: group.JID || group.jid || group.id,
-            name: group.Name || group.name || group.Subject || group.Topic || group.subject || 'Grupo sem nome',
-            subject: group.Subject || group.Topic || group.subject || '',
-            pictureUrl: group.profilePicUrl || group.pictureUrl || group.PictureUrl,
-            participants,
-            size: participants.length || group.ParticipantCount || 0,
-          };
-        });
-        console.log('Formatted groups:', formattedGroups.length, 'first:', formattedGroups[0]);
-        setGroups(formattedGroups);
-        return formattedGroups.length;
-      } else {
-        console.log('No groups found in response');
-        setGroups([]);
-        return 0;
-      }
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-      toast.error('Erro ao carregar grupos');
-      return 0;
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Set lastUpdate on first successful load
+  if (!lastUpdate && !loading && groups.length > 0) {
+    setLastUpdate(new Date());
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true);
     const previousCount = groups.length;
     let attempts = 0;
     const maxAttempts = 3;
-    let currentCount = previousCount;
-    
+    let currentGroups = groups;
+
     while (attempts < maxAttempts) {
       attempts++;
       setSyncAttempt(attempts);
-      
-      currentCount = await fetchGroups();
-      
-      // Se encontrou mais grupos, para
-      if (currentCount > previousCount) {
-        break;
-      }
-      
-      // Aguardar antes da próxima tentativa
+
+      currentGroups = await refetch();
+
+      if (currentGroups.length > previousCount) break;
+
       if (attempts < maxAttempts) {
         await new Promise(r => setTimeout(r, 2000));
       }
     }
-    
+
     setSyncAttempt(0);
     setRefreshing(false);
     setLastUpdate(new Date());
-    
-    if (currentCount > previousCount) {
-      const newGroups = currentCount - previousCount;
+
+    if (currentGroups.length > previousCount) {
+      const newGroups = currentGroups.length - previousCount;
       toast.success(`${newGroups} novo(s) grupo(s) encontrado(s)!`);
     } else {
       toast.info('Lista atualizada. Novos grupos podem levar alguns segundos para sincronizar com a API do WhatsApp.');
@@ -157,11 +67,8 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
   };
 
   const filteredGroups = groups.filter((group) =>
-    group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.subject.toLowerCase().includes(searchTerm.toLowerCase())
+    group.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // formatPhone imported from shared utils
 
   if (!isConnected) {
     return (
@@ -203,7 +110,6 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Header com busca */}
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -214,19 +120,14 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
             className="pl-10"
           />
         </div>
-        <Button
-          variant="outline"
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
+        <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing && syncAttempt > 0 
-            ? `Sincronizando... (${syncAttempt}/3)` 
+          {refreshing && syncAttempt > 0
+            ? `Sincronizando... (${syncAttempt}/3)`
             : 'Atualizar'}
         </Button>
       </div>
 
-      {/* Contador de grupos e última atualização */}
       <div className="flex items-center gap-4">
         <Badge variant="secondary" className="gap-1">
           <MessageSquare className="w-3 h-3" />
@@ -239,7 +140,6 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
         )}
       </div>
 
-      {/* Lista de grupos */}
       {filteredGroups.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">

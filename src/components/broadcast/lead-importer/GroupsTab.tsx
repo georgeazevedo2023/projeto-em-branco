@@ -6,29 +6,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { uazapiProxy } from '@/lib/uazapiClient';
 import { Users, Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatPhoneDisplay } from '@/lib/phoneUtils';
+import { useInstanceGroups } from '@/hooks/useInstanceGroups';
 import type { Instance } from '@/types';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
-
-interface GroupData {
-  id: string;
-  name: string;
-  jid: string;
-  size: number;
-  participants: Array<{
-    jid: string;
-    pushName?: string;
-    phoneNumber?: string;
-    isAdmin?: boolean;
-    isSuperAdmin?: boolean;
-  }>;
-}
-
-import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
-import { extractGroupsArray } from '@/types/uazapi';
 
 interface GroupsTabProps {
   instance: Instance;
@@ -36,43 +19,14 @@ interface GroupsTabProps {
 }
 
 const GroupsTab = ({ instance, onLeadsImported }: GroupsTabProps) => {
-  const [groups, setGroups] = useState<GroupData[]>([]);
-  const [loadingGroups, setLoadingGroups] = useState(false);
+  const { groups, loading: loadingGroups, refetch } = useInstanceGroups({
+    instanceId: instance.id,
+    manual: true,
+  });
+
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(new Set());
   const [groupSearch, setGroupSearch] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
-
-  const fetchGroups = async () => {
-    setLoadingGroups(true);
-    try {
-      const data = await uazapiProxy({
-        action: 'groups',
-        instance_id: instance.id,
-      });
-      const groupsData = extractGroupsArray(data);
-
-      const mappedGroups = groupsData.map((g: RawUazapiGroup) => ({
-        id: g.JID || g.jid || g.id || '',
-        name: g.Name || g.name || g.subject || 'Sem nome',
-        jid: g.JID || g.jid || g.id || '',
-        size: g.Size || g.size || g.Participants?.length || g.participants?.length || 0,
-        participants: (g.Participants || g.participants || []).map((p: RawUazapiParticipant) => ({
-          jid: p.JID || p.jid || p.id || '',
-          pushName: p.DisplayName || p.PushName || p.pushName || p.displayName || '',
-          phoneNumber: p.PhoneNumber || p.phoneNumber || '',
-          isAdmin: p.IsAdmin || p.isAdmin || false,
-          isSuperAdmin: p.IsSuperAdmin || p.isSuperAdmin || false,
-        })),
-      }));
-
-      setGroups(mappedGroups);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-      toast.error('Erro ao buscar grupos');
-    } finally {
-      setLoadingGroups(false);
-    }
-  };
 
   const handleGroupToggle = (groupId: string) => {
     const newSelection = new Set(selectedGroupIds);
@@ -103,7 +57,7 @@ const GroupsTab = ({ instance, onLeadsImported }: GroupsTabProps) => {
         leads.push({
           id: crypto.randomUUID(),
           phone: formatPhoneDisplay(phone),
-          name: participant.pushName || undefined,
+          name: participant.name || undefined,
           jid: participant.jid,
           source: 'group',
           groupName: group.name,
@@ -126,11 +80,6 @@ const GroupsTab = ({ instance, onLeadsImported }: GroupsTabProps) => {
     g.name.toLowerCase().includes(groupSearch.toLowerCase()),
   );
 
-  // Auto-fetch on first render if empty
-  if (groups.length === 0 && !loadingGroups) {
-    // Will be triggered by tab click in parent
-  }
-
   if (loadingGroups) {
     return (
       <div className="space-y-2">
@@ -144,7 +93,7 @@ const GroupsTab = ({ instance, onLeadsImported }: GroupsTabProps) => {
       <div className="text-center py-8">
         <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
         <p className="text-muted-foreground">Clique para carregar os grupos</p>
-        <Button variant="outline" className="mt-4" onClick={fetchGroups}>
+        <Button variant="outline" className="mt-4" onClick={() => refetch()}>
           Carregar Grupos
         </Button>
       </div>
