@@ -181,9 +181,9 @@ const InboxManagement = () => {
       setWebhookUrl('');
       setWebhookOutgoingUrl('');
       fetchInboxes();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating inbox:', error);
-      toast.error(error.message || 'Erro ao criar caixa de entrada');
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar caixa de entrada');
     } finally {
       setIsCreating(false);
     }
