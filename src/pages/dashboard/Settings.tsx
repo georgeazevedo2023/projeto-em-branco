@@ -153,11 +153,7 @@ const Settings = () => {
     setTestingId(configId);
     setTestResult(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error('Sessão expirada.');
-        return;
-      }
+      const accessToken = await getAccessToken();
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-shift-report`,

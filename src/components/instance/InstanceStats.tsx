@@ -59,8 +59,7 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
 
       // Se conectado, buscar grupos para estatísticas
       if (isConnected) {
-        const session = await supabase.auth.getSession();
-        if (session.data.session) {
+        const accessToken = await getAccessToken();
           const response = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
             {

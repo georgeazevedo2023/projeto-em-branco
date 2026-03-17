@@ -158,11 +158,7 @@ const SendMessageForm = ({ instanceToken, groupJid, groupName, participants, onM
     setIsScheduling(true);
 
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        toast({ title: 'Erro', description: 'Sessão expirada', variant: 'destructive' });
-        return;
-      }
+      const userId = await getSessionUserId();
 
       const recipients = excludeAdmins && regularMembers.length > 0
         ? regularMembers.map(m => ({ jid: m.jid }))

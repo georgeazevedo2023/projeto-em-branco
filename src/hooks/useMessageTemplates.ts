@@ -95,11 +95,7 @@ export function useMessageTemplates(): UseMessageTemplatesReturn {
     carousel_data?: CarouselData;
   }): Promise<MessageTemplate | null> => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        toast.error('Sessão expirada');
-        return null;
-      }
+      const userId = await getSessionUserId();
 
       const insertData = {
         user_id: session.session.user.id,
