@@ -236,7 +236,7 @@ const InboxManagement = () => {
     try {
       const { error } = await supabase
         .from('inboxes')
-        .update({ webhook_outgoing_url: editOutgoingValue.trim() || null } as any)
+        .update({ webhook_outgoing_url: editOutgoingValue.trim() || null })
         .eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook Outgoing atualizada!');
