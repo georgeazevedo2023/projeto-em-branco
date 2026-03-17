@@ -216,9 +216,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
       await autoAssignAgent();
       await fireOutgoingWebhook({ message_type: 'audio', content: null, media_url: audioPublicUrl });
       onMessageSent();
-    } catch (err: any) {
-      console.error('Send audio error:', err);
-      toast.error(err.message || 'Erro ao enviar áudio');
+    } catch (err) {
+      handleError(err, 'Erro ao enviar áudio', 'Send audio error');
     } finally {
       setSending(false);
     }
