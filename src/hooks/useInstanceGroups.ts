@@ -3,7 +3,7 @@ import { uazapiProxy } from '@/lib/uazapiClient';
 import { extractGroupsArray } from '@/types/uazapi';
 import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
 import type { Group, Participant } from '@/types';
-import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 /**
  * Normalize a raw UAZAPI participant into the app Participant shape.
