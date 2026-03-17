@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import type { Instance } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, Users, Search, MessageSquare } from 'lucide-react';

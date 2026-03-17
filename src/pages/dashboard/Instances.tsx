@@ -247,7 +247,7 @@ const Instances = () => {
       }) as Record<string, unknown>;
 
       // Save to database
-      const instanceId = result.instance?.instanceId || `inst_${Date.now()}`;
+      const instanceId = (result.instance as Record<string, unknown>)?.instanceId as string || `inst_${Date.now()}`;
       const { error: dbError } = await supabase.from('instances').insert({
         id: instanceId,
         name: newInstanceName,

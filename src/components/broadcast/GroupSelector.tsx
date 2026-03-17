@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import { toast } from 'sonner';
 import { Search, Users, CheckSquare, Square, MessageSquare } from 'lucide-react';
 import type { Instance, Group, Participant } from '@/types';
