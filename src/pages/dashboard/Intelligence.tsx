@@ -228,9 +228,16 @@ export default function Intelligence() {
       });
 
       setAnalysis(data);
-    } catch (err) {
-      console.error("[Intelligence] Error:", err);
-      toast.error("Erro inesperado ao gerar análise.");
+    } catch (err: unknown) {
+      const e = err as EdgeFunctionError;
+      if (e.status === 429) {
+        toast.error("Limite de IA atingido. Tente novamente em alguns minutos.");
+      } else if (e.status === 402) {
+        toast.error("Créditos de IA insuficientes. Adicione créditos ao workspace.");
+      } else {
+        console.error("[Intelligence] Error:", err);
+        toast.error(e.message || "Erro inesperado ao gerar análise.");
+      }
     } finally {
       setLoading(false);
     }
