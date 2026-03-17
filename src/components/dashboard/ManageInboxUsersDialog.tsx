@@ -202,9 +202,8 @@ const ManageInboxUsersDialog = ({
 
       toast.success('Cargo atualizado');
       fetchMembers();
-    } catch (error: any) {
-      console.error('Error updating role:', error);
-      toast.error(error.message || 'Erro ao atualizar cargo');
+    } catch (error) {
+      handleError(error, 'Erro ao atualizar cargo', 'Error updating role');
     } finally {
       setUpdatingId(null);
     }

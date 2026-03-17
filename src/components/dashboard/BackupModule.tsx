@@ -449,9 +449,8 @@ const BackupModule = () => {
         }
         toast.success(`${files.length} arquivo(s) CSV exportado(s)!`);
       }
-    } catch (error: any) {
-      console.error('Export error:', error);
-      toast.error(`Erro ao exportar: ${error.message}`);
+    } catch (error) {
+      handleError(error, 'Erro ao exportar', 'Export error');
     } finally {
       setIsExporting(false);
       setProgress(null);

@@ -220,8 +220,8 @@ const InboxUsersManagement = () => {
       toast.success('Atendente atualizado!');
       setEditingUser(null);
       fetchData();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao atualizar atendente');
+    } catch (e) {
+      handleError(e, 'Erro ao atualizar atendente');
     } finally {
       setIsSavingEdit(false);
     }

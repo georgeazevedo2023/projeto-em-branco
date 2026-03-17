@@ -232,9 +232,8 @@ const UsersManagement = () => {
       setIsDeleteDialogOpen(false);
       setUserToDelete(null);
       fetchUsers();
-    } catch (error: any) {
-      console.error('Error deleting user:', error);
-      toast.error(error.message || 'Erro ao excluir usuário');
+    } catch (error) {
+      handleError(error, 'Erro ao excluir usuário', 'Error deleting user');
     } finally {
       setIsDeleting(false);
     }

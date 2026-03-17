@@ -125,9 +125,8 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
       resetForm();
       onOpenChange(false);
       onCreated();
-    } catch (error: any) {
-      console.error('Error creating inbox user:', error);
-      toast.error(error.message || 'Erro ao criar usuário');
+    } catch (error) {
+      handleError(error, 'Erro ao criar usuário', 'Error creating inbox user');
     } finally {
       setIsCreating(false);
     }

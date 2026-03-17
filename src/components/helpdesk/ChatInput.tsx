@@ -438,8 +438,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
                                         .insert({ conversation_id: conversation.id, label_id: label.id });
                                     }
                                     onLabelsChanged?.();
-                                  } catch (err: any) {
-                                    toast.error(err.message || 'Erro');
+                                  } catch (err) {
+                                    handleError(err, 'Erro');
                                   } finally {
                                     setTogglingLabel(null);
                                   }

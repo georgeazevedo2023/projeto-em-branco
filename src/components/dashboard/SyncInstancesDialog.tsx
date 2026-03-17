@@ -276,9 +276,8 @@ export default function SyncInstancesDialog({
       toast.success(`${inserts.length} instância(s) importada(s) com sucesso!`);
       onSync();
       onOpenChange(false);
-    } catch (err: any) {
-      console.error('Error syncing instances:', err);
-      toast.error(err.message || 'Erro ao sincronizar instâncias');
+    } catch (err) {
+      handleError(err, 'Erro ao sincronizar instâncias', 'Error syncing instances');
     } finally {
       setSyncing(false);
     }
