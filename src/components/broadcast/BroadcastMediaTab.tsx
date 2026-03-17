@@ -233,7 +233,7 @@ const BroadcastMediaTab = ({
           disabled={isSending}
           className="min-h-[80px] resize-none"
         />
-        <EmojiPicker onEmojiSelect={(emoji) => setCaption(prev => prev + emoji)} disabled={isSending} />
+        <EmojiPicker onEmojiSelect={(emoji) => setCaption(caption + emoji)} disabled={isSending} />
       </div>
     </div>
   );
