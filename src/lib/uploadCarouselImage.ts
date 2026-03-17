@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getSessionUserId } from '@/hooks/useAuthSession';
 
 /**
  * Upload an image file to carousel-images bucket and return the public URL
