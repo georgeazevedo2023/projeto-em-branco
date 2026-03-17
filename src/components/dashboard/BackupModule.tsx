@@ -109,7 +109,7 @@ const BackupModule = () => {
   const selectNone = () => setSelectedSections(new Set());
 
   const callBackupApi = async (action: string, tableName?: string) => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const token = await getAccessToken();
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/database-backup`,
       {

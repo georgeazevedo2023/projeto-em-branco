@@ -252,7 +252,7 @@ export const ContactInfoPanel = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ conversation_id: convId, force_refresh: false }),
         }

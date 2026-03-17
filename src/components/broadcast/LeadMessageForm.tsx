@@ -481,9 +481,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
   const handleSendMedia = async () => {
     if (!selectedFile && !mediaUrl.trim()) { toast.error('Selecione um arquivo ou informe uma URL'); return; }
 
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) { toast.error('Sessão expirada'); return; }
-    const accessToken = session.data.session.access_token;
+    const accessToken = await getAccessToken();
 
     let mediaData = mediaUrl;
     if (selectedFile) mediaData = await fileToBase64(selectedFile);
