@@ -115,7 +115,7 @@ const KanbanBoard = () => {
       ...f,
       options: f.options ? (f.options as string[]) : null,
       show_on_card: f.show_on_card ?? false,
-      entity_id: (f as any).entity_id ?? null,
+      entity_id: f.entity_id ?? null,
     })) as KanbanField[];
     setFields(parsedFields);
 
@@ -260,7 +260,7 @@ const KanbanBoard = () => {
         .select('user_profiles(id, full_name, email)')
         .eq('inbox_id', boardData.inbox_id);
       const members = (data || [])
-        .map((d: any) => d.user_profiles)
+        .map((d: Record<string, unknown>) => d.user_profiles)
         .filter(Boolean) as TeamMember[];
       // Deduplicar por id
       const unique = [...new Map(members.map(m => [m.id, m])).values()];

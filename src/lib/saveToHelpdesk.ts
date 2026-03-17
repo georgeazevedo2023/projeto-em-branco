@@ -152,7 +152,7 @@ export const saveToHelpdesk = async (
       // Update last_message_at and last_message
       await supabase
         .from('conversations')
-        .update({ last_message_at: now, updated_at: now, last_message: lastPreview } as any)
+        .update({ last_message_at: now, updated_at: now, last_message: lastPreview })
         .eq('id', conversationId);
     } else {
       const { data: newConv, error: convErr } = await supabase

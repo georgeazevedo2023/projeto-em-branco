@@ -119,7 +119,7 @@ export function CardDetailSheet({
         assigned_to: assignedTo !== 'none' ? assignedTo : null,
         tags,
         notes: notes || null,
-      } as any)
+      })
       .eq('id', card.id);
 
     if (cardErr) {

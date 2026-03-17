@@ -42,7 +42,7 @@ export function FieldsTab({ fields, entities, loading, addField, updateField, re
                 className="h-8 text-sm flex-1"
               />
               <Select value={field.field_type} onValueChange={v => {
-                const patch: Partial<KanbanField> = { field_type: v as any };
+                const patch: Partial<KanbanField> = { field_type: v as KanbanField['field_type'] };
                 if (v !== 'entity_select') patch.entity_id = null;
                 if (v !== 'select') patch.options = null;
                 updateField(field.id, patch);

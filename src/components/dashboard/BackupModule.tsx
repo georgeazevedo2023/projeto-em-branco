@@ -109,9 +109,8 @@ const BackupModule = () => {
   const selectAll = () => setSelectedSections(new Set(EXPORT_SECTIONS.map(s => s.id)));
   const selectNone = () => setSelectedSections(new Set());
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const callBackupApi = async (action: string, tableName?: string): Promise<any[]> => {
-    const json = await edgeFunctionFetch<{ data?: any[] }>('database-backup', { action, table_name: tableName });
+  const callBackupApi = async (action: string, tableName?: string): Promise<Record<string, unknown>[]> => {
+    const json = await edgeFunctionFetch<{ data?: Record<string, unknown>[] }>('database-backup', { action, table_name: tableName });
     return json.data || [];
   };
 
@@ -162,7 +161,7 @@ const BackupModule = () => {
           const pkMap = new Map((pks || []).map((p: { table_name: string; pk_columns: string }) => [p.table_name, p.pk_columns]));
           for (const t of schema) {
             let def = `CREATE TABLE IF NOT EXISTS public.${t.table_name} (\n${t.columns_def}`;
-            const pk = pkMap.get(t.table_name);
+            const pk = pkMap.get(t.table_name as string);
             if (pk) def += `,\n  PRIMARY KEY (${pk})`;
             def += '\n);';
             lines.push(def);
@@ -250,7 +249,7 @@ const BackupModule = () => {
         lines.push('-- ── TABLE DATA ────────────────────────────────────────────');
         for (const table of (tables || [])) {
           try {
-            const rows = await callBackupApi('table-data', table.table_name);
+            const rows = await callBackupApi('table-data', table.table_name as string);
             if (rows?.length) {
               lines.push(`-- Table: ${table.table_name} (${rows.length} rows)`);
               const cols = Object.keys(rows[0]);
@@ -325,7 +324,7 @@ const BackupModule = () => {
         const tables = await callBackupApi('list-tables');
         for (const table of (tables || [])) {
           try {
-            const rows = await callBackupApi('table-data', table.table_name);
+            const rows = await callBackupApi('table-data', table.table_name as string);
             if (rows?.length) {
               const cols = Object.keys(rows[0]);
               const header = cols.join(',');
