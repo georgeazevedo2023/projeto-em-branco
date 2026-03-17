@@ -505,7 +505,7 @@ const AdminPanel = () => {
   const handleSaveOutgoing = async (inboxId: string) => {
     setIsSavingOutgoing(true);
     try {
-      const { error } = await supabase.from('inboxes').update({ webhook_outgoing_url: editOutgoingValue.trim() || null } as Record<string, unknown>).eq('id', inboxId);
+      const { error } = await supabase.from('inboxes').update({ webhook_outgoing_url: editOutgoingValue.trim() || null }).eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook Outgoing atualizado!');
       setEditingOutgoingId(null);
