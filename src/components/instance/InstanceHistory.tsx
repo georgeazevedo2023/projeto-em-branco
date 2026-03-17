@@ -17,7 +17,7 @@ interface ConnectionLog {
   instance_id: string;
   event_type: string;
   description: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
   user_id: string | null;
 }
