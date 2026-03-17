@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, memo } from 'react';
-import { FixedSizeList } from 'react-window/dist/index.cjs.js';
+import { useState, useMemo, useCallback, memo, CSSProperties } from 'react';
+import { List } from 'react-window';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,6 @@ interface LeadListProps {
 }
 
 const ROW_HEIGHT = 52;
-const LIST_HEIGHT = 256;
 
 const getVerificationBadge = (lead: Lead) => {
   switch (lead.verificationStatus) {
@@ -61,14 +60,23 @@ const getSourceBadge = (source: Lead['source'], groupName?: string) => {
   }
 };
 
-interface LeadRowProps {
-  lead: Lead;
-  isSelected: boolean;
+interface LeadRowInlineProps {
+  filteredLeads: Lead[];
+  selectedLeads: Set<string>;
   onToggle: (id: string) => void;
-  style: React.CSSProperties;
 }
 
-const LeadRow = memo(function LeadRow({ lead, isSelected, onToggle, style }: LeadRowProps) {
+function LeadRowComponent({
+  index,
+  style,
+  filteredLeads,
+  selectedLeads,
+  onToggle,
+}: { index: number; style: CSSProperties; ariaAttributes: Record<string, unknown> } & LeadRowInlineProps) {
+  const lead = filteredLeads[index];
+  if (!lead) return null;
+  const isSelected = selectedLeads.has(lead.id);
+
   return (
     <div style={style} className="px-2">
       <div
@@ -106,7 +114,7 @@ const LeadRow = memo(function LeadRow({ lead, isSelected, onToggle, style }: Lea
       </div>
     </div>
   );
-});
+}
 
 const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) => {
   const [search, setSearch] = useState('');
@@ -158,18 +166,11 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
   const allSelected = filteredLeads.length > 0 && filteredLeads.every(l => selectedLeads.has(l.id));
   const hasVerifiedLeads = leads.some(l => l.verificationStatus);
 
-  const VirtualRow = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const lead = filteredLeads[index];
-    if (!lead) return null;
-    return (
-      <LeadRow
-        lead={lead}
-        isSelected={selectedLeads.has(lead.id)}
-        onToggle={handleToggle}
-        style={style}
-      />
-    );
-  }, [filteredLeads, selectedLeads, handleToggle]);
+  const rowProps = useMemo<LeadRowInlineProps>(() => ({
+    filteredLeads,
+    selectedLeads,
+    onToggle: handleToggle,
+  }), [filteredLeads, selectedLeads, handleToggle]);
 
   return (
     <div className="space-y-3">
@@ -241,15 +242,14 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
             </p>
           </div>
         ) : (
-          <FixedSizeList
-            height={LIST_HEIGHT}
-            width="100%"
-            itemCount={filteredLeads.length}
-            itemSize={ROW_HEIGHT}
+          <List
+            rowCount={filteredLeads.length}
+            rowHeight={ROW_HEIGHT}
+            rowComponent={LeadRowComponent}
+            rowProps={rowProps}
             overscanCount={5}
-          >
-            {VirtualRow}
-          </FixedSizeList>
+            style={{ height: 256 }}
+          />
         )}
       </div>
     </div>
