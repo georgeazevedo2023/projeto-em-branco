@@ -12,6 +12,8 @@ import type { Instance } from '@/types';
 import { toast } from 'sonner';
 import { Users, Search, RefreshCw, MessageSquare, WifiOff, ChevronRight } from 'lucide-react';
 import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
+import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
+import { extractGroupsArray } from '@/types/uazapi';
 
 interface Group {
   id: string;
