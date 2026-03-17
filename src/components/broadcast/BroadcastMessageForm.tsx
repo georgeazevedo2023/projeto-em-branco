@@ -1501,10 +1501,10 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     ));
   const canSend = (isTextValid || isMediaValid || isCarouselValid) && selectedGroups.length > 0 && !(excludeAdmins && activeTab !== 'carousel' && selectedParticipants.size === 0);
   const canSchedule = activeTab === 'text' 
-    ? (message.trim() && !isOverLimit && selectedGroups.length > 0)
+    ? !!(message.trim() && !isOverLimit && selectedGroups.length > 0)
     : activeTab === 'media'
-    ? (mediaUrl.trim() && selectedGroups.length > 0 && (mediaType !== 'file' || filename.trim()))
-    : false; // Carousel scheduling not supported yet
+    ? !!(mediaUrl.trim() && selectedGroups.length > 0 && (mediaType !== 'file' || filename.trim()))
+    : false;
 
   const handleSelectTemplate = (template: MessageTemplate) => {
     if (template.message_type === 'carousel' && template.carousel_data) {
