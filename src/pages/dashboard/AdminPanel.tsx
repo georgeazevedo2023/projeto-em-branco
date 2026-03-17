@@ -539,8 +539,8 @@ const AdminPanel = () => {
       setIsCreateUserOpen(false);
       setNewUserEmail(''); setNewUserPassword(''); setNewUserName(''); setNewUserRole('user');
       fetchUsers();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao criar usuário');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao criar usuário');
     } finally {
       setIsCreatingUser(false);
     }
