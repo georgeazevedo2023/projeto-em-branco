@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getSessionUserId } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 import type { CarouselData } from '@/components/broadcast/CarouselEditor';
 

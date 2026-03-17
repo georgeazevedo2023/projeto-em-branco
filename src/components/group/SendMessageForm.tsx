@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken, getSessionUserId } from '@/hooks/useAuthSession';
 import { Send, Users, Clock } from 'lucide-react';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { toast } from '@/hooks/use-toast';

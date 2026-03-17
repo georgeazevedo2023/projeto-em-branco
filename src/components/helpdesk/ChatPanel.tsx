@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken, getSessionUserId } from '@/hooks/useAuthSession';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { Badge } from '@/components/ui/badge';
