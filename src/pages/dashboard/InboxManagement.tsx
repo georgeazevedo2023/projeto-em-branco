@@ -141,8 +141,7 @@ const InboxManagement = () => {
 
       setInboxes(enriched);
     } catch (error) {
-      console.error('Error fetching inboxes:', error);
-      toast.error('Erro ao carregar caixas de entrada');
+      handleError(error, 'Erro ao carregar caixas de entrada', 'Fetch inboxes');
     } finally {
       setLoading(false);
     }
