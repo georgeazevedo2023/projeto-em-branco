@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
+import { useInstances } from '@/hooks/useInstances';
+import { useInboxes } from '@/hooks/useInboxes';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => ({
   value: String(i),
