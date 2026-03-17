@@ -74,7 +74,7 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
       const data = await response.json();
       
       // Normalizar resposta
-      let rawGroups: any[];
+      let rawGroups: Array<Record<string, unknown>>;
       if (Array.isArray(data)) {
         rawGroups = data;
       } else if (data?.groups && Array.isArray(data.groups)) {
