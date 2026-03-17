@@ -50,8 +50,7 @@ const HelpDesk = () => {
   const [inboxLabels, setInboxLabels] = useState<Label[]>([]);
   const [conversationLabelsMap, setConversationLabelsMap] = useState<Record<string, string[]>>({});
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
-  const [agentNamesMap, setAgentNamesMap] = useState<Record<string, string>>({});
-  const [conversationNotesSet, setConversationNotesSet] = useState<Set<string>>(new Set());
+  const { namesMap: agentNamesMap } = useUserProfiles();
 
   // Departments state
   const [inboxDepartments, setInboxDepartments] = useState<{ id: string; name: string }[]>([]);
