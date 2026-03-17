@@ -205,9 +205,9 @@ const InboxManagement = () => {
       toast.success('Caixa de entrada excluída');
       setInboxToDelete(null);
       fetchInboxes();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting inbox:', error);
-      toast.error(error.message || 'Erro ao excluir');
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir');
     } finally {
       setIsDeleting(false);
     }
