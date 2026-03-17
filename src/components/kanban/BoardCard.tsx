@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import type { Inbox } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -39,11 +40,6 @@ interface KanbanBoard {
   directMemberCount?: number;
 }
 
-interface Inbox {
-  id: string;
-  name: string;
-  instance_id: string;
-}
 
 interface BoardCardProps {
   board: KanbanBoard;

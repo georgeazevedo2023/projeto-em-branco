@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { Instance } from '@/types';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,12 +26,6 @@ interface Group {
   participants: Participant[];
 }
 
-interface Instance {
-  id: string;
-  name: string;
-  token?: string;
-  status: string;
-}
 
 const SendToGroup = () => {
   const { instanceId, groupId } = useParams();

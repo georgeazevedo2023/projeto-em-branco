@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import type { Instance } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -25,10 +26,6 @@ import type { Database } from '@/integrations/supabase/types';
 
 type InboxRole = Database['public']['Enums']['inbox_role'];
 
-interface Instance {
-  id: string;
-  name: string;
-}
 
 interface InboxItem {
   id: string;

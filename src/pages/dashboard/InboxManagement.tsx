@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -49,11 +50,6 @@ interface InboxWithDetails {
   webhook_outgoing_url: string | null;
 }
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-}
 
 const InboxManagement = () => {
   const { isSuperAdmin, user } = useAuth();

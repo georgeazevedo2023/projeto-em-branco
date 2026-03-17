@@ -5,8 +5,7 @@ import { cn } from '@/lib/utils';
 import { ConversationItem } from './ConversationItem';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ManageLabelsDialog } from './ManageLabelsDialog';
-import type { Conversation } from '@/pages/dashboard/HelpDesk';
-import type { Label } from './ConversationLabels';
+import type { Conversation, Label } from '@/types';
 
 interface ConversationListProps {
   conversations: Conversation[];

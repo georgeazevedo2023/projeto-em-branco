@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import type { Instance } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,21 +33,6 @@ import {
 import { cn } from '@/lib/utils';
 import { formatBR } from '@/lib/dateUtils';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  token?: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  user_profiles?: {
-    full_name: string | null;
-    email: string;
-  };
-}
 
 interface InstanceOverviewProps {
   instance: Instance;

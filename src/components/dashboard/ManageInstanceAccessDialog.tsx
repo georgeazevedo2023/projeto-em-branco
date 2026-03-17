@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { Instance } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,10 +17,6 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Instance {
-  id: string;
-  name: string;
-}
 
 interface UserProfile {
   id: string;

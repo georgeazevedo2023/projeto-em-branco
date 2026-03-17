@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import StatsCard from '@/components/dashboard/StatsCard';
@@ -19,18 +20,6 @@ import { startOfDay, subDays } from 'date-fns';
 import { formatBR } from '@/lib/dateUtils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  user_profiles?: {
-    full_name: string | null;
-    email: string;
-  };
-}
 
 interface InstanceStats {
   instanceId: string;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { Instance } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPhone } from '@/lib/phoneUtils';
 import { Button } from '@/components/ui/button';
@@ -15,11 +16,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Instance {
-  id: string;
-  name: string;
-  owner_jid: string | null;
-}
 
 interface UserData {
   id: string;

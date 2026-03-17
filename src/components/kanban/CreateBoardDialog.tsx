@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Inbox } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,11 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Users, Lock } from 'lucide-react';
 
-interface Inbox {
-  id: string;
-  name: string;
-  instance_id: string;
-}
 
 interface CreateBoardDialogProps {
   open: boolean;

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import type { Label } from './ConversationLabels';
+import type { Label } from '@/types';
 
 interface LabelPickerProps {
   conversationId: string;

@@ -1,11 +1,7 @@
 import { cn } from '@/lib/utils';
+import type { Label } from '@/types';
 
-export interface Label {
-  id: string;
-  name: string;
-  color: string;
-  inbox_id: string;
-}
+export type { Label };
 
 interface ConversationLabelsProps {
   labels: Label[];

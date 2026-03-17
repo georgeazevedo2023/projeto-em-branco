@@ -2,22 +2,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
+import type { Instance } from '@/types';
 import { Users, MessageSquare, Clock, Activity, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  token?: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface InstanceStatsProps {
   instance: Instance;

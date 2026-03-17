@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
@@ -39,19 +40,6 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  token?: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  user_profiles?: {
-    full_name: string | null;
-    email: string;
-  };
-}
 
 interface UserProfile {
   id: string;

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pencil, Trash2, Plus, Check, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import type { Label } from './ConversationLabels';
+import type { Label } from '@/types';
 
 const PRESET_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',

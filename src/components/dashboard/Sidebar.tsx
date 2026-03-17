@@ -1,4 +1,5 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
+import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -30,11 +31,6 @@ import {
 } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-}
 
 interface DepartmentItem {
   id: string;

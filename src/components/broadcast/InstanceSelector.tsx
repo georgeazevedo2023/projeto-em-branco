@@ -5,13 +5,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Server, CheckCircle2, XCircle } from 'lucide-react';
+import type { Instance } from '@/types';
 
-export interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  profile_pic_url?: string | null;
-}
+export type { Instance };
 
 interface InstanceSelectorProps {
   selectedInstance: Instance | null;

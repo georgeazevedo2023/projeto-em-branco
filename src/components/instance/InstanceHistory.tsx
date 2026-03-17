@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { Instance } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -6,17 +7,6 @@ import { Wifi, WifiOff, QrCode, Clock, AlertCircle } from 'lucide-react';
 import { formatBR } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  token?: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface InstanceHistoryProps {
   instance: Instance;
