@@ -14,11 +14,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatBR } from '@/lib/dateUtils';
 
-interface InboxAgent {
-  user_id: string;
-  full_name: string;
-}
-
 interface PastConversation {
   id: string;
   status: string;
