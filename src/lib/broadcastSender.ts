@@ -97,7 +97,7 @@ export const sendCarouselToNumber = async (
     })
   );
 
-  return proxyFetch(accessToken, {
+  return uazapiProxyRaw(accessToken, {
     action: 'send-carousel',
     instance_id: instanceId,
     groupjid: number,
