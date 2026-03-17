@@ -44,6 +44,23 @@ interface GroupData {
   }>;
 }
 
+/** Raw UAZAPI group shape (camelCase + PascalCase variants) */
+interface RawUazapiGroup {
+  JID?: string; jid?: string; id?: string;
+  Name?: string; name?: string; subject?: string;
+  Size?: number; size?: number;
+  Participants?: RawUazapiParticipant[];
+  participants?: RawUazapiParticipant[];
+}
+
+interface RawUazapiParticipant {
+  JID?: string; jid?: string; id?: string;
+  DisplayName?: string; PushName?: string; pushName?: string; displayName?: string;
+  PhoneNumber?: string; phoneNumber?: string;
+  IsAdmin?: boolean; isAdmin?: boolean;
+  IsSuperAdmin?: boolean; isSuperAdmin?: boolean;
+}
+
 const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
   const [activeTab, setActiveTab] = useState<'paste' | 'csv' | 'groups' | 'manual'>('paste');
   
