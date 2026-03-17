@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { Inbox as InboxIcon } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,7 +50,7 @@ const HelpDesk = () => {
   const [inboxLabels, setInboxLabels] = useState<Label[]>([]);
   const [conversationLabelsMap, setConversationLabelsMap] = useState<Record<string, string[]>>({});
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
-  const [agentNamesMap, setAgentNamesMap] = useState<Record<string, string>>({});
+  const { namesMap: agentNamesMap } = useUserProfiles();
   const [conversationNotesSet, setConversationNotesSet] = useState<Set<string>>(new Set());
 
   // Departments state
@@ -144,23 +145,6 @@ const HelpDesk = () => {
     fetchDepartments();
   }, [fetchDepartments]);
 
-  // Fetch agent names from all user profiles
-  const fetchAgentNames = useCallback(async () => {
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('id, full_name');
-    if (data) {
-      const map: Record<string, string> = {};
-      data.forEach(p => {
-        if (p.full_name) map[p.id] = p.full_name;
-      });
-      setAgentNamesMap(map);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAgentNames();
-  }, [fetchAgentNames]);
 
   // Fetch conversation_labels for loaded conversations
   const fetchConversationLabels = useCallback(async (convIds: string[]) => {

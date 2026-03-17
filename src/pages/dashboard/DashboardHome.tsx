@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,7 +41,7 @@ interface HelpdeskLeadsStats {
 const DashboardHome = () => {
   const { profile, isSuperAdmin } = useAuth();
   const { inboxes } = useInboxes();
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [rawInstances, setInstances] = useState<Instance[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -48,6 +49,18 @@ const DashboardHome = () => {
   const [helpdeskLeads, setHelpdeskLeads] = useState<HelpdeskLeadsStats>({ today: 0, yesterday: 0, total: 0, dailyData: [] });
   const [filters, setFilters] = useState<DashboardFiltersState>({ instanceId: null, inboxId: null, period: 30 });
   const [showInstanceDetails, setShowInstanceDetails] = useState(false);
+
+  const ownerIds = useMemo(() => [...new Set(rawInstances.map(i => i.user_id).filter(Boolean) as string[])], [rawInstances]);
+  const { profilesMap: ownerProfilesMap } = useUserProfiles({ userIds: ownerIds, enabled: ownerIds.length > 0 });
+  const instances = useMemo<Instance[]>(() =>
+    rawInstances.map(inst => ({
+      ...inst,
+      user_profiles: inst.user_id && ownerProfilesMap[inst.user_id]
+        ? { full_name: ownerProfilesMap[inst.user_id].full_name, email: ownerProfilesMap[inst.user_id].email }
+        : undefined,
+    })),
+    [rawInstances, ownerProfilesMap]
+  );
 
   useEffect(() => {
     fetchData();
@@ -86,20 +99,8 @@ const DashboardHome = () => {
       if (instancesError) throw instancesError;
 
       if (instancesData && instancesData.length > 0) {
-        const userIds = [...new Set(instancesData.map((i) => i.user_id))];
-        const { data: profilesData } = await supabase
-          .from('user_profiles')
-          .select('id, full_name, email')
-          .in('id', userIds);
-
-        const profilesMap = new Map(profilesData?.map((p) => [p.id, p]) || []);
-        const instancesWithProfiles = instancesData.map((instance) => ({
-          ...instance,
-          user_profiles: profilesMap.get(instance.user_id),
-        }));
-
-        setInstances(instancesWithProfiles as Instance[]);
-        fetchGroupsStats(instancesWithProfiles as Instance[]);
+        setInstances(instancesData as Instance[]);
+        fetchGroupsStats(instancesData as Instance[]);
       } else {
         setInstances([]);
       }

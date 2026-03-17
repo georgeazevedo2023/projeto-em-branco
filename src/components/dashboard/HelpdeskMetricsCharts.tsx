@@ -1,4 +1,5 @@
-import { useEffect, useState, memo } from 'react';
+import { useEffect, useState, memo, useMemo } from 'react';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -43,8 +44,27 @@ const formatMinutes = (minutes: number) => {
 
 const HelpdeskMetricsCharts = () => {
   const [iaData, setIaData] = useState<IAResponseData[]>([]);
-  const [agentData, setAgentData] = useState<AgentGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [assignedIds, setAssignedIds] = useState<string[]>([]);
+  const { namesMap: agentNamesMap } = useUserProfiles({ userIds: assignedIds, enabled: assignedIds.length > 0 });
+  const [rawAgentData, setRawAgentData] = useState<Map<string, { inbox: string; agentId: string; minutes: number[] }> | null>(null);
+
+  // Derive agentData from rawAgentData + resolved names
+  const agentData = useMemo<AgentGroup[]>(() => {
+    if (!rawAgentData) return [];
+    const inboxGroups = new Map<string, AgentGroup>();
+    rawAgentData.forEach((val) => {
+      const avg = val.minutes.reduce((a, b) => a + b, 0) / val.minutes.length;
+      const agentName = agentNamesMap[val.agentId] || 'Desconhecido';
+      const existing = inboxGroups.get(val.inbox) || { inbox_name: val.inbox, agents: [] };
+      existing.agents.push({ name: agentName, minutes: Math.round(avg * 10) / 10, count: val.minutes.length });
+      inboxGroups.set(val.inbox, existing);
+    });
+    return Array.from(inboxGroups.values()).map(g => ({
+      ...g,
+      agents: g.agents.sort((a, b) => a.minutes - b.minutes),
+    }));
+  }, [rawAgentData, agentNamesMap]);
 
   useEffect(() => {
     fetchMetrics();
@@ -108,17 +128,12 @@ const HelpdeskMetricsCharts = () => {
         setIaData(iaResponseData);
       }
 
-      // --- Agent response times ---
+      // --- Agent response times (raw data with IDs, names resolved via hook) ---
       if (agentRes.data) {
-        const assignedIds = [...new Set(agentRes.data.map((c: any) => c.assigned_to).filter(Boolean))];
-        const { data: profiles } = await supabase
-          .from('user_profiles')
-          .select('id, full_name')
-          .in('id', assignedIds);
+        const ids = [...new Set(agentRes.data.map((c: any) => c.assigned_to).filter(Boolean))];
+        setAssignedIds(ids);
 
-        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
-
-        const agentInboxMap = new Map<string, { inbox: string; agent: string; minutes: number[] }>();
+        const agentInboxMap = new Map<string, { inbox: string; agentId: string; minutes: number[] }>();
 
         agentRes.data.forEach((conv: any) => {
           const msgs = conv.conversation_messages || [];
@@ -133,28 +148,15 @@ const HelpdeskMetricsCharts = () => {
           if (diffMins >= 1440) return;
 
           const agentId = conv.assigned_to;
-          const agentName = profileMap.get(agentId) || 'Desconhecido';
           const inboxName = conv.inboxes?.name || conv.inbox_id;
           const key = `${conv.inbox_id}::${agentId}`;
 
-          const existing = agentInboxMap.get(key) || { inbox: inboxName, agent: agentName, minutes: [] };
+          const existing = agentInboxMap.get(key) || { inbox: inboxName, agentId, minutes: [] };
           existing.minutes.push(diffMins);
           agentInboxMap.set(key, existing);
         });
 
-        const inboxGroups = new Map<string, AgentGroup>();
-        agentInboxMap.forEach((val) => {
-          const avg = val.minutes.reduce((a, b) => a + b, 0) / val.minutes.length;
-          const existing = inboxGroups.get(val.inbox) || { inbox_name: val.inbox, agents: [] };
-          existing.agents.push({ name: val.agent, minutes: Math.round(avg * 10) / 10, count: val.minutes.length });
-          inboxGroups.set(val.inbox, existing);
-        });
-
-        const grouped: AgentGroup[] = Array.from(inboxGroups.values()).map(g => ({
-          ...g,
-          agents: g.agents.sort((a, b) => a.minutes - b.minutes),
-        }));
-        setAgentData(grouped);
+        setRawAgentData(agentInboxMap);
       }
     } catch (err) {
       console.error('Error fetching helpdesk metrics:', err);

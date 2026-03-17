@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import type { Instance } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,10 +40,16 @@ export default function ManageInstanceAccessDialog({
   onSave,
 }: ManageInstanceAccessDialogProps) {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [superAdminIds, setSuperAdminIds] = useState<Set<string>>(new Set());
+
+  const { profiles: allProfiles, loading: profilesLoading } = useUserProfiles({ enabled: open });
+  const users = useMemo<UserProfile[]>(() =>
+    allProfiles.map(p => ({ ...p, isSuperAdmin: superAdminIds.has(p.id) })),
+    [allProfiles, superAdminIds]
+  );
+  const loading = profilesLoading;
 
   useEffect(() => {
     if (open && instance) {
@@ -53,30 +60,14 @@ export default function ManageInstanceAccessDialog({
   const fetchData = async () => {
     if (!instance) return;
 
-    setLoading(true);
     try {
-      // Fetch all users with their roles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('id, email, full_name')
-        .order('full_name');
-
-      if (profilesError) throw profilesError;
-
       // Fetch roles to identify super admins
       const { data: roles } = await supabase
         .from('user_roles')
         .select('user_id, role')
         .eq('role', 'super_admin');
 
-      const superAdminIds = new Set(roles?.map((r) => r.user_id) || []);
-
-      const usersWithRoles = (profiles || []).map((p) => ({
-        ...p,
-        isSuperAdmin: superAdminIds.has(p.id),
-      }));
-
-      setUsers(usersWithRoles);
+      setSuperAdminIds(new Set(roles?.map((r) => r.user_id) || []));
 
       // Fetch current access for this instance
       const { data: accessData, error: accessError } = await supabase
@@ -90,8 +81,6 @@ export default function ManageInstanceAccessDialog({
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Erro ao carregar dados');
-    } finally {
-      setLoading(false);
     }
   };
 

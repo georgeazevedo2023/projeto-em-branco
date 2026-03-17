@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +13,6 @@ import { ManageLabelsDialog } from './ManageLabelsDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatBR } from '@/lib/dateUtils';
-
-interface InboxAgent {
-  user_id: string;
-  full_name: string;
-}
 
 interface PastConversation {
   id: string;
@@ -73,7 +69,12 @@ export const ContactInfoPanel = ({
   const contact = conversation.contact;
   const name = contact?.name || contact?.phone || 'Desconhecido';
   const [manageLabelsOpen, setManageLabelsOpen] = useState(false);
-  const [agents, setAgents] = useState<InboxAgent[]>([]);
+  const [inboxMemberIds, setInboxMemberIds] = useState<string[]>([]);
+  const { profiles: agentProfiles } = useUserProfiles({ userIds: inboxMemberIds, enabled: inboxMemberIds.length > 0 });
+  const agents = useMemo(() =>
+    agentProfiles.map(p => ({ user_id: p.id, full_name: p.full_name || 'Sem nome' })).sort((a, b) => a.full_name.localeCompare(b.full_name)),
+    [agentProfiles]
+  );
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [aiSummary, setAiSummary] = useState<AiSummary | null>(conversation.ai_summary || null);
   const [summarizing, setSummarizing] = useState(false);
@@ -168,49 +169,17 @@ export const ContactInfoPanel = ({
     }
   };
 
-  // Fetch inbox members using two separate queries (no FK between inbox_users and user_profiles)
+  // Fetch inbox member IDs for agent select
   useEffect(() => {
-    const fetchAgents = async () => {
+    const fetchMemberIds = async () => {
       if (!conversation.inbox_id) return;
-
-      // Step 1: get user_ids from inbox_users
-      const { data: members, error: membersError } = await supabase
+      const { data: members } = await supabase
         .from('inbox_users')
         .select('user_id')
         .eq('inbox_id', conversation.inbox_id);
-
-      if (membersError) {
-        console.error('[ContactInfoPanel] fetchAgents members error:', membersError);
-        return;
-      }
-
-      const userIds = members?.map(m => m.user_id) ?? [];
-      if (userIds.length === 0) {
-        setAgents([]);
-        return;
-      }
-
-      // Step 2: get full names from user_profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('[ContactInfoPanel] fetchAgents profiles error:', profilesError);
-        return;
-      }
-
-      const agentList: InboxAgent[] = (profiles ?? [])
-        .map(p => ({
-          user_id: p.id,
-          full_name: p.full_name || 'Sem nome',
-        }))
-        .sort((a, b) => a.full_name.localeCompare(b.full_name));
-
-      setAgents(agentList);
+      setInboxMemberIds(members?.map(m => m.user_id) ?? []);
     };
-    fetchAgents();
+    fetchMemberIds();
   }, [conversation.inbox_id]);
 
   const assignedLabels = inboxLabels.filter(l => assignedLabelIds.includes(l.id));
