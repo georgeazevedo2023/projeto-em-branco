@@ -164,12 +164,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     isPausedRef.current = false;
   };
 
-  const getRandomDelay = (): number => {
-    if (randomDelay === 'none') return SEND_DELAY_MS;
-    
-    const [min, max] = randomDelay === '5-10' ? [5000, 10000] : [10000, 20000];
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
+  // getRandomDelay imported from broadcastSender
 
   const formatTime = (seconds: number): string => {
     if (seconds < 60) return `${seconds}s`;
