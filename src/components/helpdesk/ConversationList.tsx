@@ -110,6 +110,9 @@ export const ConversationList = ({
   inboxDepartments = [],
   departmentFilter,
   onDepartmentFilterChange,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
 }: ConversationListProps) => {
   const [manageOpen, setManageOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
