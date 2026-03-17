@@ -449,13 +449,13 @@ const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
       }
 
       // Map to our format
-      const mappedGroups = groupsData.map((g: any) => ({
-        id: g.JID || g.jid || g.id,
+      const mappedGroups = groupsData.map((g: RawUazapiGroup) => ({
+        id: g.JID || g.jid || g.id || '',
         name: g.Name || g.name || g.subject || 'Sem nome',
-        jid: g.JID || g.jid || g.id,
+        jid: g.JID || g.jid || g.id || '',
         size: g.Size || g.size || g.Participants?.length || g.participants?.length || 0,
-        participants: (g.Participants || g.participants || []).map((p: any) => ({
-          jid: p.JID || p.jid || p.id,
+        participants: (g.Participants || g.participants || []).map((p: RawUazapiParticipant) => ({
+          jid: p.JID || p.jid || p.id || '',
           pushName: p.DisplayName || p.PushName || p.pushName || p.displayName || '',
           phoneNumber: p.PhoneNumber || p.phoneNumber || '',
           isAdmin: p.IsAdmin || p.isAdmin || false,
