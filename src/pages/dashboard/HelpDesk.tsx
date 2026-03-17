@@ -42,6 +42,8 @@ const HelpDesk = () => {
   const [statusFilter, setStatusFilter] = useState<string>('aberta');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreConversations, setHasMoreConversations] = useState(false);
   const [inboxes, setInboxes] = useState<Inbox[]>([]);
   const [selectedInboxId, setSelectedInboxId] = useState<string>('');
   const [syncing, setSyncing] = useState(false);
