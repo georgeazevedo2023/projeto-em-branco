@@ -111,8 +111,6 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
           size: rawParticipants.length || g.ParticipantCount || 0,
           pictureUrl: g.profilePicUrl || g.pictureUrl || g.PictureUrl,
           participants: rawParticipants.map((p: RawUazapiParticipant) => {
-            let phoneNumber = p.PhoneNumber || p.phoneNumber || '';
-            const jid = p.JID || p.jid || p.id || '';
             // PhoneNumber é o número real, JID pode ser LID interno do WhatsApp
             let phoneNumber = p.PhoneNumber || p.phoneNumber || '';
             const jid = p.JID || p.jid || p.id || '';
