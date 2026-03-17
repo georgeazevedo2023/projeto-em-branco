@@ -7,7 +7,7 @@ import { Server, CheckCircle2, XCircle } from 'lucide-react';
 import type { Instance } from '@/types';
 import { useInstances } from '@/hooks/useInstances';
 
-export type { Instance };
+
 
 interface InstanceSelectorProps {
   selectedInstance: Instance | null;

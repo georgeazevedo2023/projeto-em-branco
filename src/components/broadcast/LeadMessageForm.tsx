@@ -19,7 +19,7 @@ import { TemplateSelector } from './TemplateSelector';
 import { uploadCarouselImage, base64ToFile } from '@/lib/uploadCarouselImage';
 import { saveToHelpdesk } from '@/lib/saveToHelpdesk';
 import type { MessageTemplate } from '@/hooks/useMessageTemplates';
-import type { Instance } from './InstanceSelector';
+import type { Instance } from '@/types';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 
 import {
