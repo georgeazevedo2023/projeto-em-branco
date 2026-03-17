@@ -131,9 +131,9 @@ export default function SyncInstancesDialog({
       const uazapiIds = new Set(instances.map((i) => i.id));
       const orphaned = localInstances?.filter((inst) => !uazapiIds.has(inst.id)) || [];
       setOrphanedInstances(orphaned);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err.message || 'Erro ao carregar dados');
+      setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
