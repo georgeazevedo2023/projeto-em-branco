@@ -45,24 +45,10 @@ const GroupsTab = ({ instance, onLeadsImported }: GroupsTabProps) => {
   const fetchGroups = async () => {
     setLoadingGroups(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) throw new Error('Not authenticated');
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session.access_token}`,
-          },
-          body: JSON.stringify({ action: 'groups', instance_id: instance.id }),
-        },
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch groups');
-
-      const data = await response.json();
+      const data = await uazapiProxy({
+        action: 'groups',
+        instance_id: instance.id,
+      });
       const groupsData = extractGroupsArray(data);
 
       const mappedGroups = groupsData.map((g: RawUazapiGroup) => ({

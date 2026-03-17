@@ -92,23 +92,10 @@ export default function SyncInstancesDialog({
       setUsers(usersData || []);
 
       // Fetch instances from UAZAPI
-      const session = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session?.access_token}`,
-          },
-          body: JSON.stringify({ action: 'list' }),
-        }
-      );
+      const result = await uazapiProxy({ action: 'list' });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar instâncias da UAZAPI');
+      if (!result || typeof result !== 'object') {
+        throw new Error('Erro ao buscar instâncias da UAZAPI');
       }
 
       // Handle different response formats from UAZAPI

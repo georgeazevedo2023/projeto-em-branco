@@ -62,28 +62,10 @@ const GroupDetails = () => {
       setInstance(instanceData);
 
       // Buscar grupos da instância
-      const accessToken = await getAccessToken();
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            action: 'groups',
-            token: instanceData.token,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erro ao buscar grupos');
-      }
-
-      const data = await response.json();
+      const data = await uazapiProxy({
+        action: 'groups',
+        token: instanceData.token,
+      });
       
       // Normalizar resposta
       let rawGroups: any[];

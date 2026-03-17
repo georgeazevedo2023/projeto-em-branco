@@ -73,26 +73,10 @@ const InstanceDetails = () => {
 
   const updateInstanceStatus = async () => {
     try {
-      const accessToken = await getAccessToken();
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ action: 'list' }),
-        }
-      );
-
-      if (!response.ok) return;
-
-      const uazapiInstances = await response.json();
+      const uazapiInstances = await uazapiProxy({ action: 'list' });
       if (!Array.isArray(uazapiInstances)) return;
 
-      const uazapiInstance = uazapiInstances.find((inst: any) => inst.id === id);
+      const uazapiInstance = uazapiInstances.find((inst: Record<string, unknown>) => inst.id === id);
       if (uazapiInstance) {
         const newStatus = uazapiInstance.status === 'connected' ? 'connected' : 'disconnected';
         

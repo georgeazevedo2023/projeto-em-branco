@@ -239,25 +239,11 @@ const Instances = () => {
     try {
       const token = generateToken();
 
-      // Call UAZAPI to create instance
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          action: 'connect',
-          instanceName: newInstanceName,
-          token,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao criar instância');
-      }
+      const result = await uazapiProxy({
+        action: 'connect',
+        instanceName: newInstanceName,
+        token,
+      }) as Record<string, unknown>;
 
       // Save to database
       const instanceId = result.instance?.instanceId || `inst_${Date.now()}`;
