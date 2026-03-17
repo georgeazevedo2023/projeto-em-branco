@@ -432,7 +432,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
     // Sync fields (after entities so we can resolve IDs)
     const existingFieldIds = fields.filter(f => !f.id.startsWith('new_')).map(f => f.id);
     const { data: dbFields } = await supabase.from('kanban_fields').select('id').eq('board_id', board.id);
-    const dbFieldIds = (dbFields || []).map((f: any) => f.id);
+    const dbFieldIds = (dbFields || []).map((f) => f.id);
     const fieldsToDelete = dbFieldIds.filter((id: string) => !existingFieldIds.includes(id));
     if (fieldsToDelete.length > 0) await supabase.from('kanban_fields').delete().in('id', fieldsToDelete);
 
