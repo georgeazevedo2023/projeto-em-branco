@@ -183,9 +183,8 @@ const ManageInboxUsersDialog = ({
       toast.success('Membro removido');
       fetchMembers();
       onUpdate();
-    } catch (error: any) {
-      console.error('Error removing member:', error);
-      toast.error(error.message || 'Erro ao remover');
+    } catch (error) {
+      handleError(error, 'Erro ao remover', 'Error removing member');
     } finally {
       setRemovingId(null);
     }
