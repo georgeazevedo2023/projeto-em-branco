@@ -160,49 +160,80 @@ const HelpDesk = () => {
     setConversationNotesSet(noteSet);
   }, []);
 
+  const PAGE_SIZE = 200;
+
+  const mapConversations = useCallback((data: Record<string, unknown>[]): Conversation[] => {
+    return data.map((c: Record<string, unknown>) => ({
+      ...c,
+      contact: c.contacts,
+      inbox: c.inboxes,
+      last_message: c.last_message || null,
+      ai_summary: c.ai_summary || null,
+      department_name: (c.departments as Record<string, unknown> | null)?.name || null,
+    })) as Conversation[];
+  }, []);
+
+  const buildQuery = useCallback(() => {
+    let query = supabase
+      .from('conversations')
+      .select('*, contacts(*), inboxes(id, name, instance_id, webhook_outgoing_url), departments(id, name)')
+      .eq('inbox_id', selectedInboxId)
+      .order('last_message_at', { ascending: false });
+
+    if (statusFilter !== 'todas') {
+      query = query.eq('status', statusFilter);
+    }
+    return query;
+  }, [selectedInboxId, statusFilter]);
+
   const fetchConversations = useCallback(async () => {
     if (!user || !selectedInboxId) return;
     setLoading(true);
     try {
-      let query = supabase
-        .from('conversations')
-        .select('*, contacts(*), inboxes(id, name, instance_id, webhook_outgoing_url), departments(id, name)')
-        .eq('inbox_id', selectedInboxId)
-        .order('last_message_at', { ascending: false })
-        .limit(1000);
-
-      if (statusFilter !== 'todas') {
-        query = query.eq('status', statusFilter);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await buildQuery().range(0, PAGE_SIZE - 1);
       if (error) throw error;
 
-      const convIds = (data || []).map((c: { id: string }) => c.id);
+      const rows = data || [];
+      setHasMoreConversations(rows.length === PAGE_SIZE);
 
-      // Fetch conversation labels and notes in parallel
+      const convIds = rows.map((c: { id: string }) => c.id);
       await Promise.all([
         fetchConversationLabels(convIds),
         fetchConversationNotes(convIds),
       ]);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mapped: Conversation[] = (data || []).map((c: any) => ({
-        ...c,
-        contact: c.contacts,
-        inbox: c.inboxes,
-        last_message: c.last_message || null,
-        ai_summary: c.ai_summary || null,
-        department_name: c.departments?.name || null,
-      }));
-
-      setConversations(mapped);
+      setConversations(mapConversations(rows));
     } catch (err) {
       console.error('Error fetching conversations:', err);
     } finally {
       setLoading(false);
     }
-  }, [user, selectedInboxId, statusFilter, fetchConversationLabels, fetchConversationNotes]);
+  }, [user, selectedInboxId, buildQuery, mapConversations, fetchConversationLabels, fetchConversationNotes]);
+
+  const loadMoreConversations = useCallback(async () => {
+    if (!user || !selectedInboxId || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const offset = conversations.length;
+      const { data, error } = await buildQuery().range(offset, offset + PAGE_SIZE - 1);
+      if (error) throw error;
+
+      const rows = data || [];
+      setHasMoreConversations(rows.length === PAGE_SIZE);
+
+      const convIds = rows.map((c: { id: string }) => c.id);
+      await Promise.all([
+        fetchConversationLabels(convIds),
+        fetchConversationNotes(convIds),
+      ]);
+
+      setConversations(prev => [...prev, ...mapConversations(rows)]);
+    } catch (err) {
+      console.error('Error loading more conversations:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [user, selectedInboxId, loadingMore, conversations.length, buildQuery, mapConversations, fetchConversationLabels, fetchConversationNotes]);
 
   // Defensive reset: garante que selectedConversation pertence à caixa atual
   useEffect(() => {
