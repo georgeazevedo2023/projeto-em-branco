@@ -47,7 +47,7 @@ export interface KanbanField {
 }
 
 
-interface BoardMember {
+export interface BoardMember {
   id: string;
   user_id: string;
   role: 'editor' | 'viewer';
