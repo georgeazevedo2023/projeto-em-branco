@@ -277,8 +277,8 @@ const AdminPanel = () => {
         created_by: inbox.created_by,
         created_at: inbox.created_at,
         member_count: memberCounts.get(inbox.id) || 0,
-        webhook_url: (inbox as Record<string, unknown>).webhook_url as string | null ?? null,
-        webhook_outgoing_url: (inbox as Record<string, unknown>).webhook_outgoing_url as string | null ?? null,
+        webhook_url: inbox.webhook_url ?? null,
+        webhook_outgoing_url: inbox.webhook_outgoing_url ?? null,
       })));
     } catch (e) {
       toast.error('Erro ao carregar caixas');
