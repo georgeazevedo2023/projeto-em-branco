@@ -759,7 +759,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }));
 
       try {
-        await sendMediaToNumber(
+        await sendMedia(
           lead.jid,
           mediaData,
           actualMediaType,
