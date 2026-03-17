@@ -957,7 +957,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept={getAcceptedTypes()}
+                        accept={getAcceptedTypes(mediaType)}
                         onChange={handleFileSelect}
                         className="hidden"
                       />
