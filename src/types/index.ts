@@ -4,7 +4,7 @@
 export interface Instance {
   id: string;
   name: string;
-  status: string;
+  status?: string;
   token?: string;
   owner_jid?: string | null;
   profile_pic_url?: string | null;
