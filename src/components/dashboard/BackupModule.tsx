@@ -324,7 +324,7 @@ const BackupModule = () => {
         const tables = await callBackupApi('list-tables');
         for (const table of (tables || [])) {
           try {
-            const rows = await callBackupApi('table-data', table.table_name);
+            const rows = await callBackupApi('table-data', table.table_name as string);
             if (rows?.length) {
               const cols = Object.keys(rows[0]);
               const header = cols.join(',');
