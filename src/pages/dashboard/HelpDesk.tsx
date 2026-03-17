@@ -154,7 +154,7 @@ const HelpDesk = () => {
       .in('conversation_id', convIds)
       .eq('direction', 'private_note');
 
-    const noteSet = new Set<string>((data || []).map((m: any) => m.conversation_id));
+    const noteSet = new Set<string>((data || []).map((m: { conversation_id: string }) => m.conversation_id));
     setConversationNotesSet(noteSet);
   }, []);
 
