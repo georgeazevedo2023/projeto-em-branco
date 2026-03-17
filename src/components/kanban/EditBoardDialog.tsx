@@ -9,13 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, Users, Lock, UserPlus, Pencil, Eye, MessageSquare, Search, X, Database } from 'lucide-react';
+import { Users, Lock } from 'lucide-react';
+import { ColumnsTab } from './ColumnsTab';
+import { FieldsTab } from './FieldsTab';
+import { EntitiesTab } from './EntitiesTab';
+import { AccessTab } from './AccessTab';
 
-interface KanbanBoard {
+export interface KanbanBoard {
   id: string;
   name: string;
   description: string | null;
@@ -24,7 +25,7 @@ interface KanbanBoard {
   instance_id: string | null;
 }
 
-interface KanbanColumn {
+export interface KanbanColumn {
   id: string;
   name: string;
   color: string;
@@ -33,7 +34,7 @@ interface KanbanColumn {
   automation_message: string | null;
 }
 
-interface KanbanField {
+export interface KanbanField {
   id: string;
   name: string;
   field_type: 'text' | 'currency' | 'date' | 'select' | 'entity_select';
@@ -46,7 +47,7 @@ interface KanbanField {
 }
 
 
-interface BoardMember {
+export interface BoardMember {
   id: string;
   user_id: string;
   role: 'editor' | 'viewer';
@@ -54,20 +55,20 @@ interface BoardMember {
   email: string;
 }
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   full_name: string | null;
   email: string;
 }
 
-interface KanbanEntity {
+export interface KanbanEntity {
   id: string;
   name: string;
   position: number;
   values: KanbanEntityValue[];
 }
 
-interface KanbanEntityValue {
+export interface KanbanEntityValue {
   id: string;
   label: string;
   position: number;
@@ -81,13 +82,13 @@ interface EditBoardDialogProps {
   onSaved: () => void;
 }
 
-const COLUMN_COLORS = [
+export const COLUMN_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
   '#f97316', '#eab308', '#22c55e', '#14b8a6',
   '#3b82f6', '#64748b',
 ];
 
-const FIELD_TYPES = [
+export const FIELD_TYPES = [
   { value: 'text', label: 'Texto Curto' },
   { value: 'currency', label: 'Moeda (R$)' },
   { value: 'date', label: 'Data' },
@@ -611,477 +612,63 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
             </div>
           </TabsContent>
 
-          {/* ── Aba Colunas ── */}
           <TabsContent value="colunas" className="flex flex-col flex-1 min-h-0 mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-muted-foreground">Defina as etapas do seu funil</p>
-              <Button size="sm" variant="outline" onClick={addColumn} className="gap-1">
-                <Plus className="w-3.5 h-3.5" /> Adicionar
-              </Button>
-            </div>
-            <div className="space-y-2 overflow-y-auto flex-1 pr-1">
-              {loading && <p className="text-sm text-muted-foreground py-4 text-center">Carregando...</p>}
-              {!loading && columns.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">Nenhuma coluna. Clique em Adicionar para começar.</p>
-              )}
-              {columns.map((col, idx) => (
-                <div key={col.id} className="flex items-start gap-2 p-3 rounded-lg border border-border bg-card">
-                  <GripVertical className="w-4 h-4 text-muted-foreground mt-2.5 shrink-0" />
-                  <div className="shrink-0 mt-1">
-                    <div className="flex flex-wrap gap-1 w-24">
-                      {COLUMN_COLORS.map(color => (
-                        <button
-                          key={color}
-                          type="button"
-                          className={`w-4 h-4 rounded-full transition-transform ${col.color === color ? 'ring-2 ring-offset-1 ring-foreground scale-125' : ''}`}
-                          style={{ backgroundColor: color }}
-                          onClick={() => updateColumn(col.id, { color })}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      value={col.name}
-                      onChange={e => updateColumn(col.id, { name: e.target.value })}
-                      placeholder="Nome da coluna"
-                      className="h-8 text-sm"
-                    />
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id={`auto_${col.id}`}
-                        checked={col.automation_enabled}
-                        onCheckedChange={v => updateColumn(col.id, { automation_enabled: v })}
-                      />
-                      <Label htmlFor={`auto_${col.id}`} className="text-xs">Mensagem automática ao mover</Label>
-                    </div>
-                    {col.automation_enabled && (
-                      <Textarea
-                        value={col.automation_message || ''}
-                        onChange={e => updateColumn(col.id, { automation_message: e.target.value })}
-                        placeholder="Olá {{nome}}, seu status foi atualizado! Use {{campo:NOME}} para dados do lead."
-                        rows={2}
-                        className="text-xs"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => moveColumn(col.id, 'up')} disabled={idx === 0}>
-                      <ChevronUp className="w-3 h-3" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => moveColumn(col.id, 'down')} disabled={idx === columns.length - 1}>
-                      <ChevronDown className="w-3 h-3" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => removeColumn(col.id)}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ColumnsTab
+              columns={columns}
+              loading={loading}
+              addColumn={addColumn}
+              updateColumn={updateColumn}
+              removeColumn={removeColumn}
+              moveColumn={moveColumn}
+            />
           </TabsContent>
 
-          {/* ── Aba Campos ── */}
           <TabsContent value="campos" className="flex flex-col flex-1 min-h-0 mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-muted-foreground">Campos do formulário de cada lead</p>
-              <Button size="sm" variant="outline" onClick={addField} className="gap-1">
-                <Plus className="w-3.5 h-3.5" /> Adicionar
-              </Button>
-            </div>
-            <div className="space-y-2 overflow-y-auto flex-1 pr-1">
-              {loading && <p className="text-sm text-muted-foreground py-4 text-center">Carregando...</p>}
-              {!loading && fields.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">Nenhum campo. Clique em Adicionar para começar.</p>
-              )}
-              {fields.map((field, idx) => (
-                <div key={field.id} className="p-3 rounded-lg border border-border bg-card space-y-2">
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <Input
-                      value={field.name}
-                      onChange={e => updateField(field.id, { name: e.target.value })}
-                      placeholder="Nome do campo"
-                      className="h-8 text-sm flex-1"
-                    />
-                    <Select value={field.field_type} onValueChange={v => {
-                      const patch: Partial<KanbanField> = { field_type: v as any };
-                      if (v !== 'entity_select') patch.entity_id = null;
-                      if (v !== 'select') patch.options = null;
-                      updateField(field.id, patch);
-                    }}>
-                      <SelectTrigger className="h-8 w-36 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FIELD_TYPES.map(t => (
-                          <SelectItem key={t.value} value={t.value} className="text-xs">{t.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex flex-col gap-0.5 shrink-0">
-                      <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveField(field.id, 'up')} disabled={idx === 0}>
-                        <ChevronUp className="w-3 h-3" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveField(field.id, 'down')} disabled={idx === fields.length - 1}>
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-                    </div>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive shrink-0" onClick={() => removeField(field.id)}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  {field.field_type === 'select' && (
-                    <div className="pl-6">
-                      <Input
-                        value={field.options?.join(', ') || ''}
-                        onChange={e => updateField(field.id, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                        placeholder="Opção 1, Opção 2, Opção 3"
-                        className="h-7 text-xs"
-                      />
-                      <p className="text-[10px] text-muted-foreground mt-1">Separe as opções por vírgula</p>
-                    </div>
-                  )}
-                  {field.field_type === 'entity_select' && (
-                    <div className="pl-6">
-                      <Select
-                        value={field.entity_id || 'none'}
-                        onValueChange={v => updateField(field.id, { entity_id: v === 'none' ? null : v })}
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Selecionar entidade..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none" className="text-xs">— Selecionar entidade —</SelectItem>
-                          {entities.map(e => (
-                            <SelectItem key={e.id} value={e.id} className="text-xs">
-                              {e.name} ({e.values.length} valores)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {entities.length === 0 && (
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          Crie entidades na aba <strong>Entidades</strong> antes de usar este tipo.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex flex-wrap items-center gap-4 pl-6">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id={`primary_${field.id}`}
-                        checked={field.is_primary}
-                        onCheckedChange={v => updateField(field.id, { is_primary: v })}
-                      />
-                      <Label htmlFor={`primary_${field.id}`} className="text-xs font-medium">Título do card</Label>
-                    </div>
-                    {!field.is_primary && (
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          id={`show_on_card_${field.id}`}
-                          checked={field.show_on_card}
-                          onCheckedChange={v => updateField(field.id, { show_on_card: v })}
-                        />
-                        <Label htmlFor={`show_on_card_${field.id}`} className="text-xs">Exibir no card</Label>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id={`required_${field.id}`}
-                        checked={field.required}
-                        onCheckedChange={v => updateField(field.id, { required: v })}
-                      />
-                      <Label htmlFor={`required_${field.id}`} className="text-xs">Obrigatório</Label>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <FieldsTab
+              fields={fields}
+              entities={entities}
+              loading={loading}
+              addField={addField}
+              updateField={updateField}
+              removeField={removeField}
+              moveField={moveField}
+            />
           </TabsContent>
 
-          {/* ── Aba Entidades ── */}
           <TabsContent value="entidades" className="flex flex-col flex-1 min-h-0 mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-muted-foreground">Tabelas de valores reutilizáveis (ex: Planos, Bancos, Pizzas)</p>
-              <Button size="sm" variant="outline" onClick={addEntity} className="gap-1">
-                <Plus className="w-3.5 h-3.5" /> Adicionar
-              </Button>
-            </div>
-            <div className="space-y-3 overflow-y-auto flex-1 pr-1">
-              {loading && <p className="text-sm text-muted-foreground py-4 text-center">Carregando...</p>}
-              {!loading && entities.length === 0 && (
-                <div className="text-center py-8 space-y-2">
-                  <Database className="w-8 h-8 text-muted-foreground mx-auto opacity-40" />
-                  <p className="text-sm text-muted-foreground">Nenhuma entidade criada.</p>
-                  <p className="text-xs text-muted-foreground">
-                    Crie entidades como "Planos", "Bancos" ou "Produtos" para usar em campos do tipo <strong>Entidade</strong>.
-                  </p>
-                </div>
-              )}
-              {entities.map(entity => (
-                <div key={entity.id} className="p-3 rounded-lg border border-border bg-card space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Database className="w-4 h-4 text-primary shrink-0" />
-                    <Input
-                      value={entity.name}
-                      onChange={e => updateEntity(entity.id, e.target.value)}
-                      placeholder="Nome da entidade (ex: Planos)"
-                      className="h-8 text-sm flex-1 font-medium"
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                      onClick={() => removeEntity(entity.id)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-
-                  {/* Values list */}
-                  <div className="pl-6 space-y-1.5">
-                    <p className="text-xs text-muted-foreground font-medium">Valores:</p>
-                    {entity.values.map(val => (
-                      <div key={val.id} className="flex items-center gap-2">
-                        <Input
-                          value={val.label}
-                          onChange={e => updateEntityValue(entity.id, val.id, e.target.value)}
-                          placeholder="Ex: Ouro, Calabresa..."
-                          className="h-7 text-xs flex-1"
-                        />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-destructive hover:text-destructive shrink-0"
-                          onClick={() => removeEntityValue(entity.id, val.id)}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs gap-1 text-primary"
-                      onClick={() => addEntityValue(entity.id)}
-                    >
-                      <Plus className="w-3 h-3" /> Adicionar valor
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <EntitiesTab
+              entities={entities}
+              loading={loading}
+              addEntity={addEntity}
+              updateEntity={updateEntity}
+              removeEntity={removeEntity}
+              addEntityValue={addEntityValue}
+              updateEntityValue={updateEntityValue}
+              removeEntityValue={removeEntityValue}
+            />
           </TabsContent>
 
-          {/* ── Aba Acesso ── */}
           <TabsContent value="acesso" className="flex flex-col flex-1 min-h-0 mt-4 space-y-4 overflow-y-auto">
-
-            {/* Visibilidade contextual */}
-            <div className={`flex items-start gap-3 p-3 rounded-lg border ${
-              visibility === 'private'
-                ? 'border-warning/40 bg-warning/5'
-                : 'border-primary/30 bg-primary/5'
-            }`}>
-              {visibility === 'private' ? (
-                <Lock className="w-4 h-4 text-warning mt-0.5 shrink-0" />
-              ) : (
-                <Users className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-              )}
-              <div>
-                <p className="text-xs font-medium text-foreground">
-                  Modo: {visibility === 'shared' ? 'Compartilhado' : 'Individual'}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                  {visibility === 'shared'
-                    ? 'Todos os membros com acesso a este quadro veem todos os cards uns dos outros.'
-                    : 'Cada atendente vê apenas os cards onde é criador ou responsável. Ideal para corretores, representantes comerciais e vendedores autônomos.'
-                  }
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Para alterar, vá na aba <strong>Geral</strong>.
-                </p>
-              </div>
-            </div>
-
-            {/* Acesso via inbox */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                Acesso via WhatsApp / Caixa de Entrada
-              </p>
-              {board.inbox_id ? (
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                  <MessageSquare className="w-4 h-4 text-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{inboxName || 'Caixa vinculada'}</p>
-                    <p className="text-xs text-muted-foreground">{inboxMemberCount} membro{inboxMemberCount !== 1 ? 's' : ''} com acesso automático</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed border-border text-muted-foreground">
-                  <MessageSquare className="w-4 h-4 shrink-0" />
-                  <p className="text-xs">Sem caixa de entrada vinculada — acesso independente de WhatsApp</p>
-                </div>
-              )}
-            </div>
-
-            {/* Membros diretos */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                Membros com Acesso Direto
-              </p>
-
-              {members.length === 0 ? (
-                <div className="text-center py-6 rounded-lg border border-dashed border-border text-muted-foreground">
-                  <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-xs">Nenhum membro adicionado diretamente</p>
-                  <p className="text-[11px] mt-0.5 opacity-70">Use o campo abaixo para conceder acesso a usuários específicos</p>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {members.map(member => (
-                    <div key={member.id} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-card">
-                      <Avatar className="h-7 w-7 shrink-0">
-                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                          {getInitials(member.full_name, member.email)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-foreground truncate">{member.full_name || member.email}</p>
-                        {member.full_name && <p className="text-[10px] text-muted-foreground truncate">{member.email}</p>}
-                      </div>
-                      <Select
-                        value={member.role}
-                        onValueChange={(v) => handleUpdateMemberRole(member.id, v as 'editor' | 'viewer')}
-                      >
-                        <SelectTrigger className="h-7 w-32 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="editor" className="text-xs">
-                            <span className="flex items-center gap-1.5">
-                              <Pencil className="w-3 h-3" /> Editor
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="viewer" className="text-xs">
-                            <span className="flex items-center gap-1.5">
-                              <Eye className="w-3 h-3" /> Visualizador
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                        onClick={() => handleRemoveMember(member.id, member.full_name || member.email)}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Adicionar membro */}
-            <div className="space-y-2 border-t border-border pt-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Adicionar Membro</p>
-
-              {/* User search */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou email..."
-                  value={userSearch}
-                  onChange={e => { setUserSearch(e.target.value); setSelectedUser(null); }}
-                  className="pl-8 h-9 text-sm"
-                />
-              </div>
-
-              {/* Selected user chip */}
-              {selectedUser && (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10 border border-primary/30">
-                  <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">
-                      {getInitials(selectedUser.full_name, selectedUser.email)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs font-medium text-primary flex-1 truncate">{selectedUser.full_name || selectedUser.email}</span>
-                  <button onClick={() => { setSelectedUser(null); setUserSearch(''); }}>
-                    <X className="w-3 h-3 text-primary" />
-                  </button>
-                </div>
-              )}
-
-              {/* Search results dropdown */}
-              {userSearch.length > 0 && !selectedUser && filteredUsers.length > 0 && (
-                <div className="border border-border rounded-md bg-popover shadow-md max-h-40 overflow-y-auto">
-                  {filteredUsers.slice(0, 8).map(u => (
-                    <button
-                      key={u.id}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent transition-colors"
-                      onClick={() => { setSelectedUser(u); setUserSearch(''); }}
-                    >
-                      <Avatar className="h-6 w-6 shrink-0">
-                        <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">
-                          {getInitials(u.full_name, u.email)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium truncate">{u.full_name || u.email}</p>
-                        {u.full_name && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {userSearch.length > 0 && !selectedUser && filteredUsers.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-2">Nenhum usuário encontrado</p>
-              )}
-
-              <div className="flex gap-2">
-                <Select value={newMemberRole} onValueChange={v => setNewMemberRole(v as 'editor' | 'viewer')}>
-                  <SelectTrigger className="w-36 h-9 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="editor">
-                      <span className="flex items-center gap-1.5">
-                        <Pencil className="w-3 h-3" /> Editor
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="viewer">
-                      <span className="flex items-center gap-1.5">
-                        <Eye className="w-3 h-3" /> Visualizador
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={handleAddMember}
-                  disabled={!selectedUser || addingMember}
-                  className="gap-1.5 flex-1"
-                  size="sm"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  {addingMember ? 'Adicionando...' : 'Adicionar'}
-                </Button>
-              </div>
-
-              <div className="rounded-md bg-muted/50 p-2.5 space-y-1">
-                <p className="text-[10px] text-muted-foreground font-medium">Sobre os papéis:</p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Pencil className="w-2.5 h-2.5 shrink-0" />
-                  <strong>Editor</strong> — pode criar, mover e editar cards
-                </p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Eye className="w-2.5 h-2.5 shrink-0" />
-                  <strong>Visualizador</strong> — apenas visualiza os cards, sem editar
-                </p>
-              </div>
-            </div>
+            <AccessTab
+              visibility={visibility}
+              boardInboxId={board.inbox_id}
+              members={members}
+              allUsers={allUsers}
+              userSearch={userSearch}
+              setUserSearch={setUserSearch}
+              selectedUser={selectedUser}
+              setSelectedUser={setSelectedUser}
+              newMemberRole={newMemberRole}
+              setNewMemberRole={setNewMemberRole}
+              addingMember={addingMember}
+              inboxMemberCount={inboxMemberCount}
+              inboxName={inboxName}
+              filteredUsers={filteredUsers}
+              handleAddMember={handleAddMember}
+              handleRemoveMember={handleRemoveMember}
+              handleUpdateMemberRole={handleUpdateMemberRole}
+              getInitials={getInitials}
+            />
           </TabsContent>
         </Tabs>
 
