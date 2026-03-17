@@ -414,9 +414,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     const hasValidCard = carouselData.cards.some(c => (c.image || c.imageFile) && c.text.trim());
     if (!hasValidCard) { toast.error('Preencha pelo menos um card com imagem e texto'); return; }
 
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) { toast.error('Sessão expirada'); return; }
-    const accessToken = session.data.session.access_token;
+    const accessToken = await getAccessToken();
 
     const { startedAt, successCount, failCount } = await runSendLoop(accessToken, async (lead) => {
       await sendCarousel(lead.jid, carouselData, accessToken);
