@@ -608,8 +608,8 @@ const AdminPanel = () => {
       toast.success('Usuário excluído!');
       setUserToDelete(null);
       fetchUsers();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao excluir');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao excluir');
     } finally {
       setIsDeletingUser(false);
     }
