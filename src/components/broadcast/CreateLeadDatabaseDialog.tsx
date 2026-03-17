@@ -118,8 +118,7 @@ const CreateLeadDatabaseDialog = ({
         .single();
 
       if (dbError) {
-        console.error('Error creating database:', dbError);
-        toast.error('Erro ao criar base de dados');
+        handleError(dbError, 'Erro ao criar base de dados', 'Create lead DB');
         return;
       }
 
