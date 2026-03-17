@@ -224,8 +224,8 @@ const InboxManagement = () => {
       toast.success('Webhook URL atualizada!');
       setEditingWebhookId(null);
       fetchInboxes();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar webhook');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook');
     } finally {
       setIsSavingWebhook(false);
     }
