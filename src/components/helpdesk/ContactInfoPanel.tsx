@@ -108,9 +108,9 @@ export const ContactInfoPanel = ({
 
         if (error) throw error;
         setPastConversations(
-          (data || []).map((c: any) => ({
+          (data || []).map((c) => ({
             ...c,
-            ai_summary: c.ai_summary || null,
+            ai_summary: c.ai_summary as AiSummary | null ?? null,
           }))
         );
       } catch (err) {
