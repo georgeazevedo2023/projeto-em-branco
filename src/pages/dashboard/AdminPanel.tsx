@@ -458,14 +458,14 @@ const AdminPanel = () => {
         created_by: user!.id,
         webhook_url: webhookUrl.trim() || null,
         webhook_outgoing_url: webhookOutgoingUrl.trim() || null,
-      } as any);
+      } as Record<string, unknown>);
       if (error) throw error;
       toast.success('Caixa criada!');
       setIsCreateInboxOpen(false);
       setNewInboxName(''); setSelectedInstanceId(''); setWebhookUrl(''); setWebhookOutgoingUrl('');
       fetchInboxes();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao criar caixa');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao criar caixa');
     } finally {
       setIsCreatingInbox(false);
     }
