@@ -1604,138 +1604,18 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
 
   return (
     <>
-      {/* Progress Modal */}
-      {progress.status !== 'idle' && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                {progress.status === 'sending' && (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {activeTab === 'media' ? 'Enviando mídia...' : 'Enviando mensagens...'}
-                  </>
-                )}
-                {progress.status === 'paused' && (
-                  <>
-                    <Pause className="w-5 h-5 text-warning" />
-                    Envio pausado
-                  </>
-                )}
-                {progress.status === 'success' && (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                    Envio concluído
-                  </>
-                )}
-                {progress.status === 'error' && (
-                  <>
-                    <XCircle className="w-5 h-5 text-destructive" />
-                    Erro no envio
-                  </>
-                )}
-                {progress.status === 'cancelled' && (
-                  <>
-                    <StopCircle className="w-5 h-5 text-muted-foreground" />
-                    Envio cancelado
-                  </>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(progress.status === 'sending' || progress.status === 'paused') && (
-                <>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Grupo {progress.currentGroup} de {progress.totalGroups}</span>
-                      <span className="text-muted-foreground truncate ml-2">{progress.groupName}</span>
-                    </div>
-                    <Progress value={(progress.currentGroup / progress.totalGroups) * 100} />
-                  </div>
-
-                  {excludeAdmins && progress.totalMembers > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Membros</span>
-                        <span>{progress.currentMember} / {progress.totalMembers}</span>
-                      </div>
-                      <Progress 
-                        value={(progress.currentMember / progress.totalMembers) * 100} 
-                        className="h-1"
-                      />
-                    </div>
-                  )}
-
-                  {/* Time indicators */}
-                  <div className="flex items-center justify-between text-sm border-t pt-3 mt-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Timer className="h-4 w-4" />
-                      <span>Decorrido: {formatDuration(elapsedTime)}</span>
-                    </div>
-                    {remainingTime !== null && remainingTime > 0 && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>Restante: ~{formatDuration(remainingTime)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Pause/Resume and Cancel Buttons */}
-                  <div className="flex gap-2 pt-2">
-                    {progress.status === 'sending' ? (
-                      <Button 
-                        onClick={handlePause} 
-                        variant="outline" 
-                        className="flex-1"
-                      >
-                        <Pause className="w-4 h-4 mr-2" />
-                        Pausar
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={handleResume} 
-                        className="flex-1"
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Retomar
-                      </Button>
-                    )}
-                    <Button 
-                      onClick={handleCancel} 
-                      variant="destructive" 
-                      className="flex-1"
-                    >
-                      <StopCircle className="w-4 h-4 mr-2" />
-                      Cancelar
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {!['sending', 'paused'].includes(progress.status) && progress.results.length > 0 && (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {progress.results.map((result, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      {result.success ? (
-                        <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-destructive shrink-0" />
-                      )}
-                      <span className="truncate">{result.groupName}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!['sending', 'paused'].includes(progress.status) && (
-                <Button onClick={handleCloseProgress} className="w-full">
-                  Fechar
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <BroadcastProgressModal
+        progress={progress}
+        elapsedTime={elapsedTime}
+        remainingTime={remainingTime}
+        excludeAdmins={excludeAdmins}
+        activeTab={activeTab}
+        formatDuration={formatDuration}
+        onPause={handlePause}
+        onResume={handleResume}
+        onCancel={handleCancel}
+        onClose={handleCloseProgress}
+      />
 
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader className="pb-3">
@@ -1787,185 +1667,23 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
             </TabsContent>
 
             <TabsContent value="media" className="space-y-4">
-              {/* Media Type Selector */}
-              <div className="grid grid-cols-4 gap-2">
-                <Button
-                  type="button"
-                  variant={mediaType === 'image' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => { setMediaType('image'); clearFile(); }}
-                  disabled={isSending}
-                  className="flex flex-col items-center gap-1 h-auto py-2"
-                >
-                  <Image className="w-4 h-4" />
-                  <span className="text-xs">Imagem</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={mediaType === 'video' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => { setMediaType('video'); clearFile(); }}
-                  disabled={isSending}
-                  className="flex flex-col items-center gap-1 h-auto py-2"
-                >
-                  <Video className="w-4 h-4" />
-                  <span className="text-xs">Vídeo</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={mediaType === 'audio' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => { setMediaType('audio'); clearFile(); }}
-                  disabled={isSending}
-                  className="flex flex-col items-center gap-1 h-auto py-2"
-                >
-                  <Mic className="w-4 h-4" />
-                  <span className="text-xs">Áudio</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={mediaType === 'file' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => { setMediaType('file'); clearFile(); }}
-                  disabled={isSending}
-                  className="flex flex-col items-center gap-1 h-auto py-2"
-                >
-                  <FileIcon className="w-4 h-4" />
-                  <span className="text-xs">Arquivo</span>
-                </Button>
-              </div>
-
-              {/* URL Input */}
-              <div className="space-y-2">
-                <Label>URL da mídia</Label>
-                <Input
-                  placeholder="https://exemplo.com/arquivo.jpg"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  disabled={isSending || !!selectedFile}
-                />
-              </div>
-
-              {/* Separator */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou</span>
-                </div>
-              </div>
-
-              {/* File Input */}
-              <div className="space-y-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={getAcceptedTypes(mediaType)}
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  disabled={isSending}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isSending || !!mediaUrl.trim()}
-                  className="w-full"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Escolher do dispositivo
-                </Button>
-              </div>
-
-              {/* Preview */}
-              {selectedFile && (
-                <div className="relative border border-border rounded-lg p-3 bg-muted/30">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={clearFile}
-                    className="absolute top-1 right-1 h-6 w-6"
-                    disabled={isSending}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                  
-                  {mediaType === 'image' && previewUrl && (
-                    <img src={previewUrl} alt="Preview" className="max-h-40 rounded mx-auto" />
-                  )}
-                  
-                  {mediaType === 'video' && previewUrl && (
-                    <video src={previewUrl} controls className="max-h-40 rounded mx-auto" />
-                  )}
-                  
-                  {mediaType === 'audio' && previewUrl && (
-                    <audio src={previewUrl} controls className="w-full" />
-                  )}
-                  
-                  {mediaType === 'file' && (
-                    <div className="flex items-center gap-2">
-                      <FileIcon className="w-8 h-8 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Filename for documents */}
-              {mediaType === 'file' && (
-                <div className="space-y-2">
-                  <Label>Nome do arquivo</Label>
-                  <Input
-                    placeholder="documento.pdf"
-                    value={filename}
-                    onChange={(e) => setFilename(e.target.value)}
-                    disabled={isSending}
-                  />
-                </div>
-              )}
-
-              {/* PTT Toggle for audio */}
-              {mediaType === 'audio' && (
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50">
-                  <div className="flex items-center gap-3">
-                    <Mic className="w-5 h-5 text-muted-foreground" />
-                    <div className="space-y-0.5">
-                      <Label htmlFor="ptt-toggle" className="text-sm font-medium cursor-pointer">
-                        Enviar como mensagem de voz
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Aparecerá como áudio gravado no WhatsApp
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    id="ptt-toggle"
-                    checked={isPtt}
-                    onCheckedChange={setIsPtt}
-                    disabled={isSending}
-                  />
-                </div>
-              )}
-
-              {/* Caption */}
-              <div className="space-y-2">
-                <Label>Legenda (opcional)</Label>
-                <Textarea
-                  placeholder="Adicione uma legenda..."
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  disabled={isSending}
-                  className="min-h-[80px] resize-none"
-                />
-                <EmojiPicker onEmojiSelect={(emoji) => setCaption(prev => prev + emoji)} disabled={isSending} />
-              </div>
+              <BroadcastMediaTab
+                mediaType={mediaType}
+                setMediaType={setMediaType}
+                mediaUrl={mediaUrl}
+                setMediaUrl={setMediaUrl}
+                selectedFile={selectedFile}
+                setSelectedFile={setSelectedFile}
+                previewUrl={previewUrl}
+                setPreviewUrl={setPreviewUrl}
+                caption={caption}
+                setCaption={setCaption}
+                isPtt={isPtt}
+                setIsPtt={setIsPtt}
+                filename={filename}
+                setFilename={setFilename}
+                isSending={isSending}
+              />
             </TabsContent>
 
             <TabsContent value="carousel" className="space-y-4">
@@ -1992,161 +1710,33 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
                     setCaption(newText);
                   }
                 }}
-                disabled={progress.status === 'sending' || progress.status === 'paused'}
+                disabled={isSending}
               />
             )}
 
-            {/* Common sections for all tabs - Toggle and ParticipantSelector */}
-            <div className="space-y-4 mt-4">
-              {/* Toggle para excluir admins */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50">
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-muted-foreground" />
-                  <div className="space-y-0.5">
-                    <Label htmlFor="exclude-admins-broadcast" className="text-sm font-medium cursor-pointer">
-                      Não enviar para Admins/Donos
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {excludeAdmins 
-                        ? `${selectedParticipants.size} de ${uniqueRegularMembersCount} contato(s) selecionado(s)`
-                        : `Enviará para ${selectedGroups.length} grupo${selectedGroups.length !== 1 ? 's' : ''}`
-                      }
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  id="exclude-admins-broadcast"
-                  checked={excludeAdmins}
-                  onCheckedChange={setExcludeAdmins}
-                  disabled={isSending}
-                />
-              </div>
-
-              {/* Participant Selector - shows when excludeAdmins is active */}
-              {excludeAdmins && (
-                <ParticipantSelector
-                  selectedGroups={selectedGroups}
-                  selectedParticipants={selectedParticipants}
-                  onSelectionChange={handleParticipantSelectionChange}
-                  disabled={isSending}
-                />
-              )}
-            </div>
-
-            {/* Common sections for all tabs */}
-            <div className="space-y-4 mt-4">
-              {/* Randomizador de delay anti-bloqueio */}
-              <div className="p-3 bg-muted/50 rounded-lg border border-border/50 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-muted-foreground" />
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">
-                      Intervalo entre envios (anti-bloqueio)
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Adiciona delay aleatório para evitar detecção de spam
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={randomDelay === 'none' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setRandomDelay('none')}
-                    disabled={isSending}
-                  >
-                    Desativado
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={randomDelay === '5-10' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setRandomDelay('5-10')}
-                    disabled={isSending}
-                  >
-                    5-10 seg
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={randomDelay === '10-20' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setRandomDelay('10-20')}
-                    disabled={isSending}
-                  >
-                    10-20 seg
-                  </Button>
-                </div>
-
-                {/* Estimated time indicator */}
-                {estimatedTime && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-accent/50 rounded-md px-3 py-2">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>
-                      Tempo estimado: <span className="font-medium text-foreground">{formatDuration(estimatedTime.min)} - {formatDuration(estimatedTime.max)}</span>
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Deduplication info when excludeAdmins is enabled */}
-              {excludeAdmins && totalRegularMembers > uniqueRegularMembersCount && (
-                <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 text-sm text-muted-foreground">
-                  <span className="font-medium text-primary">Deduplicação ativa:</span> {totalRegularMembers - uniqueRegularMembersCount} contato(s) em múltiplos grupos receberão apenas 1 mensagem.
-                </div>
-              )}
-
-              {/* Summary */}
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="gap-1">
-                  <MessageSquare className="w-3 h-3" />
-                  {selectedGroups.length} grupo{selectedGroups.length !== 1 ? 's' : ''}
-                </Badge>
-                <Badge variant="outline" className="gap-1">
-                  <Users className="w-3 h-3" />
-                  {excludeAdmins ? selectedParticipants.size : (activeTab === 'carousel' ? selectedGroups.length : totalMembers)} destinatário{(excludeAdmins ? selectedParticipants.size : (activeTab === 'carousel' ? selectedGroups.length : totalMembers)) !== 1 ? 's' : ''}
-                </Badge>
-                {activeTab === 'carousel' && (
-                  <Badge variant="secondary" className="gap-1">
-                    <LayoutGrid className="w-3 h-3" />
-                    {carouselData.cards.length} card{carouselData.cards.length !== 1 ? 's' : ''}
-                  </Badge>
-                )}
-                {activeTab === 'media' && (
-                  <Badge variant="secondary" className="gap-1">
-                    {mediaType === 'image' && <Image className="w-3 h-3" />}
-                    {mediaType === 'video' && <Video className="w-3 h-3" />}
-                    {mediaType === 'audio' && <Mic className="w-3 h-3" />}
-                    {mediaType === 'file' && <FileIcon className="w-3 h-3" />}
-                    {mediaType === 'image' ? 'Imagem' : mediaType === 'video' ? 'Vídeo' : mediaType === 'audio' ? (isPtt ? 'Voz' : 'Áudio') : 'Arquivo'}
-                  </Badge>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2">
-                {activeTab !== 'carousel' && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowScheduleDialog(true)}
-                    disabled={isSending || !canSchedule}
-                    size="sm"
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    Agendar
-                  </Button>
-                )}
-                <Button
-                  onClick={handleSend}
-                  disabled={isSending || !canSend}
-                  size="sm"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Enviar para {excludeAdmins ? selectedParticipants.size : (activeTab === 'carousel' ? selectedGroups.length : targetCount)}
-                </Button>
-              </div>
-            </div>
+            <BroadcastSendControls
+              activeTab={activeTab}
+              selectedGroups={selectedGroups}
+              excludeAdmins={excludeAdmins}
+              setExcludeAdmins={setExcludeAdmins}
+              selectedParticipants={selectedParticipants}
+              onParticipantSelectionChange={handleParticipantSelectionChange}
+              uniqueRegularMembersCount={uniqueRegularMembersCount}
+              totalMembers={totalMembers}
+              totalRegularMembers={totalRegularMembers}
+              randomDelay={randomDelay}
+              setRandomDelay={setRandomDelay}
+              estimatedTime={estimatedTime}
+              formatDuration={formatDuration}
+              mediaType={mediaType}
+              isPtt={isPtt}
+              carouselCardCount={carouselData.cards.length}
+              isSending={isSending}
+              canSend={canSend}
+              canSchedule={canSchedule}
+              onSend={handleSend}
+              onSchedule={() => setShowScheduleDialog(true)}
+            />
           </Tabs>
         </CardContent>
       </Card>
