@@ -353,8 +353,7 @@ const LeadsBroadcaster = () => {
         });
         
         if (response.error) {
-          console.error('Verification error:', response.error);
-          toast.error('Erro ao verificar números');
+          handleError(response.error, 'Erro ao verificar números', 'Verification');
           break;
         }
         
