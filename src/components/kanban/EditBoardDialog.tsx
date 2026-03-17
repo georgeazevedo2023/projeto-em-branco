@@ -25,7 +25,7 @@ export interface KanbanBoard {
   instance_id: string | null;
 }
 
-interface KanbanColumn {
+export interface KanbanColumn {
   id: string;
   name: string;
   color: string;
