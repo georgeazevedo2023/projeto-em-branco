@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, CheckSquare, Square, User, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
 interface LeadListProps {
   leads: Lead[];
@@ -15,33 +16,6 @@ interface LeadListProps {
 }
 
 const ITEMS_PER_PAGE = 50;
-
-// Formata o número para exibição: +55 81 99999-9999
-const formatPhoneForDisplay = (phone: string, jid?: string): string => {
-  // Usa o phone ou extrai do JID
-  let number = phone || jid?.split('@')[0] || '';
-  
-  // Remove caracteres não-numéricos e máscara
-  number = number.replace(/[^\d]/g, '');
-  
-  if (!number || number.length < 10) return phone;
-  
-  // Se não começa com 55, adiciona
-  if (!number.startsWith('55') && number.length <= 11) {
-    number = '55' + number;
-  }
-  
-  // Formata: +55 81 99999-9999
-  if (number.length >= 12) {
-    const ddi = number.slice(0, 2);
-    const ddd = number.slice(2, 4);
-    const parte1 = number.slice(4, 9);
-    const parte2 = number.slice(9);
-    return `+${ddi} ${ddd} ${parte1}-${parte2}`;
-  }
-  
-  return phone;
-};
 
 const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) => {
   const [search, setSearch] = useState('');
@@ -236,11 +210,11 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
               
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">
-                  {lead.verifiedName || lead.name || formatPhoneForDisplay(lead.phone, lead.jid)}
+                  {lead.verifiedName || lead.name || formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
                 </p>
                 {(lead.verifiedName || lead.name) && (
                   <p className="text-xs text-muted-foreground">
-                    {formatPhoneForDisplay(lead.phone, lead.jid)}
+                    {formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
                   </p>
                 )}
               </div>

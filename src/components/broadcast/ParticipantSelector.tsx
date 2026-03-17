@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Users, Search, CheckCircle2, XCircle } from 'lucide-react';
 import type { Group } from './GroupSelector';
+import { formatPhoneDisplay } from '@/lib/phoneUtils';
 
 interface ParticipantInfo {
   jid: string;
@@ -22,21 +23,6 @@ interface ParticipantSelectorProps {
   onSelectionChange: (selected: Set<string>) => void;
   disabled?: boolean;
 }
-
-// Formata para DDI + DDD + NUMERO (ex: 55 11 999999999)
-const formatPhoneNumber = (value: string): string => {
-  const number = value.split('@')[0].replace(/\D/g, '');
-  if (!number || number.length < 10) return number || value;
-  
-  if (number.startsWith('55') && number.length >= 12 && number.length <= 13) {
-    const ddi = number.slice(0, 2);
-    const ddd = number.slice(2, 4);
-    const numero = number.slice(4);
-    return `${ddi} ${ddd} ${numero}`;
-  }
-  
-  return number;
-};
 
 // Verifica se o participante só tem LID (sem PhoneNumber real)
 const isLidOnlyJid = (jid: string, phoneNumber?: string): boolean => {
@@ -71,10 +57,10 @@ const ParticipantSelector = ({
           
           // For LID participants: show PushName as primary, no "[Sem número]"
           const displayName = hasPhoneNumber
-            ? formatPhoneNumber(rawNumber)
+            ? formatPhoneDisplay(rawNumber)
             : isLid
               ? (member.name || member.jid.split('@')[0])
-              : formatPhoneNumber(rawNumber);
+              : formatPhoneDisplay(rawNumber);
           
           participants.push({
             jid: member.jid,
