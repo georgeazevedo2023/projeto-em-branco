@@ -796,7 +796,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           setProgress(p => ({ ...p, currentMember: j + 1 }));
           
           if (j < membersToSend.length - 1) {
-            await delay(getRandomDelay());
+            await delay(getRandomDelay(randomDelay));
           }
         }
 
