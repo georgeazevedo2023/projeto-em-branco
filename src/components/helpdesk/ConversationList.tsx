@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { VariableSizeList as VirtualList } from 'react-window';
+import { VariableSizeList as VirtualList } from 'react-window/dist/index.cjs.js';
+import type { ListChildComponentProps } from 'react-window';
 import { Search, Inbox, UserCheck, AlertCircle, Building2, SlidersHorizontal, Tag, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
