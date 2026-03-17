@@ -8,7 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import { ArrowLeft, Users, MessageSquare, Image } from 'lucide-react';
+import { extractGroupsArray, type RawUazapiGroup } from '@/types/uazapi';
 import SendMessageForm from '@/components/group/SendMessageForm';
 import SendMediaForm from '@/components/group/SendMediaForm';
 
@@ -58,49 +60,17 @@ const SendToGroup = () => {
 
       setInstance(instanceData);
 
-      // Buscar grupos da instância
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        toast.error('Sessão expirada');
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session.access_token}`,
-          },
-          body: JSON.stringify({
-            action: 'groups',
-            token: instanceData.token,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erro ao buscar grupos');
-      }
-
-      const data = await response.json();
+      const data = await uazapiProxy({
+        action: 'groups',
+        token: instanceData.token,
+      });
       
       // Normalizar resposta
-      let rawGroups: any[];
-      if (Array.isArray(data)) {
-        rawGroups = data;
-      } else if (data?.groups && Array.isArray(data.groups)) {
-        rawGroups = data.groups;
-      } else if (data?.data && Array.isArray(data.data)) {
-        rawGroups = data.data;
-      } else {
-        rawGroups = [];
-      }
+      const rawGroups = extractGroupsArray(data);
 
       // Encontrar o grupo específico
       const decodedGroupId = decodeURIComponent(groupId || '');
-      const targetGroup = rawGroups.find((g: any) => {
+      const targetGroup = rawGroups.find((g) => {
         const gId = g.JID || g.jid || g.id;
         return gId === decodedGroupId;
       });
@@ -114,7 +84,7 @@ const SendToGroup = () => {
       // Formatar grupo e participantes
       const rawParticipants = targetGroup.Participants || targetGroup.participants || [];
       
-      const formattedParticipants: Participant[] = rawParticipants.map((p: any) => ({
+      const formattedParticipants: Participant[] = rawParticipants.map((p) => ({
         jid: p.JID || p.jid || p.id || '',
         isAdmin: p.IsAdmin || p.isAdmin || false,
         isSuperAdmin: p.IsSuperAdmin || p.isSuperAdmin || false,

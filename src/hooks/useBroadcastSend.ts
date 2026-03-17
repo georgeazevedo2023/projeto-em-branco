@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken as getAuthToken, getSessionUserId } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 import { saveToHelpdesk } from '@/lib/saveToHelpdesk';
 import { uploadCarouselImage, base64ToFile } from '@/lib/uploadCarouselImage';
@@ -153,9 +154,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
     groupNames?: string[]; carouselData?: CarouselData | null;
   }) => {
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) return;
-
+      const userId = await getSessionUserId();
       const completedAt = Date.now();
       let storedCarouselData = null;
       if (p.carouselData) {
@@ -183,7 +182,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
       }
 
       await supabase.from('broadcast_logs').insert({
-        user_id: session.data.session.user.id,
+        user_id: userId,
         instance_id: instance.id,
         instance_name: instance.name,
         message_type: p.messageType,
@@ -351,13 +350,12 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
 
   // ── getSession helper ────────────────────────────────────────────
   const getAccessToken = async (): Promise<string | null> => {
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) {
-      toast.error('Sessão expirada');
+    try {
+      return await getAuthToken();
+    } catch {
       setProgress(p => ({ ...p, status: 'error' }));
       return null;
     }
-    return session.data.session.access_token;
   };
 
   // ══════════════════════════════════════════════════════════════════
@@ -526,15 +524,14 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
 
     setIsScheduling(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) { toast.error('Sessão expirada'); return; }
+      const userId = await getSessionUserId();
 
       const results = await Promise.all(selectedGroups.map(group => {
         const regularMembers = group.participants.filter(p => !p.isAdmin && !p.isSuperAdmin);
         const recipients = excludeAdmins && regularMembers.length > 0
           ? regularMembers.map(m => ({ jid: m.jid })) : null;
         return supabase.from('scheduled_messages').insert({
-          user_id: session.data.session!.user.id,
+          user_id: userId,
           instance_id: instance.id,
           group_jid: group.id, group_name: group.name,
           exclude_admins: excludeAdmins, recipients,
@@ -572,8 +569,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
 
     setIsScheduling(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) { toast.error('Sessão expirada'); return; }
+      const userId = await getSessionUserId();
 
       const sendType = mediaType === 'audio' && isPtt ? 'ptt' : mediaType === 'file' ? 'document' : mediaType;
 
@@ -582,7 +578,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
         const recipients = excludeAdmins && regularMembers.length > 0
           ? regularMembers.map(m => ({ jid: m.jid })) : null;
         return supabase.from('scheduled_messages').insert({
-          user_id: session.data.session!.user.id,
+          user_id: userId,
           instance_id: instance.id,
           group_jid: group.id, group_name: group.name,
           exclude_admins: excludeAdmins, recipients,
