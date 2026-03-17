@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Inbox } from '@/types';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
