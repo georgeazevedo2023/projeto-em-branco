@@ -881,7 +881,7 @@ const AdminPanel = () => {
                       <div className="space-y-2">
                         <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">IDs para integração</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <InlineCopyableId label="Caixa de Entrada" id={inbox.id} icon={Inbox} />
+                          <CopyableId label="Caixa de Entrada" id={inbox.id} icon={Inbox} />
                           <InlineCopyableId label="Instância" id={inbox.instance_id} icon={MonitorSmartphone} />
                         </div>
                       </div>
