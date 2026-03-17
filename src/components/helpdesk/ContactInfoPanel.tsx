@@ -11,6 +11,7 @@ import { ConversationLabels } from './ConversationLabels';
 import { LabelPicker } from './LabelPicker';
 import { ManageLabelsDialog } from './ManageLabelsDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 import { formatBR } from '@/lib/dateUtils';
 import { useDepartments } from '@/hooks/useDepartments';
@@ -125,8 +126,7 @@ export const ContactInfoPanel = ({
   const handleSummarize = async (forceRefresh = false) => {
     setSummarizing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Não autenticado');
+      const accessToken = await getAccessToken();
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-conversation`,
@@ -134,7 +134,7 @@ export const ContactInfoPanel = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ conversation_id: conversation.id, force_refresh: forceRefresh }),
         }
@@ -245,8 +245,7 @@ export const ContactInfoPanel = ({
   const handleGenerateHistorySummary = async (convId: string) => {
     setGeneratingSummaryFor(convId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Não autenticado');
+      const accessToken = await getAccessToken();
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-conversation`,
@@ -254,7 +253,7 @@ export const ContactInfoPanel = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ conversation_id: convId, force_refresh: false }),
         }

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -109,7 +110,7 @@ const BackupModule = () => {
   const selectNone = () => setSelectedSections(new Set());
 
   const callBackupApi = async (action: string, tableName?: string) => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const token = await getAccessToken();
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/database-backup`,
       {

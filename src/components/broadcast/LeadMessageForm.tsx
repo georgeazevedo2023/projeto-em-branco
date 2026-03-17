@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken, getSessionUserId } from '@/hooks/useAuthSession';
 import { Send, MessageSquare, Image, Loader2, CheckCircle2, XCircle, Clock, Pause, Play, Timer, StopCircle, Shield, LayoutGrid } from 'lucide-react';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { toast } from 'sonner';
@@ -187,8 +188,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     carouselData?: CarouselData;
   }) => {
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) return;
+      const userId = await getSessionUserId();
 
       const completedAt = Date.now();
       const durationSeconds = Math.round((completedAt - params.startedAt) / 1000);
@@ -228,7 +228,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }
 
       await supabase.from('broadcast_logs').insert({
-        user_id: session.data.session.user.id,
+        user_id: userId,
         instance_id: instance.id,
         instance_name: instance.name,
         message_type: params.messageType,
@@ -415,9 +415,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     const hasValidCard = carouselData.cards.some(c => (c.image || c.imageFile) && c.text.trim());
     if (!hasValidCard) { toast.error('Preencha pelo menos um card com imagem e texto'); return; }
 
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) { toast.error('Sessão expirada'); return; }
-    const accessToken = session.data.session.access_token;
+    const accessToken = await getAccessToken();
 
     const { startedAt, successCount, failCount } = await runSendLoop(accessToken, async (lead) => {
       await sendCarousel(lead.jid, carouselData, accessToken);
@@ -460,9 +458,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
   const handleSendText = async () => {
     if (!message.trim()) { toast.error('Digite uma mensagem'); return; }
 
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) { toast.error('Sessão expirada'); return; }
-    const accessToken = session.data.session.access_token;
+    const accessToken = await getAccessToken();
 
     const { startedAt, successCount, failCount } = await runSendLoop(accessToken, async (lead) => {
       await sendText(lead.jid, message.trim(), accessToken);
@@ -486,9 +482,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
   const handleSendMedia = async () => {
     if (!selectedFile && !mediaUrl.trim()) { toast.error('Selecione um arquivo ou informe uma URL'); return; }
 
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) { toast.error('Sessão expirada'); return; }
-    const accessToken = session.data.session.access_token;
+    const accessToken = await getAccessToken();
 
     let mediaData = mediaUrl;
     if (selectedFile) mediaData = await fileToBase64(selectedFile);

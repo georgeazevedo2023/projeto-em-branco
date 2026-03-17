@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { Navigate } from 'react-router-dom';
 import { formatPhone } from '@/lib/phoneUtils';
 import { CopyableId } from '@/components/shared/CopyableId';
@@ -525,7 +526,7 @@ const AdminPanel = () => {
     }
     setIsCreatingUser(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const token = await getAccessToken();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -557,7 +558,7 @@ const AdminPanel = () => {
     if (editUserPassword && editUserPassword.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     setIsSavingUser(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const token = await getAccessToken();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -595,7 +596,7 @@ const AdminPanel = () => {
     if (!userToDelete) return;
     setIsDeletingUser(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const token = await getAccessToken();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -656,7 +657,7 @@ const AdminPanel = () => {
     }
     setIsSavingTeamUser(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const token = await getAccessToken();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
