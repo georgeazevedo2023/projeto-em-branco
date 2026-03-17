@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 export interface AudioRecorderState {
   isRecording: boolean;
