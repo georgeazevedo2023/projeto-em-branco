@@ -75,20 +75,7 @@ const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
 
   // parsePhoneToJid imported from shared utils
 
-  // Format phone for display
-  const formatPhoneDisplay = (phone: string): string => {
-    const cleaned = phone.replace(/\D/g, '');
-    
-    // Format: DDI DDD NUMBER (e.g., 55 11 999999999)
-    if (cleaned.length >= 12) {
-      const ddi = cleaned.slice(0, 2);
-      const ddd = cleaned.slice(2, 4);
-      const number = cleaned.slice(4);
-      return `${ddi} ${ddd} ${number}`;
-    }
-    
-    return cleaned;
-  };
+  // formatPhoneDisplay imported from shared utils
 
   const handlePasteImport = () => {
     if (!pasteText.trim()) {
