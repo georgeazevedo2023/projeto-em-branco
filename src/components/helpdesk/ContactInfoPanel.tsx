@@ -169,49 +169,17 @@ export const ContactInfoPanel = ({
     }
   };
 
-  // Fetch inbox members using two separate queries (no FK between inbox_users and user_profiles)
+  // Fetch inbox member IDs for agent select
   useEffect(() => {
-    const fetchAgents = async () => {
+    const fetchMemberIds = async () => {
       if (!conversation.inbox_id) return;
-
-      // Step 1: get user_ids from inbox_users
-      const { data: members, error: membersError } = await supabase
+      const { data: members } = await supabase
         .from('inbox_users')
         .select('user_id')
         .eq('inbox_id', conversation.inbox_id);
-
-      if (membersError) {
-        console.error('[ContactInfoPanel] fetchAgents members error:', membersError);
-        return;
-      }
-
-      const userIds = members?.map(m => m.user_id) ?? [];
-      if (userIds.length === 0) {
-        setAgents([]);
-        return;
-      }
-
-      // Step 2: get full names from user_profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('[ContactInfoPanel] fetchAgents profiles error:', profilesError);
-        return;
-      }
-
-      const agentList: InboxAgent[] = (profiles ?? [])
-        .map(p => ({
-          user_id: p.id,
-          full_name: p.full_name || 'Sem nome',
-        }))
-        .sort((a, b) => a.full_name.localeCompare(b.full_name));
-
-      setAgents(agentList);
+      setInboxMemberIds(members?.map(m => m.user_id) ?? []);
     };
-    fetchAgents();
+    fetchMemberIds();
   }, [conversation.inbox_id]);
 
   const assignedLabels = inboxLabels.filter(l => assignedLabelIds.includes(l.id));
