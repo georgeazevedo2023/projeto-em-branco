@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAccessToken } from "@/hooks/useAuthSession";
+import { edgeFunctionFetch, type EdgeFunctionError } from "@/lib/edgeFunctionClient";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
