@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { uazapiProxy } from '@/lib/uazapiClient';
-import { getAccessToken } from '@/hooks/useAuthSession';
+
 import {
   Copy,
   Eye,
