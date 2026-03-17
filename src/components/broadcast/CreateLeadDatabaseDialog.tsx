@@ -138,10 +138,9 @@ const CreateLeadDatabaseDialog = ({
         .insert(leadsToInsert);
 
       if (entriesError) {
-        console.error('Error inserting leads:', entriesError);
         // Rollback - delete the database
         await supabase.from('lead_databases').delete().eq('id', database.id);
-        toast.error('Erro ao inserir leads na base');
+        handleError(entriesError, 'Erro ao inserir leads na base', 'Insert leads');
         return;
       }
 
