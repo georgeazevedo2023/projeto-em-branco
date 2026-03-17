@@ -12,7 +12,7 @@ import { Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { edgeFunctionFetch, type EdgeFunctionError } from '@/lib/edgeFunctionClient';
 import { toast } from 'sonner';
 import { useInstances } from '@/hooks/useInstances';
 import { useInboxes } from '@/hooks/useInboxes';
@@ -138,33 +138,16 @@ const Settings = () => {
     setTestingId(configId);
     setTestResult(null);
     try {
-      const accessToken = await getAccessToken();
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-shift-report`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ config_id: configId, test_mode: testMode }),
-        }
+      const data = await edgeFunctionFetch<{ success?: boolean; report?: string; error?: string }>(
+        'send-shift-report',
+        { config_id: configId, test_mode: testMode },
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.error || 'Erro ao enviar relatório.');
-        setTestResult({ id: configId, success: false });
-        return;
-      }
 
       if (testMode) {
         setTestResult({ id: configId, success: true, report: data.report });
         toast.success('Prévia gerada com sucesso!');
       } else {
-        setTestResult({ id: configId, success: data.success });
+        setTestResult({ id: configId, success: !!data.success });
         if (data.success) {
           toast.success('Relatório enviado via WhatsApp!');
           queryClient.invalidateQueries({ queryKey: ['shift-report-configs'] });

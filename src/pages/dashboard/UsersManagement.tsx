@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { edgeFunctionFetch } from '@/lib/edgeFunctionClient';
 import { formatPhone } from '@/lib/phoneUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,26 +161,12 @@ const UsersManagement = () => {
     setIsCreating(true);
 
     try {
-      // Create user via edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          email: newUserEmail,
-          password: newUserPassword,
-          full_name: newUserName,
-          is_super_admin: newUserIsAdmin,
-        }),
+      await edgeFunctionFetch('admin-create-user', {
+        email: newUserEmail,
+        password: newUserPassword,
+        full_name: newUserName,
+        is_super_admin: newUserIsAdmin,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao criar usuário');
-      }
 
       toast.success('Usuário criado com sucesso!');
       setIsCreateDialogOpen(false);
@@ -241,22 +227,7 @@ const UsersManagement = () => {
     setIsDeleting(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          user_id: userToDelete.id,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao excluir usuário');
-      }
+      await edgeFunctionFetch('admin-delete-user', { user_id: userToDelete.id });
 
       toast.success('Usuário excluído com sucesso!');
       setIsDeleteDialogOpen(false);
