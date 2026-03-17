@@ -1124,7 +1124,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           }
 
           if (j < membersToSend.length - 1) {
-            await delay(getRandomDelay());
+            await delay(getRandomDelay(randomDelay));
           }
         }
 
