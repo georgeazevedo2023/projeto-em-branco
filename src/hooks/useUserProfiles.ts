@@ -16,7 +16,7 @@ interface UseUserProfilesOptions {
 }
 
 export function useUserProfiles(options: UseUserProfilesOptions = {}) {
-  const { enabled = true, userIds, select = 'id, full_name, email, avatar_url' } = options;
+  const { enabled = true, userIds } = options;
   const [profiles, setProfiles] = useState<UserProfileData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
