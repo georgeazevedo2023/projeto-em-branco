@@ -343,7 +343,7 @@ const BackupModule = () => {
             if (rows?.length) {
               const cols = Object.keys(rows[0]);
               const header = cols.join(',');
-              const body = rows.map((r: any) =>
+              const body = rows.map((r: Record<string, unknown>) =>
                 cols.map(c => {
                   const v = r[c];
                   if (v === null || v === undefined) return '';
