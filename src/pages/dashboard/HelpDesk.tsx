@@ -310,11 +310,11 @@ const HelpDesk = () => {
       });
 
       fetchConversations();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Sync error:', err);
       toast({
         title: 'Erro na sincronização',
-        description: err.message || 'Tente novamente',
+        description: err instanceof Error ? err.message : 'Tente novamente',
         variant: 'destructive',
       });
     } finally {

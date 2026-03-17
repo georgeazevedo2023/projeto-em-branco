@@ -33,8 +33,8 @@ export const LabelPicker = ({ conversationId, inboxLabels, assignedLabelIds, onC
           .insert({ conversation_id: conversationId, label_id: labelId });
       }
       onChanged();
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Erro', description: err instanceof Error ? err.message : 'Erro desconhecido', variant: 'destructive' });
     } finally {
       setLoading(null);
     }

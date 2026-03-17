@@ -275,7 +275,7 @@ const Instances = () => {
     if (!instanceToDelete) return;
     setIsDeletingInstance(true);
     try {
-      const { error } = await supabase.from('instances').update({ disabled: true } as any).eq('id', instanceToDelete.id);
+      const { error } = await supabase.from('instances').update({ disabled: true }).eq('id', instanceToDelete.id);
       if (error) throw error;
       toast.success('Instância removida do painel');
       setInstanceToDelete(null);

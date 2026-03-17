@@ -260,7 +260,7 @@ const KanbanBoard = () => {
         .select('user_profiles(id, full_name, email)')
         .eq('inbox_id', boardData.inbox_id);
       const members = (data || [])
-        .map((d: any) => d.user_profiles)
+        .map((d: Record<string, unknown>) => d.user_profiles)
         .filter(Boolean) as TeamMember[];
       // Deduplicar por id
       const unique = [...new Map(members.map(m => [m.id, m])).values()];
