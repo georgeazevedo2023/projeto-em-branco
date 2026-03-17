@@ -183,8 +183,7 @@ const LeadsBroadcaster = () => {
       setLeads(loadedLeads);
       setSelectedLeads(new Set(loadedLeads.map(l => l.id)));
     } catch (error) {
-      console.error('Error loading leads:', error);
-      toast.error('Erro ao carregar contatos da base');
+      handleError(error, 'Erro ao carregar contatos da base', 'Load leads');
     } finally {
       setIsLoadingLeads(false);
     }
