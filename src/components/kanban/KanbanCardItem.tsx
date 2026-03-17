@@ -185,4 +185,4 @@ export const KanbanCardItem = memo(function KanbanCardItem({ card, onClick, isDr
       </div>
     </div>
   );
-}
+});
