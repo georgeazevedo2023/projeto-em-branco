@@ -58,7 +58,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
     content: string | null;
     media_url: string | null;
   }) => {
-    const inbox = conversation.inbox as any;
+    const inbox = conversation.inbox;
     const webhookUrl = inbox?.webhook_outgoing_url;
     if (!webhookUrl || !user) return;
     try {
