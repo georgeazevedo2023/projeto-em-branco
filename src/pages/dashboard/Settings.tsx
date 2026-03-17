@@ -59,25 +59,8 @@ const Settings = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Fetch inboxes
-  const { data: inboxes } = useQuery({
-    queryKey: ['inboxes-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('inboxes').select('id, name, instance_id').order('name');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch instances
-  const { data: instances } = useQuery({
-    queryKey: ['instances-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('instances').select('id, name, status').eq('disabled', false).order('name');
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const { inboxes } = useInboxes();
+  const { instances } = useInstances();
 
   // Fetch shift report configs
   const { data: configs, isLoading: configsLoading } = useQuery({
