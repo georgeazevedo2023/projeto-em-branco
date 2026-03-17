@@ -166,15 +166,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
 
   // getRandomDelay imported from broadcastSender
 
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds}s`;
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (mins < 60) return `${mins}min${secs > 0 ? ` ${secs}s` : ''}`;
-    const hours = Math.floor(mins / 60);
-    const remainingMins = mins % 60;
-    return `${hours}h${remainingMins > 0 ? ` ${remainingMins}min` : ''}`;
-  };
+  // formatTime imported from broadcastSender
 
   const calculateEstimatedTime = (): string => {
     if (randomDelay === 'none') return '';
