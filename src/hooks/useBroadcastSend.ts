@@ -350,13 +350,12 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
 
   // ── getSession helper ────────────────────────────────────────────
   const getAccessToken = async (): Promise<string | null> => {
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) {
-      toast.error('Sessão expirada');
+    try {
+      return await getAuthToken();
+    } catch {
       setProgress(p => ({ ...p, status: 'error' }));
       return null;
     }
-    return session.data.session.access_token;
   };
 
   // ══════════════════════════════════════════════════════════════════
