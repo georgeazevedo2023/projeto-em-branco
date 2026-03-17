@@ -22,15 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, RefreshCw, CheckCircle2, XCircle, AlertCircle, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UazapiInstance {
-  id: string;
-  instanceName: string;
-  token: string;
-  connectionStatus: string;
-  ownerJid?: string;
-  profilePicUrl?: string;
-  profileName?: string;
-}
+import type { UazapiInstance } from '@/types/uazapi';
 
 interface LocalInstance {
   id: string;

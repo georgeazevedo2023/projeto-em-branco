@@ -27,21 +27,8 @@ interface GroupData {
   }>;
 }
 
-interface RawUazapiGroup {
-  JID?: string; jid?: string; id?: string;
-  Name?: string; name?: string; subject?: string;
-  Size?: number; size?: number;
-  Participants?: RawUazapiParticipant[];
-  participants?: RawUazapiParticipant[];
-}
-
-interface RawUazapiParticipant {
-  JID?: string; jid?: string; id?: string;
-  DisplayName?: string; PushName?: string; pushName?: string; displayName?: string;
-  PhoneNumber?: string; phoneNumber?: string;
-  IsAdmin?: boolean; isAdmin?: boolean;
-  IsSuperAdmin?: boolean; isSuperAdmin?: boolean;
-}
+import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
+import { extractGroupsArray } from '@/types/uazapi';
 
 interface GroupsTabProps {
   instance: Instance;
