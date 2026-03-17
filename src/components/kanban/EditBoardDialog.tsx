@@ -443,7 +443,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
       const resolvedEntityId = field.field_type === 'entity_select' && field.entity_id
         ? (entityIdMap[field.entity_id] || field.entity_id)
         : null;
-      const payload: any = {
+      const payload: TablesInsert<'kanban_fields'> = {
         board_id: board.id,
         name: field.name,
         field_type: field.field_type,
