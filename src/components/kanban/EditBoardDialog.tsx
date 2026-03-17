@@ -502,7 +502,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
 
       // Sync values
       const { data: dbValues } = await supabase.from('kanban_entity_values').select('id').eq('entity_id', realEntityId);
-      const dbValueIds = (dbValues || []).map((v: any) => v.id);
+      const dbValueIds = (dbValues || []).map((v) => v.id);
       const currentValueIds = entity.values.filter(v => !v.id.startsWith('new_')).map(v => v.id);
       const valuesToDelete = dbValueIds.filter((id: string) => !currentValueIds.includes(id));
       if (valuesToDelete.length > 0) await supabase.from('kanban_entity_values').delete().in('id', valuesToDelete);
