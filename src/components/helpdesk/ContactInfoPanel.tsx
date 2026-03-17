@@ -244,8 +244,7 @@ export const ContactInfoPanel = ({
   const handleGenerateHistorySummary = async (convId: string) => {
     setGeneratingSummaryFor(convId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Não autenticado');
+      const accessToken = await getAccessToken();
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-conversation`,
