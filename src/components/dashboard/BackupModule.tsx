@@ -412,7 +412,7 @@ const BackupModule = () => {
       if (section.id === 'storage') {
         const buckets = await callBackupApi('storage-buckets');
         if (buckets?.length) {
-          csvFiles.push({ name: 'storage_buckets.csv', content: `id,name,public,created_at\n${buckets.map((b: any) => `${b.id},${b.name},${b.public},${b.created_at}`).join('\n')}` });
+          csvFiles.push({ name: 'storage_buckets.csv', content: `id,name,public,created_at\n${buckets.map((b: Record<string, unknown>) => `${b.id},${b.name},${b.public},${b.created_at}`).join('\n')}` });
         }
       }
     }

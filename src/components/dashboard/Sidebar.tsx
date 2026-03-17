@@ -117,8 +117,10 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
         ]);
 
         const allDepts2 = deptsRes2.data || [];
-        const rawInboxes = (userInboxesRes.data || []).map((d: any) => d.inboxes).filter(Boolean);
-        const inboxList: InboxItem[] = rawInboxes.map((ib: any) => ({
+        const rawInboxes = (userInboxesRes.data || [])
+          .map((d: { inboxes: { id: string; name: string; instance_id: string } | null }) => d.inboxes)
+          .filter(Boolean) as { id: string; name: string; instance_id: string }[];
+        const inboxList: InboxItem[] = rawInboxes.map((ib) => ({
           ...ib,
           departments: allDepts2.filter(d => d.inbox_id === ib.id),
         }));

@@ -242,8 +242,8 @@ const InboxManagement = () => {
       toast.success('Webhook Outgoing atualizada!');
       setEditingOutgoingId(null);
       fetchInboxes();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar webhook outgoing');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook outgoing');
     } finally {
       setIsSavingOutgoing(false);
     }

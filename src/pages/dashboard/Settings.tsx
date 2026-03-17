@@ -102,8 +102,8 @@ const Settings = () => {
       setForm({ inbox_id: '', instance_id: '', recipient_number: '', send_hour: '18' });
       toast.success('Relatório de turno configurado com sucesso!');
     },
-    onError: (err: any) => {
-      toast.error('Erro ao salvar configuração: ' + err.message);
+    onError: (err: unknown) => {
+      toast.error('Erro ao salvar configuração: ' + (err instanceof Error ? err.message : String(err)));
     },
   });
 

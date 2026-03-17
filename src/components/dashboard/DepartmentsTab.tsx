@@ -247,7 +247,7 @@ const DepartmentsTab = () => {
     try {
       const { error } = await supabase
         .from('departments')
-        .update({ is_default: true } as any)
+        .update({ is_default: true })
         .eq('id', dept.id);
       if (error) throw error;
       toast.success(`"${dept.name}" definido como padrão`);
