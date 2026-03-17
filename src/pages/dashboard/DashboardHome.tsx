@@ -87,20 +87,8 @@ const DashboardHome = () => {
       if (instancesError) throw instancesError;
 
       if (instancesData && instancesData.length > 0) {
-        const userIds = [...new Set(instancesData.map((i) => i.user_id))];
-        const { data: profilesData } = await supabase
-          .from('user_profiles')
-          .select('id, full_name, email')
-          .in('id', userIds);
-
-        const profilesMap = new Map(profilesData?.map((p) => [p.id, p]) || []);
-        const instancesWithProfiles = instancesData.map((instance) => ({
-          ...instance,
-          user_profiles: profilesMap.get(instance.user_id),
-        }));
-
-        setInstances(instancesWithProfiles as Instance[]);
-        fetchGroupsStats(instancesWithProfiles as Instance[]);
+        setInstances(instancesData as Instance[]);
+        fetchGroupsStats(instancesData as Instance[]);
       } else {
         setInstances([]);
       }
