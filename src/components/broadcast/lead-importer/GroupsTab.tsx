@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Users, Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatPhoneDisplay } from '@/lib/phoneUtils';
-import type { Instance } from '../InstanceSelector';
+import type { Instance } from '@/types';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 
 interface GroupData {

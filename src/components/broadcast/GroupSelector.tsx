@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Search, Users, CheckSquare, Square, MessageSquare } from 'lucide-react';
-import type { Instance } from './InstanceSelector';
+import type { Instance } from '@/types';
 
 import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
 import { extractGroupsArray } from '@/types/uazapi';

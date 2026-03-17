@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Server, Database } from 'lucide-react';
-import type { Instance } from './InstanceSelector';
+import type { Instance } from '@/types';
 
 interface LeadDatabase {
   id: string;

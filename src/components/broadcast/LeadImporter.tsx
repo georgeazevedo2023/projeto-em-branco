@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClipboardPaste, FileSpreadsheet, Users, Plus } from 'lucide-react';
-import type { Instance } from './InstanceSelector';
+import type { Instance } from '@/types';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 import PasteTab from './lead-importer/PasteTab';
 import CsvTab from './lead-importer/CsvTab';
