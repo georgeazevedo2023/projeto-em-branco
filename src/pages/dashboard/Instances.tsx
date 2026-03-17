@@ -56,7 +56,7 @@ const normalizeQrSrc = (qr: string): string => {
 };
 
 // Extrai QR code da resposta da API (pode vir em diferentes formatos)
-const extractQrCode = (data: any): string | null => {
+const extractQrCode = (data: Record<string, unknown>): string | null => {
   // Formato: { instance: { qrcode: "..." } }
   if (data?.instance?.qrcode) {
     return data.instance.qrcode;
