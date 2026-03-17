@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
