@@ -138,33 +138,16 @@ const Settings = () => {
     setTestingId(configId);
     setTestResult(null);
     try {
-      const accessToken = await getAccessToken();
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-shift-report`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ config_id: configId, test_mode: testMode }),
-        }
+      const data = await edgeFunctionFetch<{ success?: boolean; report?: string; error?: string }>(
+        'send-shift-report',
+        { config_id: configId, test_mode: testMode },
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.error || 'Erro ao enviar relatório.');
-        setTestResult({ id: configId, success: false });
-        return;
-      }
 
       if (testMode) {
         setTestResult({ id: configId, success: true, report: data.report });
         toast.success('Prévia gerada com sucesso!');
       } else {
-        setTestResult({ id: configId, success: data.success });
+        setTestResult({ id: configId, success: !!data.success });
         if (data.success) {
           toast.success('Relatório enviado via WhatsApp!');
           queryClient.invalidateQueries({ queryKey: ['shift-report-configs'] });

@@ -227,22 +227,7 @@ const UsersManagement = () => {
     setIsDeleting(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          user_id: userToDelete.id,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao excluir usuário');
-      }
+      await edgeFunctionFetch('admin-delete-user', { user_id: userToDelete.id });
 
       toast.success('Usuário excluído com sucesso!');
       setIsDeleteDialogOpen(false);
