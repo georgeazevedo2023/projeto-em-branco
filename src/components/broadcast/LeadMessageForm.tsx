@@ -653,7 +653,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }));
 
       try {
-        await sendToNumber(lead.jid, message.trim(), accessToken);
+        await sendText(lead.jid, message.trim(), accessToken);
         results.push({ name: displayName, success: true });
         // Save to HelpDesk
         saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, {
