@@ -531,7 +531,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
         const recipients = excludeAdmins && regularMembers.length > 0
           ? regularMembers.map(m => ({ jid: m.jid })) : null;
         return supabase.from('scheduled_messages').insert({
-          user_id: session.data.session!.user.id,
+          user_id: userId,
           instance_id: instance.id,
           group_jid: group.id, group_name: group.name,
           exclude_admins: excludeAdmins, recipients,
