@@ -202,14 +202,7 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
     group.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatPhone = (jid: string) => {
-    if (!jid) return 'Desconhecido';
-    // Remove @s.whatsapp.net, @lid ou qualquer sufixo @...
-    const phone = jid.split('@')[0];
-    if (!phone) return 'Desconhecido';
-    // Retornar apenas os dígitos, sem o sinal de +
-    return phone;
-  };
+  // formatPhone imported from shared utils
 
   if (!isConnected) {
     return (
