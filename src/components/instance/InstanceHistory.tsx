@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { Instance } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
