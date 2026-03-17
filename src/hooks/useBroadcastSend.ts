@@ -569,8 +569,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
 
     setIsScheduling(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) { toast.error('Sessão expirada'); return; }
+      const userId = await getSessionUserId();
 
       const sendType = mediaType === 'audio' && isPtt ? 'ptt' : mediaType === 'file' ? 'document' : mediaType;
 
