@@ -175,9 +175,8 @@ const UsersManagement = () => {
       setNewUserName('');
       setNewUserIsAdmin(false);
       fetchUsers();
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-      toast.error(error.message || 'Erro ao criar usuário');
+    } catch (error) {
+      handleError(error, 'Erro ao criar usuário', 'Error creating user');
     } finally {
       setIsCreating(false);
     }
