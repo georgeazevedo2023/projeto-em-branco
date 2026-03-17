@@ -331,20 +331,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     }
   };
 
-  const getAcceptedTypes = () => {
-    switch (mediaType) {
-      case 'image':
-        return ALLOWED_IMAGE_TYPES.join(',');
-      case 'video':
-        return ALLOWED_VIDEO_TYPES.join(',');
-      case 'audio':
-        return ALLOWED_AUDIO_TYPES.join(',');
-      case 'file':
-        return '*/*';
-      default:
-        return '*/*';
-    }
-  };
+  // getAcceptedTypes imported from broadcastSender
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
