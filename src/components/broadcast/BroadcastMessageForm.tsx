@@ -898,7 +898,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               totalMembers: 1,
             }));
 
-            await sendMediaToNumber(group.id, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
+            await sendMediaMsg(group.id, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
             setProgress(p => ({ ...p, currentMember: 1 }));
 
             results.push({ groupName: group.name, success: true });
