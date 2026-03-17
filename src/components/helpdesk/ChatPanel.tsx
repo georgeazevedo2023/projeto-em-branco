@@ -59,7 +59,7 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
         .select('status_ia')
         .eq('id', conversation.id)
         .maybeSingle();
-      setIaAtivada((data as Record<string, unknown> | null)?.status_ia === 'ligada');
+      setIaAtivada(data?.status_ia === 'ligada');
     };
     loadStatusIa();
   }, [conversation?.id]);
