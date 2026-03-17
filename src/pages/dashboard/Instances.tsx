@@ -354,25 +354,12 @@ const Instances = () => {
     setQrCode(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          action: 'connect',
-          instanceName: instance.name,
-          instance_id: instance.id,
-        }),
-      });
-
-      const result = await response.json();
+      const result = await uazapiProxy({
+        action: 'connect',
+        instanceName: instance.name,
+        instance_id: instance.id,
+      }) as Record<string, unknown>;
       console.log('Connect response:', result);
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao conectar');
-      }
 
       // Verificar se já está conectado
       if (checkIfConnected(result)) {
@@ -386,13 +373,12 @@ const Instances = () => {
       const qr = extractQrCode(result);
       if (qr) {
         setQrCode(normalizeQrSrc(qr));
-        // Iniciar polling para verificar conexão
         startPolling(instance);
       } else {
         console.error('QR code not found in response:', result);
         toast.error('Não foi possível gerar o QR Code');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error connecting:', error);
       toast.error(error.message || 'Erro ao gerar QR Code');
     } finally {
