@@ -44,6 +44,23 @@ interface GroupData {
   }>;
 }
 
+/** Raw UAZAPI group shape (camelCase + PascalCase variants) */
+interface RawUazapiGroup {
+  JID?: string; jid?: string; id?: string;
+  Name?: string; name?: string; subject?: string;
+  Size?: number; size?: number;
+  Participants?: RawUazapiParticipant[];
+  participants?: RawUazapiParticipant[];
+}
+
+interface RawUazapiParticipant {
+  JID?: string; jid?: string; id?: string;
+  DisplayName?: string; PushName?: string; pushName?: string; displayName?: string;
+  PhoneNumber?: string; phoneNumber?: string;
+  IsAdmin?: boolean; isAdmin?: boolean;
+  IsSuperAdmin?: boolean; isSuperAdmin?: boolean;
+}
+
 const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
   const [activeTab, setActiveTab] = useState<'paste' | 'csv' | 'groups' | 'manual'>('paste');
   
@@ -432,13 +449,13 @@ const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
       }
 
       // Map to our format
-      const mappedGroups = groupsData.map((g: any) => ({
-        id: g.JID || g.jid || g.id,
+      const mappedGroups = groupsData.map((g: RawUazapiGroup) => ({
+        id: g.JID || g.jid || g.id || '',
         name: g.Name || g.name || g.subject || 'Sem nome',
-        jid: g.JID || g.jid || g.id,
+        jid: g.JID || g.jid || g.id || '',
         size: g.Size || g.size || g.Participants?.length || g.participants?.length || 0,
-        participants: (g.Participants || g.participants || []).map((p: any) => ({
-          jid: p.JID || p.jid || p.id,
+        participants: (g.Participants || g.participants || []).map((p: RawUazapiParticipant) => ({
+          jid: p.JID || p.jid || p.id || '',
           pushName: p.DisplayName || p.PushName || p.pushName || p.displayName || '',
           phoneNumber: p.PhoneNumber || p.phoneNumber || '',
           isAdmin: p.IsAdmin || p.isAdmin || false,
@@ -519,7 +536,7 @@ const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
   );
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'paste' | 'csv' | 'manual' | 'groups')}>
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="paste" className="gap-2">
           <ClipboardPaste className="w-4 h-4" />

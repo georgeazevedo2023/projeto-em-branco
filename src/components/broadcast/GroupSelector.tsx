@@ -10,6 +10,24 @@ import { toast } from 'sonner';
 import { Search, Users, CheckSquare, Square, MessageSquare } from 'lucide-react';
 import type { Instance } from './InstanceSelector';
 
+/** Raw UAZAPI group shape (camelCase + PascalCase variants) */
+interface RawUazapiGroup {
+  JID?: string; jid?: string; id?: string;
+  Name?: string; name?: string; Subject?: string; Topic?: string; subject?: string;
+  Size?: number; size?: number; ParticipantCount?: number;
+  profilePicUrl?: string; pictureUrl?: string; PictureUrl?: string;
+  Participants?: RawUazapiParticipant[];
+  participants?: RawUazapiParticipant[];
+}
+
+interface RawUazapiParticipant {
+  JID?: string; jid?: string; id?: string;
+  PushName?: string; pushName?: string; DisplayName?: string; Name?: string; name?: string;
+  PhoneNumber?: string; phoneNumber?: string;
+  IsAdmin?: boolean; isAdmin?: boolean;
+  IsSuperAdmin?: boolean; isSuperAdmin?: boolean;
+}
+
 export interface Participant {
   jid: string;
   isAdmin: boolean;
@@ -74,7 +92,7 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
       const data = await response.json();
       
       // Normalizar resposta
-      let rawGroups: any[];
+      let rawGroups: RawUazapiGroup[];
       if (Array.isArray(data)) {
         rawGroups = data;
       } else if (data?.groups && Array.isArray(data.groups)) {
@@ -85,14 +103,14 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
         rawGroups = [];
       }
 
-      const formattedGroups: Group[] = rawGroups.map((g: any) => {
+      const formattedGroups: Group[] = rawGroups.map((g: RawUazapiGroup) => {
         const rawParticipants = g.Participants || g.participants || [];
         return {
-          id: g.JID || g.jid || g.id,
+          id: g.JID || g.jid || g.id || '',
           name: g.Name || g.name || g.Subject || g.Topic || g.subject || 'Grupo sem nome',
           size: rawParticipants.length || g.ParticipantCount || 0,
           pictureUrl: g.profilePicUrl || g.pictureUrl || g.PictureUrl,
-          participants: rawParticipants.map((p: any) => {
+          participants: rawParticipants.map((p: RawUazapiParticipant) => {
             // PhoneNumber é o número real, JID pode ser LID interno do WhatsApp
             let phoneNumber = p.PhoneNumber || p.phoneNumber || '';
             const jid = p.JID || p.jid || p.id || '';

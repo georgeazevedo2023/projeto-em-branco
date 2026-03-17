@@ -255,6 +255,7 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
             rowCount={filteredLeads.length}
             rowHeight={ROW_HEIGHT}
             rowComponent={LeadRowComponent}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             rowProps={rowProps as any}
             overscanCount={5}
             style={{ height: 256 }}

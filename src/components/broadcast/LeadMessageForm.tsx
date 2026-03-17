@@ -389,8 +389,9 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       try {
         await sendFn(lead);
         results.push({ name: displayName, success: true });
-      } catch (error: any) {
-        results.push({ name: displayName, success: false, error: error.message });
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        results.push({ name: displayName, success: false, error: msg });
       }
 
       setProgress(p => ({ ...p, results: [...results] }));
@@ -630,7 +631,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
                 <Shield className="w-4 h-4 text-muted-foreground" />
                 <Label>Delay anti-bloqueio</Label>
               </div>
-              <Select value={randomDelay} onValueChange={(v) => setRandomDelay(v as any)}>
+              <Select value={randomDelay} onValueChange={(v) => setRandomDelay(v as 'none' | '5-10' | '10-20')}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>

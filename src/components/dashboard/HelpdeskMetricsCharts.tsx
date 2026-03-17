@@ -95,7 +95,7 @@ const HelpdeskMetricsCharts = () => {
       if (iaConvsRes.data) {
         const inboxSecMap = new Map<string, { name: string; secs: number[]; }>();
 
-        iaConvsRes.data.forEach((conv: any) => {
+        iaConvsRes.data.forEach((conv) => {
           const msgs: { created_at: string; direction: string }[] = conv.conversation_messages || [];
           const sorted = [...msgs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
@@ -130,15 +130,15 @@ const HelpdeskMetricsCharts = () => {
 
       // --- Agent response times (raw data with IDs, names resolved via hook) ---
       if (agentRes.data) {
-        const ids = [...new Set(agentRes.data.map((c: any) => c.assigned_to).filter(Boolean))];
+        const ids = [...new Set(agentRes.data.map((c) => c.assigned_to).filter(Boolean))] as string[];
         setAssignedIds(ids);
 
         const agentInboxMap = new Map<string, { inbox: string; agentId: string; minutes: number[] }>();
 
-        agentRes.data.forEach((conv: any) => {
-          const msgs = conv.conversation_messages || [];
-          const incoming = msgs.filter((m: any) => m.direction === 'incoming').sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-          const outgoing = msgs.filter((m: any) => m.direction === 'outgoing').sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        agentRes.data.forEach((conv) => {
+          const msgs = (conv as Record<string, unknown>).conversation_messages as { created_at: string; direction: string }[] || [];
+          const incoming = msgs.filter((m) => m.direction === 'incoming').sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          const outgoing = msgs.filter((m) => m.direction === 'outgoing').sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
           if (!incoming.length || !outgoing.length) return;
           const firstIn = new Date(incoming[0].created_at).getTime();
