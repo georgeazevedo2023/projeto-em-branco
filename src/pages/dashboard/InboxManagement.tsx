@@ -170,7 +170,7 @@ const InboxManagement = () => {
         created_by: user!.id,
         webhook_url: webhookUrl.trim() || null,
         webhook_outgoing_url: webhookOutgoingUrl.trim() || null,
-      } as any);
+      } as Record<string, unknown>);
 
       if (error) throw error;
 
