@@ -149,12 +149,7 @@ const GroupDetails = () => {
     }
   };
 
-  const formatPhone = (jid: string) => {
-    if (!jid) return 'Desconhecido';
-    const phone = jid.split('@')[0];
-    if (!phone) return 'Desconhecido';
-    return phone;
-  };
+  // formatPhone imported from shared utils
 
   const handleBack = () => {
     navigate(`/dashboard/instances/${instanceId}?tab=groups`);
