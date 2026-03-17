@@ -490,7 +490,7 @@ const AdminPanel = () => {
   const handleSaveWebhook = async (inboxId: string) => {
     setIsSavingWebhook(true);
     try {
-      const { error } = await supabase.from('inboxes').update({ webhook_url: editWebhookValue.trim() || null } as Record<string, unknown>).eq('id', inboxId);
+      const { error } = await supabase.from('inboxes').update({ webhook_url: editWebhookValue.trim() || null }).eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook atualizado!');
       setEditingWebhookId(null);
