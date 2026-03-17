@@ -61,7 +61,7 @@ export interface UserProfile {
   email: string;
 }
 
-interface KanbanEntity {
+export interface KanbanEntity {
   id: string;
   name: string;
   position: number;
