@@ -282,7 +282,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
   // ── Generic send loop (group-level) ──────────────────────────────
   const runGroupLoop = async (
     accessToken: string,
-    sendFn: (groupId: string) => Promise<void>,
+    sendFn: (groupId: string) => Promise<unknown>,
     logParams: { messageType: string; content: string | null; mediaUrl: string | null; carouselData?: CarouselData | null },
   ) => {
     const results: SendProgress['results'] = [];
