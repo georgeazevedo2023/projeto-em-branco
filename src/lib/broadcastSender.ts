@@ -63,7 +63,7 @@ export const sendMediaToNumber = async (
   docName: string,
   accessToken: string
 ) => {
-  return proxyFetch(accessToken, {
+  return uazapiProxyRaw(accessToken, {
     action: 'send-media',
     instance_id: instanceId,
     groupjid: number,
