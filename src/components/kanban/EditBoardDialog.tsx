@@ -670,6 +670,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
               getInitials={getInitials}
             />
           </TabsContent>
+        </Tabs>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border mt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
