@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
+import type { Instance } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, Users, Search, MessageSquare } from 'lucide-react';
 import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
