@@ -148,8 +148,7 @@ const Instances = () => {
   useEffect(() => {
     const updateInstancesStatus = async () => {
       try {
-        const session = await supabase.auth.getSession();
-        if (!session.data.session) return;
+        const accessToken = await getAccessToken();
 
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
