@@ -13,8 +13,6 @@ interface UseUserProfilesOptions {
   enabled?: boolean;
   /** Filter by specific user IDs. Omit to fetch all visible profiles. */
   userIds?: string[];
-  /** Custom select columns. Default: 'id, full_name, email, avatar_url' */
-  select?: string;
 }
 
 export function useUserProfiles(options: UseUserProfilesOptions = {}) {
