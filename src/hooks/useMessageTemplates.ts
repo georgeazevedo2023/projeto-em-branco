@@ -53,8 +53,8 @@ export function useMessageTemplates(): UseMessageTemplatesReturn {
 
   const fetchTemplates = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         setTemplates([]);
         return;
       }
