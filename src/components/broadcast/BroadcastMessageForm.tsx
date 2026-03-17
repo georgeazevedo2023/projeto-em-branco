@@ -91,7 +91,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
   });
   const [isPtt, setIsPtt] = useState(() => initialData?.messageType === 'ptt');
   const [filename, setFilename] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
 
   // Carousel state - initialize from history if available
   const [carouselData, setCarouselData] = useState<CarouselData>(() => {
