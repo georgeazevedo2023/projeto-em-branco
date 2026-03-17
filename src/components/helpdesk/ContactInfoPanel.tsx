@@ -219,7 +219,7 @@ export const ContactInfoPanel = ({
     const deptId = value === '__none__' ? null : value;
     const { error } = await supabase
       .from('conversations')
-      .update({ department_id: deptId } as Record<string, unknown>)
+      .update({ department_id: deptId })
       .eq('id', conversation.id);
     if (error) {
       toast.error('Erro ao atribuir departamento');
