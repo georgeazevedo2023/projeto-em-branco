@@ -262,8 +262,7 @@ const LeadsBroadcaster = () => {
       setIsCreatingNewDatabase(false);
       toast.success(`Base "${db.name}" salva com ${leads.length} contatos`);
     } catch (error) {
-      console.error('Error saving database:', error);
-      toast.error('Erro ao salvar base de leads');
+      handleError(error, 'Erro ao salvar base de leads', 'Save database');
     } finally {
       setIsSavingDatabase(false);
     }
