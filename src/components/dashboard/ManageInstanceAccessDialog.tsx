@@ -40,10 +40,16 @@ export default function ManageInstanceAccessDialog({
   onSave,
 }: ManageInstanceAccessDialogProps) {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [superAdminIds, setSuperAdminIds] = useState<Set<string>>(new Set());
+
+  const { profiles: allProfiles, loading: profilesLoading } = useUserProfiles({ enabled: open });
+  const users = useMemo<UserProfile[]>(() =>
+    allProfiles.map(p => ({ ...p, isSuperAdmin: superAdminIds.has(p.id) })),
+    [allProfiles, superAdminIds]
+  );
+  const loading = profilesLoading;
 
   useEffect(() => {
     if (open && instance) {
