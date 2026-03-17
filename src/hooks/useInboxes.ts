@@ -1,19 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Inbox } from '@/types';
 
 export interface UseInboxesOptions {
   enabled?: boolean;
-  select?: string;
 }
 
 export function useInboxes(options: UseInboxesOptions = {}) {
-  const {
-    enabled = true,
-    select = 'id, name, instance_id',
-  } = options;
+  const { enabled = true } = options;
 
-  const [inboxes, setInboxes] = useState<Inbox[]>([]);
+  const [inboxes, setInboxes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -24,17 +19,17 @@ export function useInboxes(options: UseInboxesOptions = {}) {
     try {
       const { data, error: err } = await supabase
         .from('inboxes')
-        .select(select)
+        .select('id, name, instance_id')
         .order('name');
       if (err) throw err;
-      setInboxes((data as Inbox[]) || []);
+      setInboxes(data || []);
     } catch (err) {
       console.error('useInboxes error:', err);
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [enabled, select]);
+  }, [enabled]);
 
   useEffect(() => {
     fetchInboxes();
