@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Instance } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { edgeFunctionFetch } from '@/lib/edgeFunctionClient';
 import { toast } from 'sonner';
 import {
   Dialog,
