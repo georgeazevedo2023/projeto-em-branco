@@ -318,9 +318,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
       }
       setText('');
       onMessageSent();
-    } catch (err: any) {
-      console.error('Send error:', err);
-      toast.error(err.message || 'Erro ao enviar');
+    } catch (err) {
+      handleError(err, 'Erro ao enviar', 'Send error');
     } finally {
       setSending(false);
     }
