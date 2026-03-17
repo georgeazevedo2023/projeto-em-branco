@@ -149,8 +149,8 @@ export const ContactInfoPanel = ({
       }
 
       setAiSummary(result.summary);
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao gerar resumo');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar resumo');
     } finally {
       setSummarizing(false);
     }
