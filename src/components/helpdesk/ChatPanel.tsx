@@ -202,8 +202,7 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
 
       toast.success('Solicitação de ativação da IA enviada');
     } catch (err) {
-      console.error('Error activating IA:', err);
-      toast.error('Erro ao ativar IA');
+      handleError(err, 'Erro ao ativar IA', 'Activate IA');
     } finally {
       setAtivandoIa(false);
     }

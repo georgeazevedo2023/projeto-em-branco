@@ -56,7 +56,7 @@ const InstanceHistory = ({ instance }: InstanceHistoryProps) => {
 
       setLogs((data as ConnectionLog[]) || []);
     } catch (err) {
-      console.error('Error fetching connection logs:', err);
+      handleError(err, 'Erro ao carregar histórico', 'Fetch connection logs');
       setError('Erro ao carregar histórico');
     } finally {
       setLoading(false);

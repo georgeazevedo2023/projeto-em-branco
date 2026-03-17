@@ -218,8 +218,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           carousel_data: { message: carouselData.message, cards: uploadedCards },
         };
       } catch (err) {
-        console.error('Error uploading carousel images:', err);
-        toast.error('Erro ao enviar imagens. Tente novamente.');
+        handleError(err, 'Erro ao enviar imagens. Tente novamente.', 'Upload carousel images');
         return null;
       }
     } else if (activeTab === 'text') {

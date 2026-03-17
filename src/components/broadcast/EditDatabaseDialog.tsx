@@ -71,8 +71,7 @@ const EditDatabaseDialog = ({
         onOpenChange(false);
       }
     } catch (error) {
-      console.error('Error updating database:', error);
-      toast.error('Erro ao atualizar base');
+      handleError(error, 'Erro ao atualizar base', 'Update database');
     } finally {
       setIsSaving(false);
     }

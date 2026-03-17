@@ -150,7 +150,7 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
         }
       }
     } catch (error) {
-      console.error('Error fetching instances:', error);
+      handleError(error, 'Erro ao carregar instâncias', 'Sidebar fetch instances');
     }
   };
 

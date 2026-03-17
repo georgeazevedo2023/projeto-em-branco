@@ -387,8 +387,7 @@ const LeadsBroadcaster = () => {
       toast.success(`Verificação concluída: ${validCount} válidos, ${invalidCount} inválidos`);
       
     } catch (error) {
-      console.error('Verification error:', error);
-      toast.error('Erro ao verificar números');
+      handleError(error, 'Erro ao verificar números', 'Verification');
     } finally {
       setIsVerifying(false);
     }

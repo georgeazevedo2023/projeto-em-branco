@@ -205,8 +205,7 @@ const UsersManagement = () => {
       toast.success(currentlyAdmin ? 'Privilégios de admin removidos' : 'Privilégios de admin concedidos');
       fetchUsers();
     } catch (error) {
-      console.error('Error toggling admin:', error);
-      toast.error('Erro ao alterar permissões');
+      handleError(error, 'Erro ao alterar permissões', 'Toggle admin');
     }
   };
 

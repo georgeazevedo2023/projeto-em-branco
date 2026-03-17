@@ -146,8 +146,7 @@ const CsvTab = ({ onLeadsImported }: CsvTabProps) => {
       setNameColumnIndex(nameIndex);
       setShowColumnMapping(true);
     } catch (error) {
-      console.error('Error parsing file:', error);
-      toast.error('Erro ao processar o arquivo');
+      handleError(error, 'Erro ao processar o arquivo', 'Parse CSV');
     } finally {
       setIsProcessingCsv(false);
     }

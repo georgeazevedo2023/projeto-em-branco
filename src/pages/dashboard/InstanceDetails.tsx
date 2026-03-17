@@ -100,7 +100,7 @@ const InstanceDetails = () => {
         }
       }
     } catch (error) {
-      console.error('Error updating instance status:', error);
+      handleError(error, 'Erro ao atualizar status', 'Update instance status');
     }
   };
 

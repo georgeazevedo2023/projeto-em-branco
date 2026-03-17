@@ -152,8 +152,7 @@ const CreateLeadDatabaseDialog = ({
       
       onSuccess?.();
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erro ao criar base de leads');
+      handleError(error, 'Erro ao criar base de leads', 'Create lead DB');
     } finally {
       setIsCreating(false);
     }

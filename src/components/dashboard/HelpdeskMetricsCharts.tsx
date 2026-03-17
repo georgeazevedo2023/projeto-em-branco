@@ -160,7 +160,7 @@ const HelpdeskMetricsCharts = () => {
         setRawAgentData(agentInboxMap);
       }
     } catch (err) {
-      console.error('Error fetching helpdesk metrics:', err);
+      handleError(err, 'Erro ao carregar métricas', 'Fetch helpdesk metrics');
     } finally {
       setLoading(false);
     }
