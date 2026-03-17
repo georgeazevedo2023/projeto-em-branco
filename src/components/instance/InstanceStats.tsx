@@ -68,10 +68,8 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
               uptime,
               lastActivity,
             });
-            return;
           }
         }
-      }
 
       setStats({
         totalGroups: 0,

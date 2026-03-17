@@ -56,28 +56,11 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
   const fetchGroups = async (): Promise<number> => {
     try {
       setLoading(true);
-      const accessToken = await getAccessToken();
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            action: 'groups',
-            instance_id: instance.id,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erro ao buscar grupos');
-      }
-
-      const data = await response.json();
+      const data = await uazapiProxy({
+        action: 'groups',
+        instance_id: instance.id,
+      });
       console.log('Groups API response:', data);
       console.log('Response type:', typeof data, 'Is array:', Array.isArray(data));
       
