@@ -222,7 +222,7 @@ export default function Intelligence() {
     setAnalysis(null);
 
     try {
-      const data = await edgeFunctionFetch<Record<string, unknown>>("analyze-summaries", {
+      const data = await edgeFunctionFetch<AnalysisResult>("analyze-summaries", {
         inbox_id: selectedInbox === "all" ? null : selectedInbox,
         period_days: parseInt(periodDays),
       });

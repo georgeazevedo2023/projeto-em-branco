@@ -108,8 +108,9 @@ const BackupModule = () => {
   const selectAll = () => setSelectedSections(new Set(EXPORT_SECTIONS.map(s => s.id)));
   const selectNone = () => setSelectedSections(new Set());
 
-  const callBackupApi = async (action: string, tableName?: string) => {
-    const json = await edgeFunctionFetch<{ data?: unknown[] }>('database-backup', { action, table_name: tableName });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const callBackupApi = async (action: string, tableName?: string): Promise<any[]> => {
+    const json = await edgeFunctionFetch<{ data?: any[] }>('database-backup', { action, table_name: tableName });
     return json.data || [];
   };
 
