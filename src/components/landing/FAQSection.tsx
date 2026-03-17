@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -34,7 +35,7 @@ const faqs = [
   },
 ];
 
-const FAQSection = () => {
+const FAQSection = forwardRef<HTMLElement>((_, _ref) => {
   const { ref, isInView } = useInView({ threshold: 0.2 });
 
   return (
@@ -72,6 +73,8 @@ const FAQSection = () => {
       </div>
     </section>
   );
-};
+});
+
+FAQSection.displayName = 'FAQSection';
 
 export default FAQSection;
