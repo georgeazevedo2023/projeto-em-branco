@@ -1112,6 +1112,16 @@ const BroadcastHistory = ({ onResend }: BroadcastHistoryProps) => {
               })}
           </div>
         )}
+        {hasMoreLogs && (
+          <div className="pt-4 flex justify-center">
+            <button
+              onClick={handleLoadMoreLogs}
+              className="px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              Carregar mais registros
+            </button>
+          </div>
+        )}
       </CardContent>
 
       {/* Delete Confirmation Dialog */}
