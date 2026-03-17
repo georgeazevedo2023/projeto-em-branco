@@ -40,20 +40,17 @@ interface HelpdeskLeadsStats {
 const DashboardHome = () => {
   const { profile, isSuperAdmin } = useAuth();
   const { inboxes } = useInboxes();
-  const { profile, isSuperAdmin } = useAuth();
   const [instances, setInstances] = useState<Instance[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingStats, setLoadingStats] = useState(false);
   const [instanceStats, setInstanceStats] = useState<InstanceStats[]>([]);
   const [helpdeskLeads, setHelpdeskLeads] = useState<HelpdeskLeadsStats>({ today: 0, yesterday: 0, total: 0, dailyData: [] });
-  const [inboxes, setInboxes] = useState<InboxOption[]>([]);
   const [filters, setFilters] = useState<DashboardFiltersState>({ instanceId: null, inboxId: null, period: 30 });
   const [showInstanceDetails, setShowInstanceDetails] = useState(false);
 
   useEffect(() => {
     fetchData();
-    fetchInboxes();
   }, [isSuperAdmin]);
 
   useEffect(() => {
