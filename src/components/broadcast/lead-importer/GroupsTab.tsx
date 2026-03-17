@@ -63,10 +63,7 @@ const GroupsTab = ({ instance, onLeadsImported }: GroupsTabProps) => {
       if (!response.ok) throw new Error('Failed to fetch groups');
 
       const data = await response.json();
-      let groupsData: GroupData[] = [];
-      if (Array.isArray(data)) groupsData = data;
-      else if (data.groups && Array.isArray(data.groups)) groupsData = data.groups;
-      else if (data.data && Array.isArray(data.data)) groupsData = data.data;
+      const groupsData = extractGroupsArray(data);
 
       const mappedGroups = groupsData.map((g: RawUazapiGroup) => ({
         id: g.JID || g.jid || g.id || '',
