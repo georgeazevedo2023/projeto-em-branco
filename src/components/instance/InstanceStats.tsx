@@ -55,21 +55,20 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
         });
 
         if (Array.isArray(data)) {
-            const totalParticipants = (data as Array<Record<string, unknown>>).reduce(
-              (acc: number, group) =>
-                acc + ((group.size as number) || (group.participants as unknown[] | undefined)?.length || 0),
-              0
-            );
-            setStats({
-            );
-            setStats({
-              totalGroups: (data as unknown[]).length,
-              totalParticipants,
-              uptime,
-              lastActivity,
-            });
-          }
+          const totalParticipants = (data as Array<Record<string, unknown>>).reduce(
+            (acc: number, group) =>
+              acc + ((group.size as number) || (group.participants as unknown[] | undefined)?.length || 0),
+            0
+          );
+          setStats({
+            totalGroups: data.length,
+            totalParticipants,
+            uptime,
+            lastActivity,
+          });
+          return;
         }
+      }
 
       setStats({
         totalGroups: 0,
