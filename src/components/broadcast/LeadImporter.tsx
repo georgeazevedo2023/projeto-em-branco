@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { ClipboardPaste, Users, Plus, Search, Loader2, FileSpreadsheet, Upload, X, ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { parsePhoneToJid, formatPhoneDisplay } from '@/lib/phoneUtils';
 import * as XLSX from 'xlsx';
 import type { Instance } from './InstanceSelector';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
