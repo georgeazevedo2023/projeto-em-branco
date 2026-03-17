@@ -63,7 +63,7 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
             setStats({
             );
             setStats({
-              totalGroups: groups.length,
+              totalGroups: (data as unknown[]).length,
               totalParticipants,
               uptime,
               lastActivity,
