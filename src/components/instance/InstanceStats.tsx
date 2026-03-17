@@ -60,37 +60,36 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
       // Se conectado, buscar grupos para estatísticas
       if (isConnected) {
         const accessToken = await getAccessToken();
-          const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${session.data.session.access_token}`,
-              },
-              body: JSON.stringify({
-                action: 'groups',
-                instance_id: instance.id,
-              }),
-            }
-          );
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              action: 'groups',
+              instance_id: instance.id,
+            }),
+          }
+        );
 
-          if (response.ok) {
-            const groups = await response.json();
-            if (Array.isArray(groups)) {
-              const totalParticipants = groups.reduce(
-                (acc: number, group: any) =>
-                  acc + (group.size || group.participants?.length || 0),
-                0
-              );
-              setStats({
-                totalGroups: groups.length,
-                totalParticipants,
-                uptime,
-                lastActivity,
-              });
-              return;
-            }
+        if (response.ok) {
+          const groups = await response.json();
+          if (Array.isArray(groups)) {
+            const totalParticipants = groups.reduce(
+              (acc: number, group: any) =>
+                acc + (group.size || group.participants?.length || 0),
+              0
+            );
+            setStats({
+              totalGroups: groups.length,
+              totalParticipants,
+              uptime,
+              lastActivity,
+            });
+            return;
           }
         }
       }
