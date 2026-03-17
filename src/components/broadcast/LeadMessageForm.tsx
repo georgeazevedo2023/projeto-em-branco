@@ -512,7 +512,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }));
 
       try {
-        await sendCarouselToNumber(lead.jid, carouselData, accessToken);
+        await sendCarousel(lead.jid, carouselData, accessToken);
         results.push({ name: displayName, success: true });
         // Upload carousel images and save to HelpDesk
         try {
