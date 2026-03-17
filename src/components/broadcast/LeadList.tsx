@@ -246,7 +246,7 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
             rowCount={filteredLeads.length}
             rowHeight={ROW_HEIGHT}
             rowComponent={LeadRowComponent}
-            rowProps={rowProps}
+            rowProps={rowProps as any}
             overscanCount={5}
             style={{ height: 256 }}
           />

@@ -342,7 +342,7 @@ export const ConversationList = ({
             rowCount={conversations.length}
             rowHeight={getRowHeight}
             rowComponent={ConversationRow}
-            rowProps={rowProps}
+            rowProps={rowProps as any}
             overscanCount={5}
             style={{ height: '100%' }}
           />
