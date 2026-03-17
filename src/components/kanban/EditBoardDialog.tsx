@@ -135,8 +135,8 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
       setFields(fieldRes.data.map(f => ({
         ...f,
         options: f.options ? (f.options as string[]) : null,
-        show_on_card: (f as any).show_on_card ?? false,
-        entity_id: (f as any).entity_id ?? null,
+        show_on_card: f.show_on_card ?? false,
+        entity_id: f.entity_id ?? null,
       })) as KanbanField[]);
     }
 
