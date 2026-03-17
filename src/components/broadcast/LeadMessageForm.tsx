@@ -1,19 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, MessageSquare, Image, Loader2, CheckCircle2, XCircle, Clock, Video, Mic, FileIcon, Upload, X, Pause, Play, Timer, StopCircle, Shield, LayoutGrid } from 'lucide-react';
+import { Send, MessageSquare, Image, Loader2, CheckCircle2, XCircle, Clock, Pause, Play, Timer, StopCircle, Shield, LayoutGrid } from 'lucide-react';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { toast } from 'sonner';
 import MessagePreview from './MessagePreview';
+import BroadcastMediaTab from './BroadcastMediaTab';
 import { CarouselEditor, CarouselData, createEmptyCard } from './CarouselEditor';
 import { CarouselPreview } from './CarouselPreview';
 import { TemplateSelector } from './TemplateSelector';
@@ -25,10 +24,9 @@ import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 
 import {
   InitialData, MediaType, ActiveTab,
-  MAX_MESSAGE_LENGTH, MAX_FILE_SIZE, SEND_DELAY_MS,
-  ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_AUDIO_TYPES,
+  MAX_MESSAGE_LENGTH,
   sendToNumber, sendMediaToNumber, sendCarouselToNumber,
-  fileToBase64, compressImageToThumbnail, formatTime, getRandomDelay, getAcceptedTypes,
+  fileToBase64, formatTime, getRandomDelay,
 } from '@/lib/broadcastSender';
 
 interface LeadMessageFormProps {
@@ -94,7 +92,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
   const isPausedRef = useRef(false);
   const isCancelledRef = useRef(false);
 
-  // Media states - initialize from initialData if present
+  // Media states
   const getInitialMediaType = (): MediaType => {
     if (!initialData?.messageType) return 'image';
     if (initialData.messageType === 'image') return 'image';
@@ -111,7 +109,6 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
   const [caption, setCaption] = useState(initialData?.messageType !== 'text' ? (initialData?.content || '') : '');
   const [isPtt, setIsPtt] = useState(initialData?.messageType === 'ptt');
   const [filename, setFilename] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Timer for elapsed time
   useEffect(() => {
@@ -131,15 +128,6 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       if (intervalId) clearInterval(intervalId);
     };
   }, [progress.status, progress.startedAt]);
-
-  // Cleanup preview URL
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -164,10 +152,6 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     isPausedRef.current = false;
   };
 
-  // getRandomDelay imported from broadcastSender
-
-  // formatTime imported from broadcastSender
-
   const calculateEstimatedTime = (): string => {
     if (randomDelay === 'none') return '';
     
@@ -189,8 +173,6 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     return `${minHours}h${minMins > 0 ? minMins + 'min' : ''} - ${maxHours}h${maxMins > 0 ? maxMins + 'min' : ''}`;
   };
 
-  // compressImageToThumbnail imported from broadcastSender
-
   const saveBroadcastLog = async (params: {
     messageType: string;
     content: string | null;
@@ -211,28 +193,21 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       const completedAt = Date.now();
       const durationSeconds = Math.round((completedAt - params.startedAt) / 1000);
 
-      // Prepare carousel data for storage (upload files to storage for high-res)
       let storedCarouselData = null;
       if (params.carouselData) {
         const processedCards = await Promise.all(
           params.carouselData.cards.map(async (card, idx) => {
             let imageForStorage = card.image || '';
-            
             try {
-              // If we have a file, upload it to storage in high resolution
               if (card.imageFile) {
                 imageForStorage = await uploadCarouselImage(card.imageFile);
               } else if (card.image && card.image.startsWith('data:')) {
-                // If it's base64, convert to blob and upload
                 const file = await base64ToFile(card.image, `card-${idx}.jpg`);
                 imageForStorage = await uploadCarouselImage(file);
               }
-              // If it's already an external URL (https://...), keep as is
             } catch (uploadErr) {
               console.error('Error uploading carousel image:', uploadErr);
-              // Fallback: keep original image (may be low-res or base64)
             }
-            
             return {
               id: card.id,
               text: card.text,
@@ -246,7 +221,6 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
             };
           })
         );
-
         storedCarouselData = {
           message: params.carouselData.message,
           cards: processedCards,
@@ -260,7 +234,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
         message_type: params.messageType,
         content: params.content,
         media_url: params.mediaUrl,
-        groups_targeted: 0, // 0 indicates lead broadcast, not groups
+        groups_targeted: 0,
         recipients_targeted: params.recipientsTargeted,
         recipients_success: params.recipientsSuccess,
         recipients_failed: params.recipientsFailed,
@@ -276,20 +250,6 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       });
     } catch (err) {
       console.error('Error saving broadcast log:', err);
-    }
-  };
-
-  // fileToBase64 imported from broadcastSender
-
-  const clearFile = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setSelectedFile(null);
-    setPreviewUrl(null);
-    setFilename('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
     }
   };
 
@@ -332,19 +292,15 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     } else {
       setActiveTab('media');
       const typeMap: Record<string, MediaType> = {
-        'image': 'image',
-        'video': 'video',
-        'audio': 'audio',
-        'ptt': 'audio',
-        'document': 'file',
+        'image': 'image', 'video': 'video', 'audio': 'audio', 'ptt': 'audio', 'document': 'file',
       };
-      const newMediaType = typeMap[template.message_type] || 'image';
-      setMediaType(newMediaType);
+      setMediaType(typeMap[template.message_type] || 'image');
       setIsPtt(template.message_type === 'ptt');
       setMediaUrl(template.media_url || '');
       setCaption(template.content || '');
       setFilename(template.filename || '');
-      clearFile();
+      setSelectedFile(null);
+      setPreviewUrl(null);
     }
     toast.success(`Template "${template.name}" aplicado`);
   };
@@ -356,9 +312,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
         return null;
       }
       const hasLocalFiles = carouselData.cards.some(card => card.imageFile);
-      if (hasLocalFiles) {
-        toast.info('Enviando imagens do carrossel...');
-      }
+      if (hasLocalFiles) toast.info('Enviando imagens do carrossel...');
       try {
         const uploadedCards = await Promise.all(
           carouselData.cards.map(async (card) => {
@@ -373,10 +327,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
           name: '',
           content: carouselData.message || undefined,
           message_type: 'carousel',
-          carousel_data: {
-            message: carouselData.message,
-            cards: uploadedCards,
-          },
+          carousel_data: { message: carouselData.message, cards: uploadedCards },
         };
       } catch (err) {
         console.error('Error uploading carousel images:', err);
@@ -385,25 +336,12 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }
     } else if (activeTab === 'text') {
       const trimmedMessage = message.trim();
-      if (!trimmedMessage) {
-        toast.error('Digite uma mensagem para salvar');
-        return null;
-      }
-      return {
-        name: '',
-        content: trimmedMessage,
-        message_type: 'text',
-      };
+      if (!trimmedMessage) { toast.error('Digite uma mensagem para salvar'); return null; }
+      return { name: '', content: trimmedMessage, message_type: 'text' };
     } else {
       const trimmedUrl = mediaUrl.trim();
-      if (!trimmedUrl && !selectedFile) {
-        toast.error('Selecione uma mídia para salvar');
-        return null;
-      }
-      if (!trimmedUrl) {
-        toast.error('Para salvar template de mídia, use uma URL');
-        return null;
-      }
+      if (!trimmedUrl && !selectedFile) { toast.error('Selecione uma mídia para salvar'); return null; }
+      if (!trimmedUrl) { toast.error('Para salvar template de mídia, use uma URL'); return null; }
       const sendType = mediaType === 'audio' && isPtt ? 'ptt' : mediaType === 'file' ? 'document' : mediaType;
       return {
         name: '',
@@ -415,42 +353,6 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     }
   };
 
-  // getAcceptedTypes imported from broadcastSender
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('Arquivo muito grande. Máximo: 10MB');
-      return;
-    }
-
-    if (mediaType === 'video' && !ALLOWED_VIDEO_TYPES.includes(file.type)) {
-      toast.error('Apenas vídeos MP4 são suportados');
-      return;
-    }
-
-    if (mediaType === 'image' && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error('Formato de imagem não suportado');
-      return;
-    }
-
-    if (mediaType === 'audio' && !ALLOWED_AUDIO_TYPES.includes(file.type)) {
-      toast.error('Formato de áudio não suportado (use MP3 ou OGG)');
-      return;
-    }
-
-    clearFile();
-    setSelectedFile(file);
-    setFilename(file.name);
-
-    if (mediaType === 'image' || mediaType === 'video' || mediaType === 'audio') {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
-
   // Wrapper functions that bind instance.id to shared sender functions
   const sendText = (jid: string, text: string, accessToken: string) =>
     sendToNumber(instance.id, jid, text, accessToken);
@@ -459,37 +361,16 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
   const sendCarousel = (jid: string, carousel: CarouselData, accessToken: string) =>
     sendCarouselToNumber(instance.id, jid, carousel, accessToken, fileToBase64);
 
-  const handleSendCarousel = async () => {
-    // Basic validation
-    const hasValidCard = carouselData.cards.some(c => 
-      (c.image || c.imageFile) && c.text.trim()
-    );
-    
-    if (!hasValidCard) {
-      toast.error('Preencha pelo menos um card com imagem e texto');
-      return;
-    }
-
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) {
-      toast.error('Sessão expirada');
-      return;
-    }
-
-    const accessToken = session.data.session.access_token;
+  // ── Generic send loop ──────────────────────────────────────────────
+  const runSendLoop = async (
+    accessToken: string,
+    sendFn: (lead: Lead) => Promise<void>,
+  ) => {
     const startedAt = Date.now();
-
     isPausedRef.current = false;
     isCancelledRef.current = false;
 
-    setProgress({
-      current: 0,
-      total: selectedLeads.length,
-      currentName: '',
-      status: 'sending',
-      results: [],
-      startedAt,
-    });
+    setProgress({ current: 0, total: selectedLeads.length, currentName: '', status: 'sending', results: [], startedAt });
 
     const results: SendProgress['results'] = [];
 
@@ -499,56 +380,15 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
         toast.warning('Envio cancelado');
         break;
       }
-
       await waitWhilePaused();
 
       const lead = selectedLeads[i];
       const displayName = lead.name || lead.phone;
-
-      setProgress(p => ({
-        ...p,
-        current: i + 1,
-        currentName: displayName,
-      }));
+      setProgress(p => ({ ...p, current: i + 1, currentName: displayName }));
 
       try {
-        await sendCarousel(lead.jid, carouselData, accessToken);
+        await sendFn(lead);
         results.push({ name: displayName, success: true });
-        // Upload carousel images and save to HelpDesk
-        try {
-          const helpdeskCards = await Promise.all(
-            carouselData.cards.map(async (c) => {
-              let imageUrl = c.image || '';
-              if (c.imageFile) {
-                imageUrl = await uploadCarouselImage(c.imageFile);
-              } else if (c.image && c.image.startsWith('data:')) {
-                const file = await base64ToFile(c.image, `card-${c.id}.jpg`);
-                imageUrl = await uploadCarouselImage(file);
-              }
-              return {
-                id: c.id,
-                text: c.text,
-                image: imageUrl,
-                buttons: c.buttons.map(b => ({
-                  id: b.id,
-                  type: b.type,
-                  label: b.label,
-                  value: b.url || b.phone || '',
-                })),
-              };
-            })
-          );
-          saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, {
-            content: carouselData.message || '📋 Carrossel enviado',
-            media_type: 'carousel',
-            media_url: JSON.stringify({
-              message: carouselData.message,
-              cards: helpdeskCards,
-            }),
-          });
-        } catch (uploadErr) {
-          console.error('[LeadMessageForm] Error uploading carousel images for helpdesk:', uploadErr);
-        }
       } catch (error: any) {
         results.push({ name: displayName, success: false, error: error.message });
       }
@@ -564,267 +404,126 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     const failCount = results.filter(r => !r.success).length;
 
     if (!isCancelledRef.current) {
-      setProgress(p => ({
-        ...p,
-        status: failCount > 0 ? 'error' : 'success',
-      }));
-
-      if (failCount === 0) {
-        toast.success(`Carrossel enviado para ${successCount} contato${successCount !== 1 ? 's' : ''}`);
-      } else {
-        toast.warning(`${successCount} enviados, ${failCount} falharam`);
-      }
+      setProgress(p => ({ ...p, status: failCount > 0 ? 'error' : 'success' }));
     }
 
-    // Save log with carouselData
-    const leadNames = selectedLeads.slice(0, 50).map(l => l.name || l.phone);
-    await saveBroadcastLog({
-      messageType: 'carousel',
-      content: carouselData.message || null,
-      mediaUrl: null,
-      recipientsTargeted: selectedLeads.length,
-      recipientsSuccess: successCount,
-      recipientsFailed: failCount,
-      status: isCancelledRef.current ? 'cancelled' : (failCount > 0 ? 'error' : 'completed'),
-      startedAt,
-      leadNames,
-      carouselData,
-    });
+    return { startedAt, successCount, failCount, results };
   };
 
-  const handleSend = async () => {
-    if (activeTab === 'text') {
-      await handleSendText();
-    } else if (activeTab === 'carousel') {
-      await handleSendCarousel();
-    } else {
-      await handleSendMedia();
+  const handleSendCarousel = async () => {
+    const hasValidCard = carouselData.cards.some(c => (c.image || c.imageFile) && c.text.trim());
+    if (!hasValidCard) { toast.error('Preencha pelo menos um card com imagem e texto'); return; }
+
+    const session = await supabase.auth.getSession();
+    if (!session.data.session) { toast.error('Sessão expirada'); return; }
+    const accessToken = session.data.session.access_token;
+
+    const { startedAt, successCount, failCount } = await runSendLoop(accessToken, async (lead) => {
+      await sendCarousel(lead.jid, carouselData, accessToken);
+      try {
+        const helpdeskCards = await Promise.all(
+          carouselData.cards.map(async (c) => {
+            let imageUrl = c.image || '';
+            if (c.imageFile) imageUrl = await uploadCarouselImage(c.imageFile);
+            else if (c.image && c.image.startsWith('data:')) {
+              const file = await base64ToFile(c.image, `card-${c.id}.jpg`);
+              imageUrl = await uploadCarouselImage(file);
+            }
+            return { id: c.id, text: c.text, image: imageUrl, buttons: c.buttons.map(b => ({ id: b.id, type: b.type, label: b.label, value: b.url || b.phone || '' })) };
+          })
+        );
+        saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, {
+          content: carouselData.message || '📋 Carrossel enviado',
+          media_type: 'carousel',
+          media_url: JSON.stringify({ message: carouselData.message, cards: helpdeskCards }),
+        });
+      } catch (uploadErr) {
+        console.error('[LeadMessageForm] Error uploading carousel images for helpdesk:', uploadErr);
+      }
+    });
+
+    if (!isCancelledRef.current) {
+      if (failCount === 0) toast.success(`Carrossel enviado para ${successCount} contato${successCount !== 1 ? 's' : ''}`);
+      else toast.warning(`${successCount} enviados, ${failCount} falharam`);
     }
+
+    const leadNames = selectedLeads.slice(0, 50).map(l => l.name || l.phone);
+    await saveBroadcastLog({
+      messageType: 'carousel', content: carouselData.message || null, mediaUrl: null,
+      recipientsTargeted: selectedLeads.length, recipientsSuccess: successCount, recipientsFailed: failCount,
+      status: isCancelledRef.current ? 'cancelled' : (failCount > 0 ? 'error' : 'completed'),
+      startedAt, leadNames, carouselData,
+    });
   };
 
   const handleSendText = async () => {
-    if (!message.trim()) {
-      toast.error('Digite uma mensagem');
-      return;
-    }
+    if (!message.trim()) { toast.error('Digite uma mensagem'); return; }
 
     const session = await supabase.auth.getSession();
-    if (!session.data.session) {
-      toast.error('Sessão expirada');
-      return;
-    }
-
+    if (!session.data.session) { toast.error('Sessão expirada'); return; }
     const accessToken = session.data.session.access_token;
-    const startedAt = Date.now();
 
-    // Reset refs
-    isPausedRef.current = false;
-    isCancelledRef.current = false;
-
-    setProgress({
-      current: 0,
-      total: selectedLeads.length,
-      currentName: '',
-      status: 'sending',
-      results: [],
-      startedAt,
+    const { startedAt, successCount, failCount } = await runSendLoop(accessToken, async (lead) => {
+      await sendText(lead.jid, message.trim(), accessToken);
+      saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, { content: message.trim(), media_type: 'text' });
     });
 
-    const results: SendProgress['results'] = [];
-
-    for (let i = 0; i < selectedLeads.length; i++) {
-      // Check for cancellation
-      if (isCancelledRef.current) {
-        setProgress(p => ({ ...p, status: 'cancelled' }));
-        toast.warning('Envio cancelado');
-        break;
-      }
-
-      // Wait if paused
-      await waitWhilePaused();
-
-      const lead = selectedLeads[i];
-      const displayName = lead.name || lead.phone;
-
-      setProgress(p => ({
-        ...p,
-        current: i + 1,
-        currentName: displayName,
-      }));
-
-      try {
-        await sendText(lead.jid, message.trim(), accessToken);
-        results.push({ name: displayName, success: true });
-        // Save to HelpDesk
-        saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, {
-          content: message.trim(),
-          media_type: 'text',
-        });
-      } catch (error: any) {
-        results.push({ name: displayName, success: false, error: error.message });
-      }
-
-      setProgress(p => ({ ...p, results: [...results] }));
-
-      // Delay before next send
-      if (i < selectedLeads.length - 1 && !isCancelledRef.current) {
-        await delay(getRandomDelay(randomDelay));
-      }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
-
     if (!isCancelledRef.current) {
-      setProgress(p => ({
-        ...p,
-        status: failCount > 0 ? 'error' : 'success',
-      }));
-
-      if (failCount === 0) {
-        toast.success(`Mensagem enviada para ${successCount} contato${successCount !== 1 ? 's' : ''}`);
-      } else {
-        toast.warning(`${successCount} enviados, ${failCount} falharam`);
-      }
+      if (failCount === 0) toast.success(`Mensagem enviada para ${successCount} contato${successCount !== 1 ? 's' : ''}`);
+      else toast.warning(`${successCount} enviados, ${failCount} falharam`);
     }
 
-    // Save broadcast log
     const leadNames = selectedLeads.slice(0, 50).map(l => l.name || l.phone);
     await saveBroadcastLog({
-      messageType: 'text',
-      content: message.trim(),
-      mediaUrl: null,
-      recipientsTargeted: selectedLeads.length,
-      recipientsSuccess: successCount,
-      recipientsFailed: failCount,
+      messageType: 'text', content: message.trim(), mediaUrl: null,
+      recipientsTargeted: selectedLeads.length, recipientsSuccess: successCount, recipientsFailed: failCount,
       status: isCancelledRef.current ? 'cancelled' : (failCount > 0 ? 'error' : 'completed'),
-      startedAt,
-      leadNames,
+      startedAt, leadNames,
     });
   };
 
   const handleSendMedia = async () => {
-    if (!selectedFile && !mediaUrl.trim()) {
-      toast.error('Selecione um arquivo ou informe uma URL');
-      return;
-    }
+    if (!selectedFile && !mediaUrl.trim()) { toast.error('Selecione um arquivo ou informe uma URL'); return; }
 
     const session = await supabase.auth.getSession();
-    if (!session.data.session) {
-      toast.error('Sessão expirada');
-      return;
-    }
-
+    if (!session.data.session) { toast.error('Sessão expirada'); return; }
     const accessToken = session.data.session.access_token;
-    const startedAt = Date.now();
-
-    // Reset refs
-    isPausedRef.current = false;
-    isCancelledRef.current = false;
 
     let mediaData = mediaUrl;
-    if (selectedFile) {
-      mediaData = await fileToBase64(selectedFile);
-    }
-
+    if (selectedFile) mediaData = await fileToBase64(selectedFile);
     const actualMediaType = mediaType === 'audio' && isPtt ? 'ptt' : mediaType;
 
-    setProgress({
-      current: 0,
-      total: selectedLeads.length,
-      currentName: '',
-      status: 'sending',
-      results: [],
-      startedAt,
+    const { startedAt, successCount, failCount } = await runSendLoop(accessToken, async (lead) => {
+      await sendMedia(lead.jid, mediaData, actualMediaType, caption, filename || selectedFile?.name || 'file', accessToken);
+      saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, {
+        content: caption || null,
+        media_type: actualMediaType === 'ptt' ? 'audio' : mediaType === 'file' ? 'document' : actualMediaType,
+        media_url: mediaUrl || null,
+      });
     });
 
-    const results: SendProgress['results'] = [];
-
-    for (let i = 0; i < selectedLeads.length; i++) {
-      if (isCancelledRef.current) {
-        setProgress(p => ({ ...p, status: 'cancelled' }));
-        toast.warning('Envio cancelado');
-        break;
-      }
-
-      await waitWhilePaused();
-
-      const lead = selectedLeads[i];
-      const displayName = lead.name || lead.phone;
-
-      setProgress(p => ({
-        ...p,
-        current: i + 1,
-        currentName: displayName,
-      }));
-
-      try {
-        await sendMedia(
-          lead.jid,
-          mediaData,
-          actualMediaType,
-          caption,
-          filename || selectedFile?.name || 'file',
-          accessToken
-        );
-        results.push({ name: displayName, success: true });
-        // Save to HelpDesk
-        saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, {
-          content: caption || null,
-          media_type: actualMediaType === 'ptt' ? 'audio' : mediaType === 'file' ? 'document' : actualMediaType,
-          media_url: mediaUrl || null,
-        });
-      } catch (error: any) {
-        results.push({ name: displayName, success: false, error: error.message });
-      }
-
-      setProgress(p => ({ ...p, results: [...results] }));
-
-      if (i < selectedLeads.length - 1 && !isCancelledRef.current) {
-        await delay(getRandomDelay(randomDelay));
-      }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
-
     if (!isCancelledRef.current) {
-      setProgress(p => ({
-        ...p,
-        status: failCount > 0 ? 'error' : 'success',
-      }));
-
-      if (failCount === 0) {
-        toast.success(`Mídia enviada para ${successCount} contato${successCount !== 1 ? 's' : ''}`);
-      } else {
-        toast.warning(`${successCount} enviados, ${failCount} falharam`);
-      }
+      if (failCount === 0) toast.success(`Mídia enviada para ${successCount} contato${successCount !== 1 ? 's' : ''}`);
+      else toast.warning(`${successCount} enviados, ${failCount} falharam`);
     }
 
-    // Save broadcast log - reuse actualMediaType from above
     const leadNames = selectedLeads.slice(0, 50).map(l => l.name || l.phone);
     await saveBroadcastLog({
-      messageType: actualMediaType,
-      content: caption || null,
-      mediaUrl: mediaUrl || null,
-      recipientsTargeted: selectedLeads.length,
-      recipientsSuccess: successCount,
-      recipientsFailed: failCount,
+      messageType: actualMediaType, content: caption || null, mediaUrl: mediaUrl || null,
+      recipientsTargeted: selectedLeads.length, recipientsSuccess: successCount, recipientsFailed: failCount,
       status: isCancelledRef.current ? 'cancelled' : (failCount > 0 ? 'error' : 'completed'),
-      startedAt,
-      leadNames,
+      startedAt, leadNames,
     });
   };
 
+  const handleSend = async () => {
+    if (activeTab === 'text') await handleSendText();
+    else if (activeTab === 'carousel') await handleSendCarousel();
+    else await handleSendMedia();
+  };
+
   const handleReset = () => {
-    setProgress({
-      current: 0,
-      total: 0,
-      currentName: '',
-      status: 'idle',
-      results: [],
-      startedAt: null,
-    });
+    setProgress({ current: 0, total: 0, currentName: '', status: 'idle', results: [], startedAt: null });
     setElapsedTime(0);
     isPausedRef.current = false;
     isCancelledRef.current = false;
@@ -834,7 +533,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     ? message.trim().length > 0
     : activeTab === 'carousel'
       ? carouselData.cards.some(c => (c.image || c.imageFile) && c.text.trim())
-      : (selectedFile || mediaUrl.trim());
+      : !!(selectedFile || mediaUrl.trim());
 
   const isSending = progress.status === 'sending' || progress.status === 'paused';
   const isComplete = progress.status === 'success' || progress.status === 'error' || progress.status === 'cancelled';
@@ -896,100 +595,23 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
             </TabsContent>
 
             <TabsContent value="media" className="space-y-4 mt-4">
-              {/* Media Type Selection */}
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { type: 'image' as MediaType, icon: Image, label: 'Imagem' },
-                  { type: 'video' as MediaType, icon: Video, label: 'Vídeo' },
-                  { type: 'audio' as MediaType, icon: Mic, label: 'Áudio' },
-                  { type: 'file' as MediaType, icon: FileIcon, label: 'Arquivo' },
-                ].map(({ type, icon: Icon, label }) => (
-                  <Button
-                    key={type}
-                    variant={mediaType === type ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => {
-                      setMediaType(type);
-                      clearFile();
-                    }}
-                    className="gap-1.5"
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{label}</span>
-                  </Button>
-                ))}
-              </div>
-
-              {/* PTT Toggle for Audio */}
-              {mediaType === 'audio' && (
-                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <Mic className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Enviar como mensagem de voz (PTT)</span>
-                  </div>
-                  <Switch checked={isPtt} onCheckedChange={setIsPtt} />
-                </div>
-              )}
-
-              {/* File Upload */}
-              <div>
-                <Label>Arquivo</Label>
-                <div className="mt-2">
-                  {selectedFile ? (
-                    <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30">
-                      {previewUrl && mediaType === 'image' && (
-                        <img src={previewUrl} alt="Preview" className="w-12 h-12 object-cover rounded" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={clearFile}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                      <Upload className="w-6 h-6 text-muted-foreground mb-1" />
-                      <span className="text-sm text-muted-foreground">Clique para selecionar</span>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={getAcceptedTypes(mediaType)}
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              {/* URL Input */}
-              <div>
-                <Label>Ou informe a URL</Label>
-                <Input
-                  placeholder="https://exemplo.com/arquivo.jpg"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  disabled={!!selectedFile}
-                />
-              </div>
-
-              {/* Caption */}
-              {(mediaType === 'image' || mediaType === 'video') && (
-                <div>
-                  <Label>Legenda (opcional)</Label>
-                  <Textarea
-                    placeholder="Adicione uma legenda..."
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                    rows={3}
-                  />
-                  <EmojiPicker onEmojiSelect={(emoji) => setCaption(prev => prev + emoji)} />
-                </div>
-              )}
+              <BroadcastMediaTab
+                mediaType={mediaType}
+                setMediaType={setMediaType}
+                mediaUrl={mediaUrl}
+                setMediaUrl={setMediaUrl}
+                selectedFile={selectedFile}
+                setSelectedFile={setSelectedFile}
+                previewUrl={previewUrl}
+                setPreviewUrl={setPreviewUrl}
+                caption={caption}
+                setCaption={setCaption}
+                isPtt={isPtt}
+                setIsPtt={setIsPtt}
+                filename={filename}
+                setFilename={setFilename}
+                isSending={isSending}
+              />
             </TabsContent>
 
             <TabsContent value="carousel" className="space-y-4 mt-4">
