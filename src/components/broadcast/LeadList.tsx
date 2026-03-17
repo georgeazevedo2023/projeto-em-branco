@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo, CSSProperties } from 'react';
+import { List } from 'react-window';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, CheckSquare, Square, User, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, CheckSquare, Square, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
@@ -15,7 +15,7 @@ interface LeadListProps {
   onSelectionChange: (selected: Set<string>) => void;
 }
 
-const ITEMS_PER_PAGE = 50;
+const ROW_HEIGHT = 52;
 
 const getVerificationBadge = (lead: Lead) => {
   switch (lead.verificationStatus) {
@@ -60,54 +60,65 @@ const getSourceBadge = (source: Lead['source'], groupName?: string) => {
   }
 };
 
-interface LeadRowProps {
-  lead: Lead;
-  isSelected: boolean;
+interface LeadRowInlineProps {
+  filteredLeads: Lead[];
+  selectedLeads: Set<string>;
   onToggle: (id: string) => void;
 }
 
-const LeadRow = memo(function LeadRow({ lead, isSelected, onToggle }: LeadRowProps) {
+function LeadRowComponent({
+  index,
+  style,
+  filteredLeads,
+  selectedLeads,
+  onToggle,
+}: { index: number; style: CSSProperties; ariaAttributes: Record<string, unknown> } & LeadRowInlineProps) {
+  const lead = filteredLeads[index];
+  if (!lead) return null;
+  const isSelected = selectedLeads.has(lead.id);
+
   return (
-    <div
-      className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
-        isSelected
-          ? 'bg-primary/10 border border-primary/20'
-          : 'hover:bg-muted/50'
-      }`}
-      onClick={() => onToggle(lead.id)}
-    >
-      <Checkbox
-        checked={isSelected}
-        onCheckedChange={() => onToggle(lead.id)}
-      />
+    <div style={style} className="px-2">
+      <div
+        className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+          isSelected
+            ? 'bg-primary/10 border border-primary/20'
+            : 'hover:bg-muted/50'
+        }`}
+        onClick={() => onToggle(lead.id)}
+      >
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggle(lead.id)}
+        />
 
-      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-        <User className="w-4 h-4 text-muted-foreground" />
-      </div>
+        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+          <User className="w-4 h-4 text-muted-foreground" />
+        </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">
-          {lead.verifiedName || lead.name || formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
-        </p>
-        {(lead.verifiedName || lead.name) && (
-          <p className="text-xs text-muted-foreground">
-            {formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm truncate">
+            {lead.verifiedName || lead.name || formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
           </p>
-        )}
-      </div>
+          {(lead.verifiedName || lead.name) && (
+            <p className="text-xs text-muted-foreground">
+              {formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
+            </p>
+          )}
+        </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        {getVerificationBadge(lead)}
-        {getSourceBadge(lead.source, lead.groupName)}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {getVerificationBadge(lead)}
+          {getSourceBadge(lead.source, lead.groupName)}
+        </div>
       </div>
     </div>
   );
-});
+}
 
 const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'valid' | 'invalid' | 'pending'>('all');
-  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredLeads = useMemo(() => {
     let result = leads;
@@ -133,16 +144,6 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
     return result;
   }, [leads, search, statusFilter]);
 
-  const totalPages = Math.ceil(filteredLeads.length / ITEMS_PER_PAGE);
-  const paginatedLeads = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredLeads.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredLeads, currentPage]);
-
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
   const handleToggle = useCallback((leadId: string) => {
     const newSelection = new Set(selectedLeads);
     if (newSelection.has(leadId)) {
@@ -164,7 +165,12 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
 
   const allSelected = filteredLeads.length > 0 && filteredLeads.every(l => selectedLeads.has(l.id));
   const hasVerifiedLeads = leads.some(l => l.verificationStatus);
-  const showPagination = filteredLeads.length > ITEMS_PER_PAGE;
+
+  const rowProps = useMemo<LeadRowInlineProps>(() => ({
+    filteredLeads,
+    selectedLeads,
+    onToggle: handleToggle,
+  }), [filteredLeads, selectedLeads, handleToggle]);
 
   return (
     <div className="space-y-3">
@@ -226,82 +232,26 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
         )}
       </div>
 
-      {/* Lead list */}
-      <ScrollArea className="h-64 border rounded-lg">
-        <div className="p-2 space-y-1">
-          {paginatedLeads.map(lead => (
-            <LeadRow
-              key={lead.id}
-              lead={lead}
-              isSelected={selectedLeads.has(lead.id)}
-              onToggle={handleToggle}
-            />
-          ))}
-
-          {filteredLeads.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">
-                {search || statusFilter !== 'all' ? 'Nenhum contato encontrado' : 'Nenhum contato importado'}
-              </p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Pagination */}
-      {showPagination && (
-        <div className="flex items-center justify-between pt-2 border-t">
-          <p className="text-xs text-muted-foreground">
-            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredLeads.length)} de {filteredLeads.length}
-          </p>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "ghost"}
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => setCurrentPage(pageNum)}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+      {/* Lead list — virtualized */}
+      <div className="border rounded-lg">
+        {filteredLeads.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">
+              {search || statusFilter !== 'all' ? 'Nenhum contato encontrado' : 'Nenhum contato importado'}
+            </p>
           </div>
-        </div>
-      )}
+        ) : (
+          <List
+            rowCount={filteredLeads.length}
+            rowHeight={ROW_HEIGHT}
+            rowComponent={LeadRowComponent}
+            rowProps={rowProps as any}
+            overscanCount={5}
+            style={{ height: 256 }}
+          />
+        )}
+      </div>
     </div>
   );
 };

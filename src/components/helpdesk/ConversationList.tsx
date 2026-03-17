@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo, CSSProperties } from 'react';
+import { List, useListRef } from 'react-window';
 import { Search, Inbox, UserCheck, AlertCircle, Building2, SlidersHorizontal, Tag, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -31,7 +32,7 @@ interface ConversationListProps {
   onDepartmentFilterChange?: (v: string | null) => void;
 }
 
-const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string; icon?: string }[] = [
+const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string }[] = [
   { value: 'todas', label: 'Todas' },
   { value: 'minhas', label: 'Minhas' },
   { value: 'nao-atribuidas', label: 'Não atribuídas' },
@@ -43,6 +44,46 @@ const priorityOptions: { value: 'todas' | 'alta' | 'media' | 'baixa'; label: str
   { value: 'media', label: '🟡 Média' },
   { value: 'baixa', label: '🔵 Baixa' },
 ];
+
+const BASE_ROW_HEIGHT = 64;
+const RICH_ROW_HEIGHT = 90;
+
+interface ConversationRowProps {
+  conversations: Conversation[];
+  selectedId: string | null;
+  onSelect: (c: Conversation) => void;
+  inboxLabels: Label[];
+  conversationLabelsMap: Record<string, string[]>;
+  agentNamesMap: Record<string, string>;
+  conversationNotesSet: Set<string>;
+}
+
+function ConversationRow({
+  index,
+  style,
+  conversations,
+  selectedId,
+  onSelect,
+  inboxLabels,
+  conversationLabelsMap,
+  agentNamesMap,
+  conversationNotesSet,
+}: { index: number; style: CSSProperties; ariaAttributes: Record<string, unknown> } & ConversationRowProps) {
+  const c = conversations[index];
+  if (!c) return null;
+  return (
+    <div style={style} className="border-b border-border/30">
+      <ConversationItem
+        conversation={c}
+        isSelected={c.id === selectedId}
+        onClick={() => onSelect(c)}
+        labels={inboxLabels.filter(l => (conversationLabelsMap[c.id] || []).includes(l.id))}
+        agentName={c.assigned_to ? agentNamesMap[c.assigned_to] || null : null}
+        hasNotes={conversationNotesSet.has(c.id)}
+      />
+    </div>
+  );
+}
 
 export const ConversationList = ({
   conversations,
@@ -69,6 +110,7 @@ export const ConversationList = ({
 }: ConversationListProps) => {
   const [manageOpen, setManageOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const listRef = useListRef();
 
   const hasActiveFilters =
     assignmentFilter !== 'todas' ||
@@ -82,6 +124,31 @@ export const ConversationList = ({
     !!labelFilter,
     !!departmentFilter,
   ].filter(Boolean).length;
+
+  // Reset scroll when filters change
+  useEffect(() => {
+    listRef.current?.scrollToRow({ index: 0 });
+  }, [conversations.length, searchQuery, assignmentFilter, priorityFilter, labelFilter, departmentFilter]);
+
+  const getRowHeight = useCallback((index: number) => {
+    const c = conversations[index];
+    if (!c) return BASE_ROW_HEIGHT;
+    const hasLabels = (conversationLabelsMap[c.id] || []).length > 0;
+    const hasAgent = !!c.assigned_to;
+    const hasNotes = conversationNotesSet.has(c.id);
+    const hasDept = !!c.department_id;
+    return (hasLabels || hasAgent || hasNotes || hasDept) ? RICH_ROW_HEIGHT : BASE_ROW_HEIGHT;
+  }, [conversations, conversationLabelsMap, conversationNotesSet]);
+
+  const rowProps = useMemo<ConversationRowProps>(() => ({
+    conversations,
+    selectedId,
+    onSelect,
+    inboxLabels,
+    conversationLabelsMap,
+    agentNamesMap,
+    conversationNotesSet,
+  }), [conversations, selectedId, onSelect, inboxLabels, conversationLabelsMap, agentNamesMap, conversationNotesSet]);
 
   return (
     <>
@@ -256,7 +323,7 @@ export const ConversationList = ({
       <div className="h-px bg-border/30 mx-3" />
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -270,19 +337,15 @@ export const ConversationList = ({
             )}
           </div>
         ) : (
-          <div className="divide-y divide-border/30">
-            {conversations.map(c => (
-              <ConversationItem
-                key={c.id}
-                conversation={c}
-                isSelected={c.id === selectedId}
-                onClick={() => onSelect(c)}
-                labels={inboxLabels.filter(l => (conversationLabelsMap[c.id] || []).includes(l.id))}
-                agentName={c.assigned_to ? agentNamesMap[c.assigned_to] || null : null}
-                hasNotes={conversationNotesSet.has(c.id)}
-              />
-            ))}
-          </div>
+          <List
+            listRef={listRef}
+            rowCount={conversations.length}
+            rowHeight={getRowHeight}
+            rowComponent={ConversationRow}
+            rowProps={rowProps as any}
+            overscanCount={5}
+            style={{ height: '100%' }}
+          />
         )}
       </div>
 
