@@ -83,7 +83,7 @@ const DepartmentsTab = () => {
       const inboxMap = new Map((inboxData || []).map(i => [i.id, { name: i.name, instance_id: i.instance_id }]));
 
       const deptIds = (depts || []).map(d => d.id);
-      let membersData: any[] = [];
+      let membersData: { department_id: string; user_id: string }[] = [];
       if (deptIds.length > 0) {
         const { data } = await supabase
           .from('department_members')
