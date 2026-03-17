@@ -39,40 +39,8 @@ interface InstanceOverviewProps {
   onUpdate: () => void;
 }
 
-// Normaliza string base64 para src de imagem
-const normalizeQrSrc = (qr: string): string => {
-  if (qr.startsWith('data:image')) {
-    return qr;
-  }
-  return `data:image/png;base64,${qr}`;
-};
+import { normalizeQrSrc, extractQrCode, checkIfConnected } from '@/lib/uazapiUtils';
 
-// Extrai QR code da resposta da API (pode vir em diferentes formatos)
-const extractQrCode = (data: any): string | null => {
-  // Formato: { instance: { qrcode: "..." } }
-  if (data?.instance?.qrcode) {
-    return data.instance.qrcode;
-  }
-  // Formato: { qrcode: "..." }
-  if (data?.qrcode) {
-    return data.qrcode;
-  }
-  // Formato: { base64: "..." }
-  if (data?.base64) {
-    return data.base64;
-  }
-  return null;
-};
-
-// Verifica se a instância está conectada na resposta
-const checkIfConnected = (data: any): boolean => {
-  return (
-    data?.instance?.status === 'connected' ||
-    data?.status === 'connected' ||
-    data?.status?.connected === true ||
-    data?.loggedIn === true
-  );
-};
 
 const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
   const [showToken, setShowToken] = useState(false);
