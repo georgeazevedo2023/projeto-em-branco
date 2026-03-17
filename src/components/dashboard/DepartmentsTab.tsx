@@ -200,7 +200,7 @@ const DepartmentsTab = () => {
             description: formDescription.trim() || null,
             inbox_id: formInboxId,
             is_default: formIsDefault,
-          } as any)
+          } as Partial<typeof dept>)
           .select('id')
           .single();
         if (error) throw error;
