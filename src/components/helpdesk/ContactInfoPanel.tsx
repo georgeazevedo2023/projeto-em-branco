@@ -179,8 +179,8 @@ export const ContactInfoPanel = ({
         .eq('conversation_id', conversation.id)
         .eq('label_id', labelId);
       onLabelsChanged?.();
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao remover etiqueta');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover etiqueta');
     }
   };
 
