@@ -21,7 +21,7 @@ const priorityColors: Record<string, string> = {
   baixa: 'bg-primary',
 };
 
-export const ConversationItem = ({ conversation, isSelected, onClick, labels = [], agentName, hasNotes }: ConversationItemProps) => {
+export const ConversationItem = memo(function ConversationItem({ conversation, isSelected, onClick, labels = [], agentName, hasNotes }: ConversationItemProps) {
   const contact = conversation.contact;
   const name = contact?.name || contact?.phone || 'Desconhecido';
   const initials = name.charAt(0).toUpperCase();
