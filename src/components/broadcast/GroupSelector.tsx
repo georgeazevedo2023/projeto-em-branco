@@ -77,16 +77,7 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
       const data = await response.json();
       
       // Normalizar resposta
-      let rawGroups: RawUazapiGroup[];
-      if (Array.isArray(data)) {
-        rawGroups = data;
-      } else if (data?.groups && Array.isArray(data.groups)) {
-        rawGroups = data.groups;
-      } else if (data?.data && Array.isArray(data.data)) {
-        rawGroups = data.data;
-      } else {
-        rawGroups = [];
-      }
+      const rawGroups = extractGroupsArray(data);
 
       const formattedGroups: Group[] = rawGroups.map((g: RawUazapiGroup) => {
         const rawParticipants = g.Participants || g.participants || [];
