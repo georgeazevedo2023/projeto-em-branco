@@ -222,14 +222,7 @@ export default function Intelligence() {
     setAnalysis(null);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        toast.error("Sessão expirada. Faça login novamente.");
-        return;
-      }
+      const accessToken = await getAccessToken();
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-summaries`,
