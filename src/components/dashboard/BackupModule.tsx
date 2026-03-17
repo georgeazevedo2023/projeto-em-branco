@@ -129,7 +129,7 @@ const BackupModule = () => {
     return json.data || [];
   };
 
-  const escapeSQL = (val: any): string => {
+  const escapeSQL = (val: unknown): string => {
     if (val === null || val === undefined) return 'NULL';
     if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
     if (typeof val === 'number') return String(val);
