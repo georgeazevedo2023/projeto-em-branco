@@ -184,7 +184,8 @@ const HelpDesk = () => {
         fetchConversationNotes(convIds),
       ]);
 
-      const mapped: Conversation[] = (data || []).map((c: Record<string, unknown>) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped: Conversation[] = (data || []).map((c: any) => ({
         ...c,
         contact: c.contacts,
         inbox: c.inboxes,
