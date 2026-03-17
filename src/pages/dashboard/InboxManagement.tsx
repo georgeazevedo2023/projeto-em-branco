@@ -134,8 +134,8 @@ const InboxManagement = () => {
         created_by: inbox.created_by,
         created_at: inbox.created_at,
         member_count: memberCounts.get(inbox.id) || 0,
-        webhook_url: (inbox as any).webhook_url || null,
-        webhook_outgoing_url: (inbox as any).webhook_outgoing_url || null,
+        webhook_url: inbox.webhook_url || null,
+        webhook_outgoing_url: inbox.webhook_outgoing_url || null,
       }));
 
       setInboxes(enriched);
