@@ -30,6 +30,9 @@ interface ConversationListProps {
   inboxDepartments?: { id: string; name: string }[];
   departmentFilter?: string | null;
   onDepartmentFilterChange?: (v: string | null) => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string }[] = [
