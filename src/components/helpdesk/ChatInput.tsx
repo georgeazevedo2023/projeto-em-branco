@@ -466,27 +466,12 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
           return;
         }
 
-        const { data: session } = await supabase.auth.getSession();
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session?.session?.access_token}`,
-            },
-            body: JSON.stringify({
-              action: 'send-chat',
-              instance_id: instanceId,
-              jid: contactJid,
-              message: text.trim(),
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Falha ao enviar mensagem');
-        }
+        await uazapiProxy({
+          action: 'send-chat',
+          instance_id: instanceId,
+          jid: contactJid,
+          message: text.trim(),
+        });
 
         const { data: insertedMsg, error } = await supabase.from('conversation_messages').insert({
           conversation_id: conversation.id,

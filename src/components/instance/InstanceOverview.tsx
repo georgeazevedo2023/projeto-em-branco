@@ -112,25 +112,11 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
     setQrCode(null);
 
     try {
-      const accessToken = await getAccessToken();
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            action: 'connect',
-            instanceName: instance.name,
-            instance_id: instance.id,
-          }),
-        }
-      );
-
-      const data = await response.json();
+      const data = await uazapiProxy({
+        action: 'connect',
+        instanceName: instance.name,
+        instance_id: instance.id,
+      });
       console.log('Connect response:', data);
 
       // Verificar se já está conectado
