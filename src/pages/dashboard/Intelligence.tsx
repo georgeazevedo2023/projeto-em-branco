@@ -88,7 +88,7 @@ const PERIOD_OPTIONS = [
   { value: "90", label: "Últimos 90 dias" },
 ];
 
-const CustomBarTooltip = ({ active, payload, label }: any) => {
+const CustomBarTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm shadow-lg">
