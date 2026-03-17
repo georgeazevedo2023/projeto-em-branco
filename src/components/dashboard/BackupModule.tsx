@@ -161,7 +161,7 @@ const BackupModule = () => {
           const pkMap = new Map((pks || []).map((p: { table_name: string; pk_columns: string }) => [p.table_name, p.pk_columns]));
           for (const t of schema) {
             let def = `CREATE TABLE IF NOT EXISTS public.${t.table_name} (\n${t.columns_def}`;
-            const pk = pkMap.get(t.table_name);
+            const pk = pkMap.get(t.table_name as string);
             if (pk) def += `,\n  PRIMARY KEY (${pk})`;
             def += '\n);';
             lines.push(def);
