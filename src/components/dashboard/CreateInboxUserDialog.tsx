@@ -94,7 +94,7 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
 
     setIsCreating(true);
     try {
-      const session = (await supabase.auth.getSession()).data.session;
+      const accessToken = await getAccessToken();
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
         {
