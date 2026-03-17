@@ -73,7 +73,7 @@ const Settings = () => {
       if (error) throw error;
 
       // Enrich with names
-      const enriched: ShiftConfig[] = (data || []).map((c: any) => ({
+      const enriched: ShiftConfig[] = (data || []).map((c) => ({
         ...c,
         inbox_name: inboxes?.find((i) => i.id === c.inbox_id)?.name,
         instance_name: instances?.find((i) => i.id === c.instance_id)?.name,
