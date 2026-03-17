@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import type { Instance } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
