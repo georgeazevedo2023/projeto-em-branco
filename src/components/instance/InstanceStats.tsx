@@ -54,13 +54,13 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
           instance_id: instance.id,
         });
 
-        if (response.ok) {
-          const groups = await response.json();
-          if (Array.isArray(groups)) {
-            const totalParticipants = groups.reduce(
-              (acc: number, group: any) =>
-                acc + (group.size || group.participants?.length || 0),
+        if (Array.isArray(data)) {
+            const totalParticipants = (data as Array<Record<string, unknown>>).reduce(
+              (acc: number, group) =>
+                acc + ((group.size as number) || (group.participants as unknown[] | undefined)?.length || 0),
               0
+            );
+            setStats({
             );
             setStats({
               totalGroups: groups.length,
