@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -92,47 +93,35 @@ export default function SyncInstancesDialog({
       setUsers(usersData || []);
 
       // Fetch instances from UAZAPI
-      const session = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session?.access_token}`,
-          },
-          body: JSON.stringify({ action: 'list' }),
-        }
-      );
+      const result = await uazapiProxy({ action: 'list' });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar instâncias da UAZAPI');
+      if (!result || typeof result !== 'object') {
+        throw new Error('Erro ao buscar instâncias da UAZAPI');
       }
 
       // Handle different response formats from UAZAPI
       let instances: UazapiInstance[] = [];
       
+      const resultObj = result as Record<string, unknown>;
       if (Array.isArray(result)) {
-        instances = result.map((inst: any) => ({
-          id: inst.id || inst.instanceId || inst.key,
-          instanceName: inst.instanceName || inst.name || inst.key,
-          token: inst.token || '',
-          connectionStatus: inst.connectionStatus || inst.status || 'disconnected',
-          ownerJid: inst.ownerJid || inst.owner?.jid,
-          profilePicUrl: inst.profilePicUrl || inst.profilePic,
-          profileName: inst.profileName || inst.pushname,
+        instances = result.map((inst: Record<string, unknown>) => ({
+          id: (inst.id || inst.instanceId || inst.key) as string,
+          instanceName: (inst.instanceName || inst.name || inst.key) as string,
+          token: (inst.token || '') as string,
+          connectionStatus: (inst.connectionStatus || inst.status || 'disconnected') as string,
+          ownerJid: (inst.ownerJid || (inst.owner as Record<string, unknown>)?.jid) as string | undefined,
+          profilePicUrl: (inst.profilePicUrl || inst.profilePic) as string | undefined,
+          profileName: (inst.profileName || inst.pushname) as string | undefined,
         }));
-      } else if (result.instances && Array.isArray(result.instances)) {
-        instances = result.instances.map((inst: any) => ({
-          id: inst.id || inst.instanceId || inst.key,
-          instanceName: inst.instanceName || inst.name || inst.key,
-          token: inst.token || '',
-          connectionStatus: inst.connectionStatus || inst.status || 'disconnected',
-          ownerJid: inst.ownerJid || inst.owner?.jid,
-          profilePicUrl: inst.profilePicUrl || inst.profilePic,
-          profileName: inst.profileName || inst.pushname,
+      } else if (Array.isArray(resultObj.instances)) {
+        instances = (resultObj.instances as Array<Record<string, unknown>>).map((inst) => ({
+          id: (inst.id || inst.instanceId || inst.key) as string,
+          instanceName: (inst.instanceName || inst.name || inst.key) as string,
+          token: (inst.token || '') as string,
+          connectionStatus: (inst.connectionStatus || inst.status || 'disconnected') as string,
+          ownerJid: (inst.ownerJid || (inst.owner as Record<string, unknown>)?.jid) as string | undefined,
+          profilePicUrl: (inst.profilePicUrl || inst.profilePic) as string | undefined,
+          profileName: (inst.profileName || inst.pushname) as string | undefined,
         }));
       }
 

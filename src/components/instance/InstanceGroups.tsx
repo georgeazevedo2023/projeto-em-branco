@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import type { Instance } from '@/types';
 import { toast } from 'sonner';
 import { Users, Search, RefreshCw, MessageSquare, WifiOff, ChevronRight } from 'lucide-react';
@@ -56,28 +56,11 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
   const fetchGroups = async (): Promise<number> => {
     try {
       setLoading(true);
-      const accessToken = await getAccessToken();
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            action: 'groups',
-            instance_id: instance.id,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erro ao buscar grupos');
-      }
-
-      const data = await response.json();
+      const data = await uazapiProxy({
+        action: 'groups',
+        instance_id: instance.id,
+      });
       console.log('Groups API response:', data);
       console.log('Response type:', typeof data, 'Is array:', Array.isArray(data));
       

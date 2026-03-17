@@ -1,4 +1,5 @@
 import type { CarouselData } from '@/components/broadcast/CarouselEditor';
+import { uazapiProxyRaw } from '@/lib/uazapiClient';
 
 // ─── Shared Constants ────────────────────────────────────────────────────────
 
@@ -38,25 +39,6 @@ export type ActiveTab = 'text' | 'media' | 'carousel';
 
 // ─── Sender Functions ────────────────────────────────────────────────────────
 
-const PROXY_URL = () => `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`;
-
-const proxyFetch = async (accessToken: string, body: Record<string, unknown>) => {
-  const response = await fetch(PROXY_URL(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || 'Erro ao enviar');
-  }
-
-  return response.json();
-};
 
 export const sendToNumber = async (
   instanceId: string,
@@ -64,7 +46,7 @@ export const sendToNumber = async (
   text: string,
   accessToken: string
 ) => {
-  return proxyFetch(accessToken, {
+  return uazapiProxyRaw(accessToken, {
     action: 'send-message',
     instance_id: instanceId,
     groupjid: number,
@@ -81,7 +63,7 @@ export const sendMediaToNumber = async (
   docName: string,
   accessToken: string
 ) => {
-  return proxyFetch(accessToken, {
+  return uazapiProxyRaw(accessToken, {
     action: 'send-media',
     instance_id: instanceId,
     groupjid: number,
@@ -115,7 +97,7 @@ export const sendCarouselToNumber = async (
     })
   );
 
-  return proxyFetch(accessToken, {
+  return uazapiProxyRaw(accessToken, {
     action: 'send-carousel',
     instance_id: instanceId,
     groupjid: number,

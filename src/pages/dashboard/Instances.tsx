@@ -3,6 +3,7 @@ import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
+import { uazapiProxy, uazapiProxyRaw } from '@/lib/uazapiClient';
 import InstanceCard from '@/components/dashboard/InstanceCard';
 import SyncInstancesDialog from '@/components/dashboard/SyncInstancesDialog';
 import ManageInstanceAccessDialog from '@/components/dashboard/ManageInstanceAccessDialog';
@@ -104,23 +105,7 @@ const Instances = () => {
   useEffect(() => {
     const updateInstancesStatus = async () => {
       try {
-        const accessToken = await getAccessToken();
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ action: 'list' }),
-          }
-        );
-
-        if (!response.ok) return;
-
-        const uazapiInstances = await response.json();
+        const uazapiInstances = await uazapiProxy({ action: 'list' });
         if (!Array.isArray(uazapiInstances)) return;
 
         // Criar mapa de status da UAZAPI
@@ -255,28 +240,14 @@ const Instances = () => {
     try {
       const token = generateToken();
 
-      // Call UAZAPI to create instance
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          action: 'connect',
-          instanceName: newInstanceName,
-          token,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao criar instância');
-      }
+      const result = await uazapiProxy({
+        action: 'connect',
+        instanceName: newInstanceName,
+        token,
+      }) as Record<string, unknown>;
 
       // Save to database
-      const instanceId = result.instance?.instanceId || `inst_${Date.now()}`;
+      const instanceId = (result.instance as Record<string, unknown>)?.instanceId as string || `inst_${Date.now()}`;
       const { error: dbError } = await supabase.from('instances').insert({
         id: instanceId,
         name: newInstanceName,
@@ -337,24 +308,10 @@ const Instances = () => {
 
     pollingRef.current = setInterval(async () => {
       try {
-        const accessToken = await getAccessToken();
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              action: 'status',
-              instance_id: instance.id,
-            }),
-          }
-        );
-
-        const data = await response.json();
+        const data = await uazapiProxy({
+          action: 'status',
+          instance_id: instance.id,
+        }) as Record<string, unknown>;
         console.log('Polling status response:', data);
 
         if (checkIfConnected(data)) {
@@ -383,25 +340,12 @@ const Instances = () => {
     setQrCode(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          action: 'connect',
-          instanceName: instance.name,
-          instance_id: instance.id,
-        }),
-      });
-
-      const result = await response.json();
+      const result = await uazapiProxy({
+        action: 'connect',
+        instanceName: instance.name,
+        instance_id: instance.id,
+      }) as Record<string, unknown>;
       console.log('Connect response:', result);
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao conectar');
-      }
 
       // Verificar se já está conectado
       if (checkIfConnected(result)) {
@@ -415,15 +359,14 @@ const Instances = () => {
       const qr = extractQrCode(result);
       if (qr) {
         setQrCode(normalizeQrSrc(qr));
-        // Iniciar polling para verificar conexão
         startPolling(instance);
       } else {
         console.error('QR code not found in response:', result);
         toast.error('Não foi possível gerar o QR Code');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error connecting:', error);
-      toast.error(error.message || 'Erro ao gerar QR Code');
+      toast.error(error instanceof Error ? error.message : 'Erro ao gerar QR Code');
     } finally {
       setIsLoadingQr(false);
     }

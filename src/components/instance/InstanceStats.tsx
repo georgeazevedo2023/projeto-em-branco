@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import type { Instance } from '@/types';
 import { Users, MessageSquare, Clock, Activity, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
@@ -49,38 +49,24 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
 
       // Se conectado, buscar grupos para estatísticas
       if (isConnected) {
-        const accessToken = await getAccessToken();
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              action: 'groups',
-              instance_id: instance.id,
-            }),
-          }
-        );
+        const data = await uazapiProxy({
+          action: 'groups',
+          instance_id: instance.id,
+        });
 
-        if (response.ok) {
-          const groups = await response.json();
-          if (Array.isArray(groups)) {
-            const totalParticipants = groups.reduce(
-              (acc: number, group: any) =>
-                acc + (group.size || group.participants?.length || 0),
-              0
-            );
-            setStats({
-              totalGroups: groups.length,
-              totalParticipants,
-              uptime,
-              lastActivity,
-            });
-            return;
-          }
+        if (Array.isArray(data)) {
+          const totalParticipants = (data as Array<Record<string, unknown>>).reduce(
+            (acc: number, group) =>
+              acc + ((group.size as number) || (group.participants as unknown[] | undefined)?.length || 0),
+            0
+          );
+          setStats({
+            totalGroups: data.length,
+            totalParticipants,
+            uptime,
+            lastActivity,
+          });
+          return;
         }
       }
 
