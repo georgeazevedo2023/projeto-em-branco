@@ -182,7 +182,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
       }
 
       await supabase.from('broadcast_logs').insert({
-        user_id: session.data.session.user.id,
+        user_id: userId,
         instance_id: instance.id,
         instance_name: instance.name,
         message_type: p.messageType,
