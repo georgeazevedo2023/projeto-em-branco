@@ -212,7 +212,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
   const runIndividualLoop = async (
     accessToken: string,
     membersToSend: { jid: string; groupName: string }[],
-    sendFn: (jid: string) => Promise<void>,
+    sendFn: (jid: string) => Promise<unknown>,
     helpdeskFn: (jid: string, phone: string) => void,
     logParams: { messageType: string; content: string | null; mediaUrl: string | null; carouselData?: CarouselData | null },
   ) => {
