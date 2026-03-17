@@ -213,7 +213,7 @@ const DepartmentsTab = () => {
           department_id: deptId,
           user_id: userId,
         }));
-        const { error: memErr } = await supabase.from('department_members').insert(rows as any);
+        const { error: memErr } = await supabase.from('department_members').insert(rows);
         if (memErr) throw memErr;
       }
 
