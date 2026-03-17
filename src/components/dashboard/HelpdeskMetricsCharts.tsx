@@ -46,6 +46,8 @@ const HelpdeskMetricsCharts = () => {
   const [iaData, setIaData] = useState<IAResponseData[]>([]);
   const [agentData, setAgentData] = useState<AgentGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [assignedIds, setAssignedIds] = useState<string[]>([]);
+  const { namesMap: agentNamesMap } = useUserProfiles({ userIds: assignedIds, enabled: assignedIds.length > 0 });
 
   useEffect(() => {
     fetchMetrics();
