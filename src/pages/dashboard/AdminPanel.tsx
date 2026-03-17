@@ -553,19 +553,12 @@ const AdminPanel = () => {
     if (editUserPassword && editUserPassword.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     setIsSavingUser(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          user_id: editingUser.id,
-          email: editUserEmail.trim(),
-          full_name: editUserName.trim(),
-          ...(editUserPassword ? { password: editUserPassword } : {}),
-        }),
+      await edgeFunctionFetch('admin-update-user', {
+        user_id: editingUser.id,
+        email: editUserEmail.trim(),
+        full_name: editUserName.trim(),
+        ...(editUserPassword ? { password: editUserPassword } : {}),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
       toast.success('Usuário atualizado!');
       setEditingUser(null);
       fetchUsers();
