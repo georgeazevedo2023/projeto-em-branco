@@ -34,7 +34,7 @@ export interface KanbanColumn {
   automation_message: string | null;
 }
 
-interface KanbanField {
+export interface KanbanField {
   id: string;
   name: string;
   field_type: 'text' | 'currency' | 'date' | 'select' | 'entity_select';
