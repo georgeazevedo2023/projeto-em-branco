@@ -86,7 +86,7 @@ const HelpDesk = () => {
           .eq('user_id', user.id);
         if (!error && data) {
           inboxData = data
-            .map((d: any) => d.inboxes)
+            .map((d: { inboxes: Inbox | null }) => d.inboxes)
             .filter(Boolean) as Inbox[];
         }
       }

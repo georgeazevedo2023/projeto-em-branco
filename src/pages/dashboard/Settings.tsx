@@ -73,7 +73,7 @@ const Settings = () => {
       if (error) throw error;
 
       // Enrich with names
-      const enriched: ShiftConfig[] = (data || []).map((c: any) => ({
+      const enriched: ShiftConfig[] = (data || []).map((c) => ({
         ...c,
         inbox_name: inboxes?.find((i) => i.id === c.inbox_id)?.name,
         instance_name: instances?.find((i) => i.id === c.instance_id)?.name,
@@ -102,8 +102,8 @@ const Settings = () => {
       setForm({ inbox_id: '', instance_id: '', recipient_number: '', send_hour: '18' });
       toast.success('Relatório de turno configurado com sucesso!');
     },
-    onError: (err: any) => {
-      toast.error('Erro ao salvar configuração: ' + err.message);
+    onError: (err: unknown) => {
+      toast.error('Erro ao salvar configuração: ' + (err instanceof Error ? err.message : String(err)));
     },
   });
 

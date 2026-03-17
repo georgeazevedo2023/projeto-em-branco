@@ -83,7 +83,7 @@ const DepartmentsTab = () => {
       const inboxMap = new Map((inboxData || []).map(i => [i.id, { name: i.name, instance_id: i.instance_id }]));
 
       const deptIds = (depts || []).map(d => d.id);
-      let membersData: any[] = [];
+      let membersData: { department_id: string; user_id: string }[] = [];
       if (deptIds.length > 0) {
         const { data } = await supabase
           .from('department_members')
@@ -188,7 +188,7 @@ const DepartmentsTab = () => {
             description: formDescription.trim() || null,
             inbox_id: formInboxId,
             is_default: formIsDefault,
-          } as any)
+          })
           .eq('id', editingDept.id);
         if (error) throw error;
         deptId = editingDept.id;
@@ -200,7 +200,7 @@ const DepartmentsTab = () => {
             description: formDescription.trim() || null,
             inbox_id: formInboxId,
             is_default: formIsDefault,
-          } as any)
+          })
           .select('id')
           .single();
         if (error) throw error;
@@ -213,15 +213,15 @@ const DepartmentsTab = () => {
           department_id: deptId,
           user_id: userId,
         }));
-        const { error: memErr } = await supabase.from('department_members').insert(rows as any);
+        const { error: memErr } = await supabase.from('department_members').insert(rows);
         if (memErr) throw memErr;
       }
 
       toast.success(editingDept ? 'Departamento atualizado!' : 'Departamento criado!');
       setIsFormOpen(false);
       fetchDepartments();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao salvar');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao salvar');
     } finally {
       setSaving(false);
     }
@@ -236,8 +236,8 @@ const DepartmentsTab = () => {
       toast.success('Departamento excluído');
       setDeptToDelete(null);
       fetchDepartments();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao excluir');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao excluir');
     } finally {
       setDeleting(false);
     }
@@ -247,7 +247,7 @@ const DepartmentsTab = () => {
     try {
       const { error } = await supabase
         .from('departments')
-        .update({ is_default: true } as any)
+        .update({ is_default: true })
         .eq('id', dept.id);
       if (error) throw error;
       toast.success(`"${dept.name}" definido como padrão`);

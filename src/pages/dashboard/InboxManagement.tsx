@@ -134,8 +134,8 @@ const InboxManagement = () => {
         created_by: inbox.created_by,
         created_at: inbox.created_at,
         member_count: memberCounts.get(inbox.id) || 0,
-        webhook_url: (inbox as any).webhook_url || null,
-        webhook_outgoing_url: (inbox as any).webhook_outgoing_url || null,
+        webhook_url: inbox.webhook_url || null,
+        webhook_outgoing_url: inbox.webhook_outgoing_url || null,
       }));
 
       setInboxes(enriched);
@@ -170,7 +170,7 @@ const InboxManagement = () => {
         created_by: user!.id,
         webhook_url: webhookUrl.trim() || null,
         webhook_outgoing_url: webhookOutgoingUrl.trim() || null,
-      } as any);
+      });
 
       if (error) throw error;
 
@@ -181,9 +181,9 @@ const InboxManagement = () => {
       setWebhookUrl('');
       setWebhookOutgoingUrl('');
       fetchInboxes();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating inbox:', error);
-      toast.error(error.message || 'Erro ao criar caixa de entrada');
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar caixa de entrada');
     } finally {
       setIsCreating(false);
     }
@@ -205,9 +205,9 @@ const InboxManagement = () => {
       toast.success('Caixa de entrada excluída');
       setInboxToDelete(null);
       fetchInboxes();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting inbox:', error);
-      toast.error(error.message || 'Erro ao excluir');
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir');
     } finally {
       setIsDeleting(false);
     }
@@ -218,14 +218,14 @@ const InboxManagement = () => {
     try {
       const { error } = await supabase
         .from('inboxes')
-        .update({ webhook_url: editWebhookValue.trim() || null } as any)
+        .update({ webhook_url: editWebhookValue.trim() || null })
         .eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook URL atualizada!');
       setEditingWebhookId(null);
       fetchInboxes();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar webhook');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook');
     } finally {
       setIsSavingWebhook(false);
     }
@@ -236,14 +236,14 @@ const InboxManagement = () => {
     try {
       const { error } = await supabase
         .from('inboxes')
-        .update({ webhook_outgoing_url: editOutgoingValue.trim() || null } as any)
+        .update({ webhook_outgoing_url: editOutgoingValue.trim() || null })
         .eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook Outgoing atualizada!');
       setEditingOutgoingId(null);
       fetchInboxes();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar webhook outgoing');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook outgoing');
     } finally {
       setIsSavingOutgoing(false);
     }

@@ -129,7 +129,7 @@ const BackupModule = () => {
     return json.data || [];
   };
 
-  const escapeSQL = (val: any): string => {
+  const escapeSQL = (val: unknown): string => {
     if (val === null || val === undefined) return 'NULL';
     if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
     if (typeof val === 'number') return String(val);
@@ -173,7 +173,7 @@ const BackupModule = () => {
         // Tables
         if (schema?.length) {
           lines.push('-- ── TABLES ─────────────────────────────────────────────────');
-          const pkMap = new Map((pks || []).map((p: any) => [p.table_name, p.pk_columns]));
+          const pkMap = new Map((pks || []).map((p: { table_name: string; pk_columns: string }) => [p.table_name, p.pk_columns]));
           for (const t of schema) {
             let def = `CREATE TABLE IF NOT EXISTS public.${t.table_name} (\n${t.columns_def}`;
             const pk = pkMap.get(t.table_name);
@@ -343,7 +343,7 @@ const BackupModule = () => {
             if (rows?.length) {
               const cols = Object.keys(rows[0]);
               const header = cols.join(',');
-              const body = rows.map((r: any) =>
+              const body = rows.map((r: Record<string, unknown>) =>
                 cols.map(c => {
                   const v = r[c];
                   if (v === null || v === undefined) return '';
@@ -366,7 +366,7 @@ const BackupModule = () => {
         if (policies?.length) {
           const cols = ['tablename', 'policyname', 'permissive', 'roles', 'cmd', 'qual', 'with_check'];
           const header = cols.join(',');
-          const body = policies.map((p: any) =>
+          const body = policies.map((p: Record<string, unknown>) =>
             cols.map(c => {
               const v = p[c] ?? '';
               const s = String(v);
@@ -384,7 +384,7 @@ const BackupModule = () => {
         if (users?.length) {
           const cols = ['id', 'email', 'created_at', 'last_sign_in_at', 'email_confirmed_at', 'phone', 'role'];
           const header = cols.join(',');
-          const body = users.map((u: any) =>
+          const body = users.map((u: Record<string, unknown>) =>
             cols.map(c => {
               const v = u[c] ?? '';
               const s = String(v);
@@ -398,21 +398,21 @@ const BackupModule = () => {
       if (section.id === 'schema') {
         const columns = await callBackupApi('schema');
         if (columns?.length) {
-          csvFiles.push({ name: 'schema_tables.csv', content: `table_name,columns_def\n${columns.map((c: any) => `"${c.table_name}","${(c.columns_def || '').replace(/"/g, '""')}"`).join('\n')}` });
+          csvFiles.push({ name: 'schema_tables.csv', content: `table_name,columns_def\n${columns.map((c: Record<string, unknown>) => `"${c.table_name}","${(String(c.columns_def || '')).replace(/"/g, '""')}"`).join('\n')}` });
         }
       }
 
       if (section.id === 'functions') {
         const funcs = await callBackupApi('db-functions');
         if (funcs?.length) {
-          csvFiles.push({ name: 'db_functions.csv', content: `function_name,arguments,return_type,definition\n${funcs.map((f: any) => `"${f.function_name}","${(f.arguments || '').replace(/"/g, '""')}","${(f.return_type || '').replace(/"/g, '""')}","${(f.definition || '').replace(/"/g, '""')}"`).join('\n')}` });
+          csvFiles.push({ name: 'db_functions.csv', content: `function_name,arguments,return_type,definition\n${funcs.map((f: Record<string, unknown>) => `"${f.function_name}","${(String(f.arguments || '')).replace(/"/g, '""')}","${(String(f.return_type || '')).replace(/"/g, '""')}","${(String(f.definition || '')).replace(/"/g, '""')}"`).join('\n')}` });
         }
       }
 
       if (section.id === 'storage') {
         const buckets = await callBackupApi('storage-buckets');
         if (buckets?.length) {
-          csvFiles.push({ name: 'storage_buckets.csv', content: `id,name,public,created_at\n${buckets.map((b: any) => `${b.id},${b.name},${b.public},${b.created_at}`).join('\n')}` });
+          csvFiles.push({ name: 'storage_buckets.csv', content: `id,name,public,created_at\n${buckets.map((b: Record<string, unknown>) => `${b.id},${b.name},${b.public},${b.created_at}`).join('\n')}` });
         }
       }
     }
