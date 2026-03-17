@@ -223,7 +223,7 @@ const InboxManagement = () => {
       setEditingWebhookId(null);
       fetchInboxes();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook');
+      handleError(error, 'Erro ao atualizar webhook', 'Save webhook');
     } finally {
       setIsSavingWebhook(false);
     }
