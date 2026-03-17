@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { edgeFunctionFetch } from '@/lib/edgeFunctionClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -109,24 +108,9 @@ const BackupModule = () => {
   const selectAll = () => setSelectedSections(new Set(EXPORT_SECTIONS.map(s => s.id)));
   const selectNone = () => setSelectedSections(new Set());
 
-  const callBackupApi = async (action: string, tableName?: string) => {
-    const token = await getAccessToken();
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/database-backup`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action, table_name: tableName }),
-      }
-    );
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Erro na API');
-    }
-    const json = await res.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const callBackupApi = async (action: string, tableName?: string): Promise<any[]> => {
+    const json = await edgeFunctionFetch<{ data?: any[] }>('database-backup', { action, table_name: tableName });
     return json.data || [];
   };
 

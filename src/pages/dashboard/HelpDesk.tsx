@@ -4,7 +4,7 @@ import { useDepartments } from '@/hooks/useDepartments';
 import { Inbox as InboxIcon } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { edgeFunctionFetch } from '@/lib/edgeFunctionClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConversationList } from '@/components/helpdesk/ConversationList';
@@ -302,25 +302,7 @@ const HelpDesk = () => {
     if (!selectedInboxId || syncing) return;
     setSyncing(true);
     try {
-      const accessToken = await getAccessToken();
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-conversations`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ inbox_id: selectedInboxId }),
-        }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || 'Sync failed');
-      }
+      const result = await edgeFunctionFetch<{ synced: number; errors: number }>('sync-conversations', { inbox_id: selectedInboxId });
 
       toast({
         title: 'Sincronização concluída',

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
+import { edgeFunctionFetch } from '@/lib/edgeFunctionClient';
 import { Navigate } from 'react-router-dom';
 import { formatPhone } from '@/lib/phoneUtils';
 import { CopyableId } from '@/components/shared/CopyableId';
@@ -526,14 +526,9 @@ const AdminPanel = () => {
     }
     setIsCreatingUser(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ email: newUserEmail, password: newUserPassword, full_name: newUserName, role: newUserRole }),
+      const result = await edgeFunctionFetch<{ user?: { id: string } }>('admin-create-user', {
+        email: newUserEmail, password: newUserPassword, full_name: newUserName, role: newUserRole,
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao criar usuário');
       toast.success('Usuário criado!');
       setIsCreateUserOpen(false);
       setNewUserEmail(''); setNewUserPassword(''); setNewUserName(''); setNewUserRole('user');
@@ -558,19 +553,12 @@ const AdminPanel = () => {
     if (editUserPassword && editUserPassword.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     setIsSavingUser(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          user_id: editingUser.id,
-          email: editUserEmail.trim(),
-          full_name: editUserName.trim(),
-          ...(editUserPassword ? { password: editUserPassword } : {}),
-        }),
+      await edgeFunctionFetch('admin-update-user', {
+        user_id: editingUser.id,
+        email: editUserEmail.trim(),
+        full_name: editUserName.trim(),
+        ...(editUserPassword ? { password: editUserPassword } : {}),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
       toast.success('Usuário atualizado!');
       setEditingUser(null);
       fetchUsers();
@@ -596,14 +584,7 @@ const AdminPanel = () => {
     if (!userToDelete) return;
     setIsDeletingUser(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ user_id: userToDelete.id }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao excluir');
+      await edgeFunctionFetch('admin-delete-user', { user_id: userToDelete.id });
       toast.success('Usuário excluído!');
       setUserToDelete(null);
       fetchUsers();
@@ -657,19 +638,12 @@ const AdminPanel = () => {
     }
     setIsSavingTeamUser(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          user_id: editingTeamUser.id,
-          email: editTeamEmail.trim(),
-          full_name: editTeamName.trim(),
-          ...(editTeamPassword ? { password: editTeamPassword } : {}),
-        }),
+      await edgeFunctionFetch('admin-update-user', {
+        user_id: editingTeamUser.id,
+        email: editTeamEmail.trim(),
+        full_name: editTeamName.trim(),
+        ...(editTeamPassword ? { password: editTeamPassword } : {}),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
       // Sync inbox memberships
       const previousIds = editingTeamUser.memberships.map(m => m.inbox_id);
       const currentIds = new Set(Object.keys(editTeamInboxes));

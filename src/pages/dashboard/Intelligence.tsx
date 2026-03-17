@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAccessToken } from "@/hooks/useAuthSession";
+import { edgeFunctionFetch, type EdgeFunctionError } from "@/lib/edgeFunctionClient";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -222,40 +222,22 @@ export default function Intelligence() {
     setAnalysis(null);
 
     try {
-      const accessToken = await getAccessToken();
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-summaries`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            inbox_id: selectedInbox === "all" ? null : selectedInbox,
-            period_days: parseInt(periodDays),
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          toast.error("Limite de IA atingido. Tente novamente em alguns minutos.");
-        } else if (response.status === 402) {
-          toast.error("Créditos de IA insuficientes. Adicione créditos ao workspace.");
-        } else {
-          toast.error(data.error || "Erro ao gerar análise.");
-        }
-        return;
-      }
+      const data = await edgeFunctionFetch<AnalysisResult>("analyze-summaries", {
+        inbox_id: selectedInbox === "all" ? null : selectedInbox,
+        period_days: parseInt(periodDays),
+      });
 
       setAnalysis(data);
-    } catch (err) {
-      console.error("[Intelligence] Error:", err);
-      toast.error("Erro inesperado ao gerar análise.");
+    } catch (err: unknown) {
+      const e = err as EdgeFunctionError;
+      if (e.status === 429) {
+        toast.error("Limite de IA atingido. Tente novamente em alguns minutos.");
+      } else if (e.status === 402) {
+        toast.error("Créditos de IA insuficientes. Adicione créditos ao workspace.");
+      } else {
+        console.error("[Intelligence] Error:", err);
+        toast.error(e.message || "Erro inesperado ao gerar análise.");
+      }
     } finally {
       setLoading(false);
     }
