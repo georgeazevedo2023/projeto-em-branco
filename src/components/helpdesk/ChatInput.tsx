@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Send, StickyNote, Mic, X, Paperclip, Loader2, Plus, ImageIcon, Smile, Tags, CircleDot, Check } from 'lucide-react';
-import { EmojiPicker, EmojiPickerContent } from '@/components/ui/emoji-picker';
+import { EmojiPickerContent } from '@/components/ui/emoji-picker';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,8 @@ import { uazapiProxy } from '@/lib/uazapiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { nowBRISO } from '@/lib/dateUtils';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { useSendFile } from '@/hooks/useSendFile';
 import type { Conversation, Label } from '@/types';
 
 interface ChatInputProps {
@@ -24,6 +26,8 @@ interface ChatInputProps {
 
 export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxLabels = [], assignedLabelIds = [], onLabelsChanged, onStatusChange }: ChatInputProps) => {
   const { user } = useAuth();
+  const { isRecording, recordingTime, startRecording, stopRecording, cancelRecording, formatTime } = useAudioRecorder();
+  const { sendingFile, fileInputRef, imageInputRef, handleSendFile } = useSendFile();
 
   const autoAssignAgent = async () => {
     if (!user || conversation.assigned_to === user.id) return;
@@ -33,10 +37,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
         .update({ assigned_to: user.id })
         .eq('id', conversation.id);
 
-      // Callback imediato para UI local (sem depender do broadcast)
       onAgentAssigned?.(conversation.id, user.id);
 
-      // Broadcast para sincronizar outros agentes em tempo real
       await supabase.channel('helpdesk-conversations').send({
         type: 'broadcast',
         event: 'assigned-agent',
@@ -97,6 +99,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
       console.error('Outgoing webhook error:', err);
     }
   };
+
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [isNote, setIsNote] = useState(false);
@@ -127,110 +130,10 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
     }
   };
 
-  // Audio recording state
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const [sendingFile, setSendingFile] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      // Cleanup on unmount
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
-      }
-    };
-  }, []);
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-
-      // Priorizar OGG Opus (mais compatível com WhatsApp)
-      const mimeType = MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-        ? 'audio/ogg;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : 'audio/webm';
-
-      const recorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = recorder;
-      chunksRef.current = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-    } catch (err) {
-      console.error('Mic access error:', err);
-      toast.error('Não foi possível acessar o microfone');
-    }
-  };
-
-  const stopRecording = (): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      const recorder = mediaRecorderRef.current;
-      if (!recorder || recorder.state === 'inactive') {
-        resolve(null);
-        return;
-      }
-
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
-        resolve(blob);
-      };
-      recorder.stop();
-
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
-        streamRef.current = null;
-      }
-      setIsRecording(false);
-    });
-  };
-
-  const cancelRecording = () => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== 'inactive') {
-      recorder.stop();
-    }
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    chunksRef.current = [];
-    setIsRecording(false);
-    setRecordingTime(0);
-  };
-
   const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        // Manter data URI prefix para o proxy poder detectar e limpar
-        resolve(reader.result as string);
-      };
+      reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
@@ -243,16 +146,9 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
     setSending(true);
     try {
       const instanceId = conversation.inbox?.instance_id || '';
-      if (!instanceId) {
-        toast.error('Instância não encontrada');
-        return;
-      }
-
+      if (!instanceId) { toast.error('Instância não encontrada'); return; }
       const contactJid = conversation.contact?.jid;
-      if (!contactJid) {
-        toast.error('Contato sem JID');
-        return;
-      }
+      if (!contactJid) { toast.error('Contato sem JID'); return; }
 
       // Upload audio to storage
       const fileName = `${conversation.id}/${Date.now()}.ogg`;
@@ -275,7 +171,6 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
         audio: base64Audio,
       });
 
-      // Save to DB with media_url
       const { data: insertedMsg, error } = await supabase.from('conversation_messages').insert({
         conversation_id: conversation.id,
         direction: 'outgoing',
@@ -291,7 +186,6 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
         .update({ last_message_at: new Date().toISOString(), last_message: '🎵 Áudio', status_ia: 'desligada' } as any)
         .eq('id', conversation.id);
 
-      // Broadcast manual para atualizar o ChatPanel em tempo real
       await supabase.channel('helpdesk-realtime').send({
         type: 'broadcast',
         event: 'new-message',
@@ -326,116 +220,27 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
       toast.error(err.message || 'Erro ao enviar áudio');
     } finally {
       setSending(false);
-      setRecordingTime(0);
     }
   };
 
-  const handleSendFile = async (file: File) => {
-    if (!user) return;
-    setSendingFile(true);
-    try {
-      const instanceId = conversation.inbox?.instance_id || '';
-      if (!instanceId) {
-        toast.error('Instância não encontrada');
-        return;
-      }
-
-      const contactJid = conversation.contact?.jid;
-      if (!contactJid) {
-        toast.error('Contato sem JID');
-        return;
-      }
-
-      // Upload file to storage
-      const ext = file.name.split('.').pop() || 'bin';
-      const fileName = `${conversation.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('helpdesk-media')
-        .upload(fileName, file, { contentType: file.type });
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from('helpdesk-media')
-        .getPublicUrl(fileName);
-      const filePublicUrl = publicUrlData.publicUrl;
-
-      // Convert to base64 for UAZAPI
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8 = new Uint8Array(arrayBuffer);
-      let binary = '';
-      for (let i = 0; i < uint8.length; i++) {
-        binary += String.fromCharCode(uint8[i]);
-      }
-      const base64 = btoa(binary);
-      const dataUri = `data:${file.type};base64,${base64}`;
-
-      const isImage = file.type.startsWith('image/');
-      const mediaType = isImage ? 'image' : 'document';
-
-      await uazapiProxy({
-        action: 'send-media',
-        instance_id: instanceId,
-        jid: contactJid,
-        mediaUrl: dataUri,
-        mediaType,
-        filename: isImage ? undefined : file.name,
-        caption: '',
-      });
-
-      // Save to DB
-      const { data: insertedMsg, error } = await supabase.from('conversation_messages').insert({
-        conversation_id: conversation.id,
-        direction: 'outgoing',
-        content: isImage ? null : file.name,
-        media_type: mediaType,
-        media_url: filePublicUrl,
-        sender_id: user.id,
-      }).select().single();
-      if (error) throw error;
-
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString(), last_message: mediaType === 'image' ? '📷 Foto' : '📎 Documento', status_ia: 'desligada' } as any)
-        .eq('id', conversation.id);
-
-      // Broadcast for realtime
-      await supabase.channel('helpdesk-realtime').send({
-        type: 'broadcast',
-        event: 'new-message',
-        payload: {
-          conversation_id: conversation.id,
-          message_id: insertedMsg.id,
-          direction: 'outgoing',
-          media_type: mediaType,
-          content: isImage ? null : file.name,
-          media_url: filePublicUrl,
-          created_at: insertedMsg.created_at,
-          status_ia: 'desligada',
-        },
-      });
-      await supabase.channel('helpdesk-conversations').send({
-        type: 'broadcast',
-        event: 'new-message',
-        payload: {
-          conversation_id: conversation.id,
-          inbox_id: conversation.inbox_id,
-          content: isImage ? null : file.name,
-          media_type: mediaType,
-          created_at: insertedMsg.created_at,
-        },
-      });
-
+  const onFileSelected = async (file: File) => {
+    const instanceId = conversation.inbox?.instance_id || '';
+    const contactJid = conversation.contact?.jid || '';
+    const result = await handleSendFile(file, {
+      conversationId: conversation.id,
+      inboxId: conversation.inbox_id,
+      instanceId,
+      contactJid,
+      userId: user?.id || '',
+    });
+    if (result.success) {
       await autoAssignAgent();
-      await fireOutgoingWebhook({ message_type: mediaType, content: isImage ? null : file.name, media_url: filePublicUrl });
+      await fireOutgoingWebhook({
+        message_type: result.mediaType || 'document',
+        content: result.mediaType === 'image' ? null : file.name,
+        media_url: result.mediaUrl || null,
+      });
       onMessageSent();
-      toast.success(isImage ? 'Imagem enviada!' : 'Documento enviado!');
-    } catch (err: any) {
-      console.error('Send file error:', err);
-      toast.error(err.message || 'Erro ao enviar documento');
-    } finally {
-      setSendingFile(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      if (imageInputRef.current) imageInputRef.current.value = '';
     }
   };
 
@@ -455,16 +260,9 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
         if (error) throw error;
       } else {
         const instanceId = conversation.inbox?.instance_id || '';
-        if (!instanceId) {
-          toast.error('Instância não encontrada');
-          return;
-        }
-
+        if (!instanceId) { toast.error('Instância não encontrada'); return; }
         const contactJid = conversation.contact?.jid;
-        if (!contactJid) {
-          toast.error('Contato sem JID');
-          return;
-        }
+        if (!contactJid) { toast.error('Contato sem JID'); return; }
 
         await uazapiProxy({
           action: 'send-chat',
@@ -487,7 +285,6 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
           .update({ last_message_at: new Date().toISOString(), last_message: text.trim(), status_ia: 'desligada' } as any)
           .eq('id', conversation.id);
 
-        // Broadcast manual para atualizar o ChatPanel em tempo real
         await supabase.channel('helpdesk-realtime').send({
           type: 'broadcast',
           event: 'new-message',
@@ -536,12 +333,6 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
-
   return (
     <div className="p-3 border-t border-border/50 bg-card/50">
       {isNote && !isRecording && (
@@ -552,33 +343,18 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
 
       {isRecording ? (
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 h-9 w-9 text-destructive"
-            onClick={cancelRecording}
-            title="Cancelar gravação"
-          >
+          <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9 text-destructive" onClick={cancelRecording} title="Cancelar gravação">
             <X className="w-4 h-4" />
           </Button>
-
           <div className="flex items-center gap-2 flex-1">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
             </span>
-            <span className="text-sm font-mono text-destructive">
-              {formatTime(recordingTime)}
-            </span>
+            <span className="text-sm font-mono text-destructive">{formatTime(recordingTime)}</span>
             <span className="text-xs text-muted-foreground">Gravando...</span>
           </div>
-
-          <Button
-            size="icon"
-            className="shrink-0 h-9 w-9"
-            onClick={handleSendAudio}
-            disabled={sending}
-          >
+          <Button size="icon" className="shrink-0 h-9 w-9" onClick={handleSendAudio} disabled={sending}>
             <Send className="w-4 h-4" />
           </Button>
         </div>
@@ -589,32 +365,14 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
             ref={fileInputRef}
             className="hidden"
             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                if (file.size > 20 * 1024 * 1024) {
-                  toast.error('Arquivo deve ter no máximo 20MB');
-                  return;
-                }
-                handleSendFile(file);
-              }
-            }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onFileSelected(f); }}
           />
           <input
             type="file"
             ref={imageInputRef}
             className="hidden"
             accept=".jpg,.jpeg,.png,.gif,.webp"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                if (file.size > 20 * 1024 * 1024) {
-                  toast.error('Arquivo deve ter no máximo 20MB');
-                  return;
-                }
-                handleSendFile(file);
-              }
-            }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onFileSelected(f); }}
           />
 
           {sendingFile ? (
@@ -631,11 +389,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
               <PopoverContent side="top" align="start" className="w-48 p-1.5">
                 <div className="flex flex-col gap-0.5">
                   <button
-                    className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
-                      isNote
-                        ? 'bg-yellow-500/20 text-yellow-400'
-                        : 'hover:bg-accent text-foreground'
-                    }`}
+                    className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${isNote ? 'bg-yellow-500/20 text-yellow-400' : 'hover:bg-accent text-foreground'}`}
                     onClick={() => { setIsNote(!isNote); setMenuOpen(false); }}
                   >
                     <StickyNote className="w-4 h-4" />
@@ -703,7 +457,6 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
                       )}
                     </>
                   )}
-                  {/* Status submenu */}
                   <button
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent text-foreground"
                     onClick={() => setShowStatus(!showStatus)}
@@ -718,9 +471,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
                         return (
                           <button
                             key={opt.value}
-                            className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-sm transition-colors ${
-                              isActive ? 'bg-accent font-medium' : 'hover:bg-secondary/50'
-                            }`}
+                            className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-sm transition-colors ${isActive ? 'bg-accent font-medium' : 'hover:bg-secondary/50'}`}
                             onClick={() => handleStatusChange(opt.value)}
                           >
                             <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${opt.dotClass}`} />
@@ -733,10 +484,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
                   )}
                   <Popover>
                     <PopoverTrigger asChild>
-                      <button
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent text-foreground"
-                        disabled={sending}
-                      >
+                      <button className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent text-foreground" disabled={sending}>
                         <Smile className="w-4 h-4" />
                         Enviar Emojis
                       </button>
@@ -758,22 +506,10 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
             className="min-h-[40px] max-h-32 resize-none text-sm md:text-sm text-base"
             rows={1}
           />
-          <Button
-            size="icon"
-            className="shrink-0 h-9 w-9"
-            onClick={handleSend}
-            disabled={!text.trim() || sending}
-          >
+          <Button size="icon" className="shrink-0 h-9 w-9" onClick={handleSend} disabled={!text.trim() || sending}>
             <Send className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 h-9 w-9"
-            onClick={startRecording}
-            disabled={isNote}
-            title="Gravar áudio"
-          >
+          <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={startRecording} disabled={isNote} title="Gravar áudio">
             <Mic className="w-4 h-4" />
           </Button>
         </div>
