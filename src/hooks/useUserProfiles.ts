@@ -34,7 +34,7 @@ export function useUserProfiles(options: UseUserProfilesOptions = {}) {
     setLoading(true);
     setError(null);
     try {
-      let query = supabase.from('user_profiles').select(select).order('full_name');
+      let query = supabase.from('user_profiles').select('id, full_name, email, avatar_url').order('full_name');
 
       if (userIds) {
         query = query.in('id', userIds);
