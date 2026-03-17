@@ -1212,7 +1212,7 @@ const AdminPanel = () => {
                       {/* User ID */}
                       <div className="space-y-2">
                         <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">ID do Atendente</p>
-                        <InlineCopyableId label="User ID" id={u.id} icon={User} />
+                        <CopyableId label="User ID" id={u.id} icon={User} />
                       </div>
 
                       {/* Memberships */}
