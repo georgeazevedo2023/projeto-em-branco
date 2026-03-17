@@ -188,7 +188,7 @@ const DepartmentsTab = () => {
             description: formDescription.trim() || null,
             inbox_id: formInboxId,
             is_default: formIsDefault,
-          } as any)
+        } as Partial<typeof dept>)
           .eq('id', editingDept.id);
         if (error) throw error;
         deptId = editingDept.id;
