@@ -313,8 +313,7 @@ const LeadsBroadcaster = () => {
       ));
       toast.success('Base atualizada');
     } catch (error) {
-      console.error('Error updating database:', error);
-      toast.error('Erro ao atualizar base');
+      handleError(error, 'Erro ao atualizar base', 'Update database');
     } finally {
       setIsSavingDatabase(false);
     }
