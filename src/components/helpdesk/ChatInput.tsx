@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { uazapiProxy } from '@/lib/uazapiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import { nowBRISO } from '@/lib/dateUtils';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useSendFile } from '@/hooks/useSendFile';
