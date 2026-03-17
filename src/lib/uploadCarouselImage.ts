@@ -9,7 +9,7 @@ export const uploadCarouselImage = async (file: File): Promise<string> => {
 
   const fileExt = file.name.split('.').pop() || 'jpg';
   const fileName = `${crypto.randomUUID()}.${fileExt}`;
-  const filePath = `${session.data.session.user.id}/${fileName}`;
+  const filePath = `${userId}/${fileName}`;
 
   const { error: uploadError } = await supabase.storage
     .from('carousel-images')
