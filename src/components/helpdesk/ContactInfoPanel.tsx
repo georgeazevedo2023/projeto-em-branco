@@ -69,7 +69,12 @@ export const ContactInfoPanel = ({
   const contact = conversation.contact;
   const name = contact?.name || contact?.phone || 'Desconhecido';
   const [manageLabelsOpen, setManageLabelsOpen] = useState(false);
-  const [agents, setAgents] = useState<InboxAgent[]>([]);
+  const [inboxMemberIds, setInboxMemberIds] = useState<string[]>([]);
+  const { profiles: agentProfiles } = useUserProfiles({ userIds: inboxMemberIds, enabled: inboxMemberIds.length > 0 });
+  const agents = useMemo(() =>
+    agentProfiles.map(p => ({ user_id: p.id, full_name: p.full_name || 'Sem nome' })).sort((a, b) => a.full_name.localeCompare(b.full_name)),
+    [agentProfiles]
+  );
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [aiSummary, setAiSummary] = useState<AiSummary | null>(conversation.ai_summary || null);
   const [summarizing, setSummarizing] = useState(false);
