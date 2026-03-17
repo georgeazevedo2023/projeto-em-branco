@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, Users, Lock, UserPlus, Pencil, Eye, MessageSquare, Search, X, Database } from 'lucide-react';
+import { Users, Lock } from 'lucide-react';
+import { ColumnsTab } from './ColumnsTab';
+import { FieldsTab } from './FieldsTab';
+import { EntitiesTab } from './EntitiesTab';
+import { AccessTab } from './AccessTab';
 
 interface KanbanBoard {
   id: string;
