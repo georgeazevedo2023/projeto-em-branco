@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import { ArrowLeft, Users, MessageSquare, Image } from 'lucide-react';
 import SendMessageForm from '@/components/group/SendMessageForm';
 import SendMediaForm from '@/components/group/SendMediaForm';
