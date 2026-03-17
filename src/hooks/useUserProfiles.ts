@@ -50,7 +50,7 @@ export function useUserProfiles(options: UseUserProfilesOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [enabled, userIdsKey, select]);
+  }, [enabled, userIdsKey]);
 
   useEffect(() => {
     fetchProfiles();
