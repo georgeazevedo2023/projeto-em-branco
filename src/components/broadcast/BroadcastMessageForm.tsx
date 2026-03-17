@@ -496,7 +496,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           }
           
           try {
-            await sendToNumber(membersToSend[j].jid, trimmedMessage, accessToken);
+            await sendText(membersToSend[j].jid, trimmedMessage, accessToken);
             successCount++;
             // Save to HelpDesk
             const phone = membersToSend[j].jid.replace('@s.whatsapp.net', '');
