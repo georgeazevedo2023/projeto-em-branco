@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Server, Users, MessageSquare, ChevronRight, Check, ArrowLeft, ShieldCheck, Loader2, Database, Save, Plus, MessageCircle, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import InstanceSelector from '@/components/broadcast/InstanceSelector';
 import type { Instance } from '@/types';
 import BroadcasterHeader from '@/components/broadcast/BroadcasterHeader';
