@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -46,7 +47,7 @@ const getInitials = (name: string) => {
   return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 };
 
-export function KanbanCardItem({ card, onClick, isDragging, onMoveCard, hasPrev, hasNext }: KanbanCardItemProps) {
+export const KanbanCardItem = memo(function KanbanCardItem({ card, onClick, isDragging, onMoveCard, hasPrev, hasNext }: KanbanCardItemProps) {
   const {
     attributes,
     listeners,
@@ -184,4 +185,4 @@ export function KanbanCardItem({ card, onClick, isDragging, onMoveCard, hasPrev,
       </div>
     </div>
   );
-}
+});
