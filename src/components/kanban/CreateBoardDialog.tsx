@@ -11,11 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Users, Lock } from 'lucide-react';
 
-interface Inbox {
-  id: string;
-  name: string;
-  instance_id: string;
-}
 
 interface CreateBoardDialogProps {
   open: boolean;

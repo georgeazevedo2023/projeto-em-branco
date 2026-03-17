@@ -40,11 +40,6 @@ interface KanbanBoard {
   directMemberCount?: number;
 }
 
-interface Inbox {
-  id: string;
-  name: string;
-  instance_id: string;
-}
 
 interface BoardCardProps {
   board: KanbanBoard;

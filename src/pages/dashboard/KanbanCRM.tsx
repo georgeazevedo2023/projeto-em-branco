@@ -21,11 +21,6 @@ interface KanbanBoard {
   directMemberCount?: number;
 }
 
-interface Inbox {
-  id: string;
-  name: string;
-  instance_id: string;
-}
 
 const KanbanCRM = () => {
   const { user, isSuperAdmin, isGerente } = useAuth();

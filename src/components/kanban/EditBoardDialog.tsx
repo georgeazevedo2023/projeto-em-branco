@@ -45,11 +45,6 @@ interface KanbanField {
   entity_id?: string | null;
 }
 
-interface Inbox {
-  id: string;
-  name: string;
-  instance_id: string;
-}
 
 interface BoardMember {
   id: string;
