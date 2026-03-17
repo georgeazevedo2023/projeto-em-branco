@@ -57,7 +57,7 @@ const ParticipantSelector = ({
           
           // For LID participants: show PushName as primary, no "[Sem número]"
           const displayName = hasPhoneNumber
-            ? formatPhoneNumber(rawNumber)
+            ? formatPhoneDisplay(rawNumber)
             : isLid
               ? (member.name || member.jid.split('@')[0])
               : formatPhoneNumber(rawNumber);
