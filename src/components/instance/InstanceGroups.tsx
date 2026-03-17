@@ -82,28 +82,15 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
       console.log('Response type:', typeof data, 'Is array:', Array.isArray(data));
       
       // Normalizar resposta - backend já deve enviar array, mas ser tolerante
-      let rawGroups: any[];
-      if (Array.isArray(data)) {
-        rawGroups = data;
-      } else if (data?.groups && Array.isArray(data.groups)) {
-        rawGroups = data.groups;
-        console.log('Fallback: extracted from groups property');
-      } else if (data?.data && Array.isArray(data.data)) {
-        rawGroups = data.data;
-        console.log('Fallback: extracted from data property');
-      } else {
-        console.log('Unexpected response format:', data);
-        rawGroups = [];
-      }
+      const rawGroups: RawUazapiGroup[] = extractGroupsArray(data);
       
       console.log('Raw groups count:', rawGroups.length);
       
       if (rawGroups.length > 0) {
-        const formattedGroups: Group[] = rawGroups.map((group: any) => {
-          // UAZAPI retorna campos em PascalCase (JID, Name, Participants)
+        const formattedGroups: Group[] = rawGroups.map((group: RawUazapiGroup) => {
           const rawParticipants = group.Participants || group.participants || [];
           
-          const participants = rawParticipants.map((p: any) => {
+          const participants = rawParticipants.map((p: RawUazapiParticipant) => {
             // PhoneNumber contém o número real (ex: 558199669495@s.whatsapp.net)
             // JID/LID são IDs internos do WhatsApp (ex: 135300193980622@lid)
             const phoneNumber = p.PhoneNumber || p.phoneNumber || '';
