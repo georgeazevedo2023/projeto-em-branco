@@ -59,33 +59,10 @@ const SendToGroup = () => {
 
       setInstance(instanceData);
 
-      // Buscar grupos da instância
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        toast.error('Sessão expirada');
-        return;
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session.access_token}`,
-          },
-          body: JSON.stringify({
-            action: 'groups',
-            token: instanceData.token,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erro ao buscar grupos');
-      }
-
-      const data = await response.json();
+      const data = await uazapiProxy({
+        action: 'groups',
+        token: instanceData.token,
+      });
       
       // Normalizar resposta
       let rawGroups: any[];
