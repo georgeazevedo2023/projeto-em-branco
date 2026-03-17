@@ -140,16 +140,27 @@ const LeadsBroadcaster = () => {
     setIsLoadingLeads(true);
     try {
       const ids = dbs.map(d => d.id);
-      const { data, error } = await supabase
-        .from('lead_database_entries')
-        .select('*')
-        .in('database_id', ids)
-        .limit(5000);
-
-      if (error) throw error;
+      
+      // Paginated fetch to avoid 1000-row limit
+      interface EntryRow { id: string; phone: string; name: string | null; jid: string; source: string | null; group_name: string | null; is_verified: boolean | null; verified_name: string | null; verification_status: string | null; database_id: string; created_at: string | null; }
+      const allData: EntryRow[] = [];
+      const BATCH_SIZE = 1000;
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data: batch, error } = await supabase
+          .from('lead_database_entries')
+          .select('*')
+          .in('database_id', ids)
+          .range(offset, offset + BATCH_SIZE - 1);
+        if (error) throw error;
+        allData.push(...((batch || []) as EntryRow[]));
+        hasMore = (batch || []).length === BATCH_SIZE;
+        offset += BATCH_SIZE;
+      }
 
       const seen = new Set<string>();
-      const uniqueEntries = (data || []).filter(entry => {
+      const uniqueEntries = allData.filter(entry => {
         if (seen.has(entry.phone)) return false;
         seen.add(entry.phone);
         return true;

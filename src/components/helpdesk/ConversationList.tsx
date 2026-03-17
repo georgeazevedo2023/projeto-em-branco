@@ -30,6 +30,9 @@ interface ConversationListProps {
   inboxDepartments?: { id: string; name: string }[];
   departmentFilter?: string | null;
   onDepartmentFilterChange?: (v: string | null) => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string }[] = [
@@ -107,6 +110,9 @@ export const ConversationList = ({
   inboxDepartments = [],
   departmentFilter,
   onDepartmentFilterChange,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
 }: ConversationListProps) => {
   const [manageOpen, setManageOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -345,15 +351,37 @@ export const ConversationList = ({
             )}
           </div>
         ) : (
-          <List
-            listRef={listRef}
-            rowCount={conversations.length}
-            rowHeight={getRowHeight}
-            rowComponent={ConversationRow}
-            rowProps={rowProps as any}
-            overscanCount={5}
-            style={{ height: '100%' }}
-          />
+          <div className="flex flex-col h-full">
+            <div className="flex-1 overflow-hidden">
+              <List
+                listRef={listRef}
+                rowCount={conversations.length}
+                rowHeight={getRowHeight}
+                rowComponent={ConversationRow}
+                rowProps={rowProps as any}
+                overscanCount={5}
+                style={{ height: '100%' }}
+              />
+            </div>
+            {hasMore && (
+              <div className="shrink-0 px-3 py-2 border-t border-border/30">
+                <button
+                  onClick={onLoadMore}
+                  disabled={loadingMore}
+                  className="w-full py-1.5 text-xs font-medium text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {loadingMore ? (
+                    <span className="flex items-center justify-center gap-1.5">
+                      <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      Carregando...
+                    </span>
+                  ) : (
+                    'Carregar mais conversas'
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

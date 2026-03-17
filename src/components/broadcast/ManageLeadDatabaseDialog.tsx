@@ -103,11 +103,25 @@ const ManageLeadDatabaseDialog = ({
     if (!database) return;
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('lead_database_entries')
-        .select('*')
-        .eq('database_id', database.id)
-        .order('created_at', { ascending: false });
+      // Paginated fetch to get all entries
+      const allEntries: LeadEntry[] = [];
+      const BATCH = 1000;
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data: batch, error: batchError } = await supabase
+          .from('lead_database_entries')
+          .select('*')
+          .eq('database_id', database.id)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + BATCH - 1);
+        if (batchError) throw batchError;
+        allEntries.push(...(batch || []) as LeadEntry[]);
+        hasMore = (batch || []).length === BATCH;
+        offset += BATCH;
+      }
+      const data = allEntries;
+      const error = null;
 
       if (error) throw error;
       setEntries(data || []);
