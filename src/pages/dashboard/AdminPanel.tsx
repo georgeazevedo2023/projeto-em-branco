@@ -482,8 +482,8 @@ const AdminPanel = () => {
       toast.success('Caixa excluída');
       setInboxToDelete(null);
       fetchInboxes();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao excluir');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao excluir');
     } finally {
       setIsDeletingInbox(false);
     }
@@ -492,13 +492,13 @@ const AdminPanel = () => {
   const handleSaveWebhook = async (inboxId: string) => {
     setIsSavingWebhook(true);
     try {
-      const { error } = await supabase.from('inboxes').update({ webhook_url: editWebhookValue.trim() || null } as any).eq('id', inboxId);
+      const { error } = await supabase.from('inboxes').update({ webhook_url: editWebhookValue.trim() || null } as Record<string, unknown>).eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook atualizado!');
       setEditingWebhookId(null);
       fetchInboxes();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar webhook');
     } finally {
       setIsSavingWebhook(false);
     }
