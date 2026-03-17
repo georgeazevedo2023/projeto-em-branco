@@ -46,7 +46,7 @@ export const sendToNumber = async (
   text: string,
   accessToken: string
 ) => {
-  return proxyFetch(accessToken, {
+  return uazapiProxyRaw(accessToken, {
     action: 'send-message',
     instance_id: instanceId,
     groupjid: number,
