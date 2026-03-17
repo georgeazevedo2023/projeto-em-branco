@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { Navigate } from 'react-router-dom';
 import { formatPhone } from '@/lib/phoneUtils';
 import { CopyableId } from '@/components/shared/CopyableId';

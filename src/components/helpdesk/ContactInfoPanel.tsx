@@ -11,6 +11,7 @@ import { ConversationLabels } from './ConversationLabels';
 import { LabelPicker } from './LabelPicker';
 import { ManageLabelsDialog } from './ManageLabelsDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 import { formatBR } from '@/lib/dateUtils';
 import { useDepartments } from '@/hooks/useDepartments';
