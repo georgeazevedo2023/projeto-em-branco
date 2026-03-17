@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { uazapiProxy } from '@/lib/uazapiClient';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 interface SendFileOptions {
   conversationId: string;
