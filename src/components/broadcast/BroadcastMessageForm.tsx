@@ -1875,7 +1875,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={getAcceptedTypes()}
+                  accept={getAcceptedTypes(mediaType)}
                   onChange={handleFileSelect}
                   className="hidden"
                   disabled={isSending}
