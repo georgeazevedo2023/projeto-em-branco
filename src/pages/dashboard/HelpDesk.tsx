@@ -55,9 +55,12 @@ const HelpDesk = () => {
   const [conversationNotesSet, setConversationNotesSet] = useState<Set<string>>(new Set());
 
   // Departments state
-  const [inboxDepartments, setInboxDepartments] = useState<{ id: string; name: string }[]>([]);
-  const [allInboxDepts, setAllInboxDepts] = useState<Record<string, { id: string; name: string }[]>>({});
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
+
+  // Departments hooks
+  const allInboxIds = inboxes.map(ib => ib.id);
+  const { departmentsByInbox: allInboxDepts } = useDepartments({ inboxIds: allInboxIds, enabled: allInboxIds.length > 0 });
+  const { departments: inboxDepartments } = useDepartments({ inboxId: selectedInboxId, enabled: !!selectedInboxId });
 
   const { isSuperAdmin } = useAuth();
 
