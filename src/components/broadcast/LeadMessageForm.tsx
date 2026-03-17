@@ -389,8 +389,9 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       try {
         await sendFn(lead);
         results.push({ name: displayName, success: true });
-      } catch (error: any) {
-        results.push({ name: displayName, success: false, error: error.message });
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        results.push({ name: displayName, success: false, error: msg });
       }
 
       setProgress(p => ({ ...p, results: [...results] }));
