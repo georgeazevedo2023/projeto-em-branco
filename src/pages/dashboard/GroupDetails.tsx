@@ -86,18 +86,20 @@ const GroupDetails = () => {
 
       // Formatar grupo
       const rawParticipants = targetGroup.Participants || targetGroup.participants || [];
-      const participants = rawParticipants.map((p: any) => {
-        const phoneNumber = p.PhoneNumber || p.phoneNumber || '';
-        const jid = p.JID || p.jid || p.id || '';
+      const participants: Participant[] = rawParticipants.map((p: Record<string, unknown>) => {
+        const phoneNumber = (p.PhoneNumber || p.phoneNumber || '') as string;
+        const jid = (p.JID || p.jid || p.id || '') as string;
         const phoneId = phoneNumber || jid;
-        const name = p.PushName || p.pushName || p.DisplayName || p.Name || p.name || undefined;
+        const name = (p.PushName || p.pushName || p.DisplayName || p.Name || p.name || undefined) as string | undefined;
+        const isAdmin = p.IsAdmin || p.isAdmin;
+        const isSuperAdmin = p.IsSuperAdmin || p.isSuperAdmin;
         
         return {
           id: phoneId,
-          name: name,
-          admin: p.IsAdmin 
-            ? (p.IsSuperAdmin ? 'superadmin' : 'admin') 
-            : (p.isSuperAdmin ? 'superadmin' : (p.isAdmin ? 'admin' : undefined)),
+          name,
+          admin: isAdmin 
+            ? (isSuperAdmin ? 'superadmin' as const : 'admin' as const) 
+            : undefined,
         };
       });
 
