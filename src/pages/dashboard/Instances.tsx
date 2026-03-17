@@ -47,38 +47,8 @@ interface UserProfile {
   full_name: string | null;
 }
 
-// Normaliza string base64 para src de imagem
-const normalizeQrSrc = (qr: string): string => {
-  if (qr.startsWith('data:image')) {
-    return qr;
-  }
-  return `data:image/png;base64,${qr}`;
-};
+import { normalizeQrSrc, extractQrCode, checkIfConnected } from '@/lib/uazapiUtils';
 
-// Extrai QR code da resposta da API (pode vir em diferentes formatos)
-interface UazapiConnectResponse {
-  instance?: { qrcode?: string; status?: string };
-  qrcode?: string;
-  base64?: string;
-  status?: string | { connected?: boolean };
-  loggedIn?: boolean;
-}
-
-const extractQrCode = (data: UazapiConnectResponse): string | null => {
-  if (data?.instance?.qrcode) return data.instance.qrcode;
-  if (data?.qrcode) return data.qrcode;
-  if (data?.base64) return data.base64;
-  return null;
-};
-
-const checkIfConnected = (data: UazapiConnectResponse): boolean => {
-  return (
-    data?.instance?.status === 'connected' ||
-    data?.status === 'connected' ||
-    (typeof data?.status === 'object' && data?.status?.connected === true) ||
-    data?.loggedIn === true
-  );
-};
 
 const Instances = () => {
   const { isSuperAdmin, user } = useAuth();
