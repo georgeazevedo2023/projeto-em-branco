@@ -37,12 +37,9 @@ interface HelpdeskLeadsStats {
   dailyData: { day: string; label: string; leads: number }[];
 }
 
-interface InboxOption {
-  id: string;
-  name: string;
-}
-
 const DashboardHome = () => {
+  const { profile, isSuperAdmin } = useAuth();
+  const { inboxes } = useInboxes();
   const { profile, isSuperAdmin } = useAuth();
   const [instances, setInstances] = useState<Instance[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
