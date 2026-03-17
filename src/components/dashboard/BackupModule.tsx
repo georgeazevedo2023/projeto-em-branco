@@ -405,7 +405,7 @@ const BackupModule = () => {
       if (section.id === 'functions') {
         const funcs = await callBackupApi('db-functions');
         if (funcs?.length) {
-          csvFiles.push({ name: 'db_functions.csv', content: `function_name,arguments,return_type,definition\n${funcs.map((f: any) => `"${f.function_name}","${(f.arguments || '').replace(/"/g, '""')}","${(f.return_type || '').replace(/"/g, '""')}","${(f.definition || '').replace(/"/g, '""')}"`).join('\n')}` });
+          csvFiles.push({ name: 'db_functions.csv', content: `function_name,arguments,return_type,definition\n${funcs.map((f: Record<string, unknown>) => `"${f.function_name}","${(String(f.arguments || '')).replace(/"/g, '""')}","${(String(f.return_type || '')).replace(/"/g, '""')}","${(String(f.definition || '')).replace(/"/g, '""')}"`).join('\n')}` });
         }
       }
 
