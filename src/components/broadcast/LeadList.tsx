@@ -210,7 +210,7 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
               
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">
-                  {lead.verifiedName || lead.name || formatPhoneForDisplay(lead.phone, lead.jid)}
+                  {lead.verifiedName || lead.name || formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
                 </p>
                 {(lead.verifiedName || lead.name) && (
                   <p className="text-xs text-muted-foreground">
