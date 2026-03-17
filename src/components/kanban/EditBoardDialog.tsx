@@ -68,7 +68,7 @@ export interface KanbanEntity {
   values: KanbanEntityValue[];
 }
 
-interface KanbanEntityValue {
+export interface KanbanEntityValue {
   id: string;
   label: string;
   position: number;
