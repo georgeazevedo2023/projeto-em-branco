@@ -98,7 +98,7 @@ export function useMessageTemplates(): UseMessageTemplatesReturn {
       const userId = await getSessionUserId();
 
       const insertData = {
-        user_id: session.session.user.id,
+        user_id: userId,
         name: template.name,
         content: template.content || null,
         message_type: template.message_type,

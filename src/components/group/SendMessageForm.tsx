@@ -165,7 +165,7 @@ const SendMessageForm = ({ instanceToken, groupJid, groupName, participants, onM
         : null;
 
       const { error } = await supabase.from('scheduled_messages').insert({
-        user_id: session.data.session.user.id,
+        user_id: userId,
         instance_id: instanceId,
         group_jid: groupJid,
         group_name: groupName || null,
