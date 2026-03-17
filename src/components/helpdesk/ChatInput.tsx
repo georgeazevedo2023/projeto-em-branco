@@ -184,7 +184,7 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
 
       await supabase
         .from('conversations')
-        .update({ last_message_at: new Date().toISOString(), last_message: '🎵 Áudio', status_ia: 'desligada' } as any)
+        .update({ last_message_at: new Date().toISOString(), last_message: '🎵 Áudio', status_ia: 'desligada' })
         .eq('id', conversation.id);
 
       await supabase.channel('helpdesk-realtime').send({
