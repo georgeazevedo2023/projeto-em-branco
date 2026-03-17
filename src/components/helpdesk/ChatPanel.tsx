@@ -79,7 +79,7 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
       if (error) throw error;
       setMessages((data as Message[]) || []);
     } catch (err) {
-      console.error('Error fetching messages:', err);
+      handleError(err, 'Erro ao carregar mensagens', 'Fetch messages');
     } finally {
       setLoading(false);
     }
