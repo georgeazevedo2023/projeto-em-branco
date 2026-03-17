@@ -163,9 +163,8 @@ const ManageInboxUsersDialog = ({
       setSelectedRole('agente');
       fetchMembers();
       onUpdate();
-    } catch (error: any) {
-      console.error('Error adding member:', error);
-      toast.error(error.message || 'Erro ao adicionar');
+    } catch (error) {
+      handleError(error, 'Erro ao adicionar', 'Error adding member');
     } finally {
       setAdding(false);
     }
