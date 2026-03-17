@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ArrowLeft, Users, Search, MessageSquare } from 'lucide-react';
+import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
 
 interface Participant {
   id: string;

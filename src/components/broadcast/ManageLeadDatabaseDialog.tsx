@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
 interface LeadDatabase {
   id: string;
