@@ -668,7 +668,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
 
       // Delay before next send
       if (i < selectedLeads.length - 1 && !isCancelledRef.current) {
-        await delay(getRandomDelay());
+        await delay(getRandomDelay(randomDelay));
       }
     }
 
