@@ -249,7 +249,7 @@ const BackupModule = () => {
         lines.push('-- ── TABLE DATA ────────────────────────────────────────────');
         for (const table of (tables || [])) {
           try {
-            const rows = await callBackupApi('table-data', table.table_name);
+            const rows = await callBackupApi('table-data', table.table_name as string);
             if (rows?.length) {
               lines.push(`-- Table: ${table.table_name} (${rows.length} rows)`);
               const cols = Object.keys(rows[0]);
