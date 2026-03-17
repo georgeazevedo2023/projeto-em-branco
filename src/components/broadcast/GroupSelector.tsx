@@ -85,14 +85,15 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
         rawGroups = [];
       }
 
-      const formattedGroups: Group[] = rawGroups.map((g: any) => {
-        const rawParticipants = g.Participants || g.participants || [];
+      const formattedGroups: Group[] = rawGroups.map((g) => {
+        const rawParticipants = (g as Record<string, unknown>).Participants as Record<string, unknown>[] ||
+          (g as Record<string, unknown>).participants as Record<string, unknown>[] || [];
         return {
-          id: g.JID || g.jid || g.id,
-          name: g.Name || g.name || g.Subject || g.Topic || g.subject || 'Grupo sem nome',
-          size: rawParticipants.length || g.ParticipantCount || 0,
-          pictureUrl: g.profilePicUrl || g.pictureUrl || g.PictureUrl,
-          participants: rawParticipants.map((p: any) => {
+          id: String(g.JID || g.jid || g.id || ''),
+          name: String(g.Name || g.name || (g as Record<string, unknown>).Subject || (g as Record<string, unknown>).Topic || (g as Record<string, unknown>).subject || 'Grupo sem nome'),
+          size: rawParticipants.length || Number((g as Record<string, unknown>).ParticipantCount) || 0,
+          pictureUrl: String(g.profilePicUrl || g.pictureUrl || (g as Record<string, unknown>).PictureUrl || ''),
+          participants: rawParticipants.map((p) => {
             // PhoneNumber é o número real, JID pode ser LID interno do WhatsApp
             let phoneNumber = p.PhoneNumber || p.phoneNumber || '';
             const jid = p.JID || p.jid || p.id || '';
