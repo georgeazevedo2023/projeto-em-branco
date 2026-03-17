@@ -180,14 +180,7 @@ const SendMediaForm = ({ instanceToken, groupJid, groupName, participants, onMed
     setErrorMessage('');
 
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        setErrorMessage('Sessão expirada');
-        setSendStatus('error');
-        return;
-      }
-
-      const accessToken = session.data.session.access_token;
+      const accessToken = await getAccessToken();
 
       if (excludeAdmins && participants && regularMembers.length > 0) {
         // Envio individual para membros não-admins
