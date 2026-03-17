@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Database, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Group } from './GroupSelector';
+import type { Group } from '@/types';
 
 interface CreateLeadDatabaseDialogProps {
   open: boolean;

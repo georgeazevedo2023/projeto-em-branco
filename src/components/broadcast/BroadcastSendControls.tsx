@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Users, MessageSquare, Clock, Image, Video, Mic, FileIcon, Send, LayoutGrid } from 'lucide-react';
 import ParticipantSelector from './ParticipantSelector';
-import type { Group } from './GroupSelector';
+import type { Group } from '@/types';
 import type { MediaType, ActiveTab } from '@/lib/broadcastSender';
 
 interface BroadcastSendControlsProps {

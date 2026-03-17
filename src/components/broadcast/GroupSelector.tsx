@@ -13,21 +13,7 @@ import type { Instance } from '@/types';
 import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
 import { extractGroupsArray } from '@/types/uazapi';
 
-export interface Participant {
-  jid: string;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
-  name?: string;        // PushName do WhatsApp
-  phoneNumber?: string; // Número real (quando disponível)
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  size: number;
-  participants: Participant[];
-  pictureUrl?: string;
-}
+import type { Instance, Group, Participant } from '@/types';
 
 interface GroupSelectorProps {
   instance: Instance;

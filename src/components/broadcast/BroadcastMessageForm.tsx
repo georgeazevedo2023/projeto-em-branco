@@ -15,7 +15,7 @@ import BroadcastMediaTab from './BroadcastMediaTab';
 import BroadcastSendControls from './BroadcastSendControls';
 import type { MessageTemplate } from '@/hooks/useMessageTemplates';
 import type { Instance } from '@/types';
-import type { Group } from './GroupSelector';
+import type { Group } from '@/types';
 import { useBroadcastSend } from '@/hooks/useBroadcastSend';
 
 import {
