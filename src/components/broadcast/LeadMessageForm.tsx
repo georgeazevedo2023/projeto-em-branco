@@ -451,115 +451,13 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     }
   };
 
-  const sendToNumber = async (jid: string, text: string, accessToken: string) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-message',
-          instance_id: instance.id,
-          groupjid: jid,
-          message: text,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar');
-    }
-
-    return response.json();
-  };
-
-  const sendMediaToNumber = async (
-    jid: string,
-    mediaData: string,
-    type: string,
-    captionText: string,
-    docName: string,
-    accessToken: string
-  ) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-media',
-          instance_id: instance.id,
-          groupjid: jid,
-          mediaUrl: mediaData,
-          mediaType: type,
-          caption: captionText,
-          filename: docName,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar mídia');
-    }
-
-    return response.json();
-  };
-
-  const sendCarouselToNumber = async (
-    jid: string, 
-    carousel: CarouselData,
-    accessToken: string
-  ) => {
-    // Convert local files to base64
-    const processedCards = await Promise.all(
-      carousel.cards.map(async (card) => {
-        let imageUrl = card.image;
-        if (card.imageFile) {
-          imageUrl = await fileToBase64(card.imageFile);
-          const base64Data = imageUrl.split(',')[1] || imageUrl;
-          imageUrl = base64Data;
-        }
-        return {
-          text: card.text,
-          image: imageUrl,
-          buttons: card.buttons,
-        };
-      })
-    );
-
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-carousel',
-          instance_id: instance.id,
-          groupjid: jid,
-          message: carousel.message,
-          carousel: processedCards,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar carrossel');
-    }
-
-    return response.json();
-  };
+  // Wrapper functions that bind instance.id to shared sender functions
+  const sendText = (jid: string, text: string, accessToken: string) =>
+    sendToNumber(instance.id, jid, text, accessToken);
+  const sendMedia = (jid: string, mediaData: string, type: string, captionText: string, docName: string, accessToken: string) =>
+    sendMediaToNumber(instance.id, jid, mediaData, type, captionText, docName, accessToken);
+  const sendCarousel = (jid: string, carousel: CarouselData, accessToken: string) =>
+    sendCarouselToNumber(instance.id, jid, carousel, accessToken, fileToBase64);
 
   const handleSendCarousel = async () => {
     // Basic validation
