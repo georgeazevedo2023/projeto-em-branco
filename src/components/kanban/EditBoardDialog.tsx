@@ -16,7 +16,7 @@ import { FieldsTab } from './FieldsTab';
 import { EntitiesTab } from './EntitiesTab';
 import { AccessTab } from './AccessTab';
 
-interface KanbanBoard {
+export interface KanbanBoard {
   id: string;
   name: string;
   description: string | null;
