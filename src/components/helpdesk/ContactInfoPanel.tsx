@@ -219,13 +219,13 @@ export const ContactInfoPanel = ({
     const deptId = value === '__none__' ? null : value;
     const { error } = await supabase
       .from('conversations')
-      .update({ department_id: deptId } as any)
+      .update({ department_id: deptId } as Record<string, unknown>)
       .eq('id', conversation.id);
     if (error) {
       toast.error('Erro ao atribuir departamento');
       return;
     }
-    onUpdateConversation(conversation.id, { department_id: deptId } as any);
+    onUpdateConversation(conversation.id, { department_id: deptId });
     const deptName = deptId ? departments.find(d => d.id === deptId)?.name : null;
     toast.success(deptId ? `Departamento: ${deptName}` : 'Departamento removido');
   };
