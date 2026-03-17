@@ -50,11 +50,6 @@ interface InboxWithDetails {
   webhook_outgoing_url: string | null;
 }
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-}
 
 const InboxManagement = () => {
   const { isSuperAdmin, user } = useAuth();

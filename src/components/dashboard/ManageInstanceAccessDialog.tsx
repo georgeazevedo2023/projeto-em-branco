@@ -17,10 +17,6 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Instance {
-  id: string;
-  name: string;
-}
 
 interface UserProfile {
   id: string;

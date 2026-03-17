@@ -26,12 +26,6 @@ interface Group {
   participants: Participant[];
 }
 
-interface Instance {
-  id: string;
-  name: string;
-  token?: string;
-  status: string;
-}
 
 const SendToGroup = () => {
   const { instanceId, groupId } = useParams();

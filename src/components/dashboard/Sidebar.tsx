@@ -31,11 +31,6 @@ import {
 } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-}
 
 interface DepartmentItem {
   id: string;

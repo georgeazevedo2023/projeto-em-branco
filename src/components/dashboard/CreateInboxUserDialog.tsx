@@ -26,10 +26,6 @@ import type { Database } from '@/integrations/supabase/types';
 
 type InboxRole = Database['public']['Enums']['inbox_role'];
 
-interface Instance {
-  id: string;
-  name: string;
-}
 
 interface InboxItem {
   id: string;
