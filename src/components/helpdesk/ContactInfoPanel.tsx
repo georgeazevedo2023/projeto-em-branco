@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Phone, ArrowLeft, Tags, Settings2, UserCheck, Sparkles, RefreshCw, Clock, Target, CheckCircle2, AlertCircle, History, ChevronDown, ChevronUp, MessageSquare, Wand2 } from 'lucide-react';
 import type { Conversation, AiSummary, Label } from '@/types';
 import { ConversationLabels } from './ConversationLabels';
+import { LabelPicker } from './LabelPicker';
 import { ManageLabelsDialog } from './ManageLabelsDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
