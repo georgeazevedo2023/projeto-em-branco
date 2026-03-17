@@ -631,7 +631,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
                 <Shield className="w-4 h-4 text-muted-foreground" />
                 <Label>Delay anti-bloqueio</Label>
               </div>
-              <Select value={randomDelay} onValueChange={(v) => setRandomDelay(v as any)}>
+              <Select value={randomDelay} onValueChange={(v) => setRandomDelay(v as 'none' | '5-10' | '10-20')}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>

@@ -536,7 +536,7 @@ const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
   );
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'paste' | 'csv' | 'manual' | 'groups')}>
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="paste" className="gap-2">
           <ClipboardPaste className="w-4 h-4" />
