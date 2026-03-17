@@ -23,7 +23,7 @@ export function useDepartments(options: UseDepartmentsOptions = {}) {
   const [error, setError] = useState<Error | null>(null);
 
   // Stabilize inboxIds for dependency comparison
-  const inboxIdsKey = inboxIds ? JSON.stringify(inboxIds.sort()) : null;
+  const inboxIdsKey = inboxIds ? JSON.stringify([...inboxIds].sort()) : null;
 
   const fetchDepartments = useCallback(async () => {
     if (!enabled) return;

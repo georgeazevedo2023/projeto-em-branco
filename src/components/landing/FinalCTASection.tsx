@@ -1,9 +1,10 @@
+import { forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Shield, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useInView } from '@/hooks/useInView';
 import { cn } from '@/lib/utils';
 
-const FinalCTASection = () => {
+const FinalCTASection = forwardRef<HTMLElement>((_, _ref) => {
   const { ref, isInView } = useInView({ threshold: 0.3 });
 
   return (
@@ -48,6 +49,8 @@ const FinalCTASection = () => {
       </div>
     </section>
   );
-};
+});
+
+FinalCTASection.displayName = 'FinalCTASection';
 
 export default FinalCTASection;
