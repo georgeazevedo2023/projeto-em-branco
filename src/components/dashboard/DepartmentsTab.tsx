@@ -236,8 +236,8 @@ const DepartmentsTab = () => {
       toast.success('Departamento excluído');
       setDeptToDelete(null);
       fetchDepartments();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao excluir');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao excluir');
     } finally {
       setDeleting(false);
     }
