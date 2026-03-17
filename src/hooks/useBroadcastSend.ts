@@ -154,9 +154,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
     groupNames?: string[]; carouselData?: CarouselData | null;
   }) => {
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) return;
-
+      const userId = await getSessionUserId();
       const completedAt = Date.now();
       let storedCarouselData = null;
       if (p.carouselData) {
