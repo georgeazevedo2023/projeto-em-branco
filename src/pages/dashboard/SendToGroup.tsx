@@ -70,7 +70,7 @@ const SendToGroup = () => {
 
       // Encontrar o grupo específico
       const decodedGroupId = decodeURIComponent(groupId || '');
-      const targetGroup = rawGroups.find((g: any) => {
+      const targetGroup = rawGroups.find((g) => {
         const gId = g.JID || g.jid || g.id;
         return gId === decodedGroupId;
       });
@@ -84,7 +84,7 @@ const SendToGroup = () => {
       // Formatar grupo e participantes
       const rawParticipants = targetGroup.Participants || targetGroup.participants || [];
       
-      const formattedParticipants: Participant[] = rawParticipants.map((p: any) => ({
+      const formattedParticipants: Participant[] = rawParticipants.map((p) => ({
         jid: p.JID || p.jid || p.id || '',
         isAdmin: p.IsAdmin || p.isAdmin || false,
         isSuperAdmin: p.IsSuperAdmin || p.isSuperAdmin || false,
