@@ -214,7 +214,7 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
                 </p>
                 {(lead.verifiedName || lead.name) && (
                   <p className="text-xs text-muted-foreground">
-                    {formatPhoneForDisplay(lead.phone, lead.jid)}
+                    {formatPhoneForDisplay(lead.phone || lead.jid?.split('@')[0] || '')}
                   </p>
                 )}
               </div>

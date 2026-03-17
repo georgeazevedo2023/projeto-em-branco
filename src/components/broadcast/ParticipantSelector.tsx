@@ -60,7 +60,7 @@ const ParticipantSelector = ({
             ? formatPhoneDisplay(rawNumber)
             : isLid
               ? (member.name || member.jid.split('@')[0])
-              : formatPhoneNumber(rawNumber);
+              : formatPhoneDisplay(rawNumber);
           
           participants.push({
             jid: member.jid,
