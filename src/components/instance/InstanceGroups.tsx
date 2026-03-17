@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 import { Users, Search, RefreshCw, MessageSquare, WifiOff, ChevronRight } from 'lucide-react';
 import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
@@ -64,11 +65,7 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
   const fetchGroups = async (): Promise<number> => {
     try {
       setLoading(true);
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        toast.error('Sessão expirada');
-        return 0;
-      }
+      const accessToken = await getAccessToken();
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
@@ -76,7 +73,7 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             action: 'groups',

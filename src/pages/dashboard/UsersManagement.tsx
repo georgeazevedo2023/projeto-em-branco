@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
+import { formatPhone } from '@/lib/phoneUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,17 +51,6 @@ interface UserWithRole {
   instances: InstanceInfo[];
 }
 
-const formatPhone = (jid: string | null): string => {
-  if (!jid) return '';
-  const clean = jid.replace(/@s\.whatsapp\.net$/, '');
-  if (clean.length === 12) {
-    return `${clean.slice(0, 2)} ${clean.slice(2, 4)} ${clean.slice(4, 8)}-${clean.slice(8)}`;
-  }
-  if (clean.length === 13) {
-    return `${clean.slice(0, 2)} ${clean.slice(2, 4)} ${clean.slice(4, 9)}-${clean.slice(9)}`;
-  }
-  return clean;
-};
 
 const UsersManagement = () => {
   const { isSuperAdmin } = useAuth();
@@ -175,7 +166,7 @@ const UsersManagement = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Authorization': `Bearer ${await getAccessToken()}`,
         },
         body: JSON.stringify({
           email: newUserEmail,
@@ -254,7 +245,7 @@ const UsersManagement = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Authorization': `Bearer ${await getAccessToken()}`,
         },
         body: JSON.stringify({
           user_id: userToDelete.id,

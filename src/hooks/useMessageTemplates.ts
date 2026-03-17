@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getSessionUserId } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 import type { CarouselData } from '@/components/broadcast/CarouselEditor';
 
@@ -52,8 +53,8 @@ export function useMessageTemplates(): UseMessageTemplatesReturn {
 
   const fetchTemplates = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         setTemplates([]);
         return;
       }
@@ -94,14 +95,10 @@ export function useMessageTemplates(): UseMessageTemplatesReturn {
     carousel_data?: CarouselData;
   }): Promise<MessageTemplate | null> => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        toast.error('Sessão expirada');
-        return null;
-      }
+      const userId = await getSessionUserId();
 
       const insertData = {
-        user_id: session.session.user.id,
+        user_id: userId,
         name: template.name,
         content: template.content || null,
         message_type: template.message_type,

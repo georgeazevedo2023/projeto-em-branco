@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { Button } from '@/components/ui/button';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -86,8 +87,7 @@ const InstanceDetails = () => {
 
   const updateInstanceStatus = async () => {
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) return;
+      const accessToken = await getAccessToken();
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
@@ -95,7 +95,7 @@ const InstanceDetails = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ action: 'list' }),
         }

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken, getSessionUserId } from '@/hooks/useAuthSession';
 import { Image, FileIcon, Upload, Send, X, Video, Mic, Users, Clock } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
@@ -179,14 +180,7 @@ const SendMediaForm = ({ instanceToken, groupJid, groupName, participants, onMed
     setErrorMessage('');
 
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        setErrorMessage('Sessão expirada');
-        setSendStatus('error');
-        return;
-      }
-
-      const accessToken = session.data.session.access_token;
+      const accessToken = await getAccessToken();
 
       if (excludeAdmins && participants && regularMembers.length > 0) {
         // Envio individual para membros não-admins
@@ -276,11 +270,7 @@ const SendMediaForm = ({ instanceToken, groupJid, groupName, participants, onMed
     setIsScheduling(true);
 
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        toast({ title: 'Erro', description: 'Sessão expirada', variant: 'destructive' });
-        return;
-      }
+      const userId = await getSessionUserId();
 
       const recipients = excludeAdmins && regularMembers.length > 0
         ? regularMembers.map(m => ({ jid: m.jid }))
@@ -290,7 +280,7 @@ const SendMediaForm = ({ instanceToken, groupJid, groupName, participants, onMed
                                  mediaType === 'file' ? 'document' : mediaType;
 
       const { error } = await supabase.from('scheduled_messages').insert({
-        user_id: session.data.session.user.id,
+        user_id: userId,
         instance_id: instanceId,
         group_jid: groupJid,
         group_name: groupName || null,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken, getSessionUserId } from '@/hooks/useAuthSession';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { Badge } from '@/components/ui/badge';
@@ -165,9 +166,8 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
         .maybeSingle();
 
       // Fetch logged-in agent info
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const userId = sessionData?.session?.user?.id;
+      const token = await getAccessToken();
+      const userId = await getSessionUserId();
 
       let currentAgentName = 'Agente';
       if (userId) {

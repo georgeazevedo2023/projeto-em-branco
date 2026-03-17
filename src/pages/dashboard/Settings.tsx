@@ -12,6 +12,7 @@ import { Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => ({
@@ -152,11 +153,7 @@ const Settings = () => {
     setTestingId(configId);
     setTestResult(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error('Sessão expirada.');
-        return;
-      }
+      const accessToken = await getAccessToken();
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-shift-report`,
@@ -164,7 +161,7 @@ const Settings = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ config_id: configId, test_mode: testMode }),
         }

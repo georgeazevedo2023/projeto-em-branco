@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import {
   Copy,
   Eye,
@@ -127,16 +128,14 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
 
     pollingRef.current = setInterval(async () => {
       try {
-        const session = await supabase.auth.getSession();
-        if (!session.data.session) return;
-
+        const accessToken = await getAccessToken();
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${session.data.session.access_token}`,
+              Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
               action: 'status',
@@ -172,11 +171,7 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
     setQrCode(null);
 
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        toast.error('Sessão expirada');
-        return;
-      }
+      const accessToken = await getAccessToken();
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
@@ -184,7 +179,7 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.data.session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             action: 'connect',
