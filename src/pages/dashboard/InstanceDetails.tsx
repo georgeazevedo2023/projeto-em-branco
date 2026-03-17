@@ -15,21 +15,6 @@ import InstanceGroups from '@/components/instance/InstanceGroups';
 import InstanceStats from '@/components/instance/InstanceStats';
 import InstanceHistory from '@/components/instance/InstanceHistory';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  token?: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  user_profiles?: {
-    full_name: string | null;
-    email: string;
-  };
-}
 
 const InstanceDetails = () => {
   const { id } = useParams<{ id: string }>();

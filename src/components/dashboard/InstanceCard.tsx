@@ -15,18 +15,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  user_profiles?: {
-    full_name: string | null;
-    email: string;
-  };
-}
 
 interface InstanceCardProps {
   instance: Instance;

@@ -8,17 +8,6 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface Instance {
-  id: string;
-  name: string;
-  status: string;
-  token?: string;
-  owner_jid: string | null;
-  profile_pic_url: string | null;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface InstanceStatsProps {
   instance: Instance;

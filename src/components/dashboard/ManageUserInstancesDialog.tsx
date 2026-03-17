@@ -16,11 +16,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Instance {
-  id: string;
-  name: string;
-  owner_jid: string | null;
-}
 
 interface UserData {
   id: string;
