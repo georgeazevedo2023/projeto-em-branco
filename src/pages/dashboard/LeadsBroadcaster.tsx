@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Server, Users, MessageSquare, ChevronRight, Check, ArrowLeft, ShieldCheck, Loader2, Database, Save, Plus, MessageCircle, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import InstanceSelector from '@/components/broadcast/InstanceSelector';
 import type { Instance } from '@/types';
 import BroadcasterHeader from '@/components/broadcast/BroadcasterHeader';
@@ -182,8 +183,7 @@ const LeadsBroadcaster = () => {
       setLeads(loadedLeads);
       setSelectedLeads(new Set(loadedLeads.map(l => l.id)));
     } catch (error) {
-      console.error('Error loading leads:', error);
-      toast.error('Erro ao carregar contatos da base');
+      handleError(error, 'Erro ao carregar contatos da base', 'Load leads');
     } finally {
       setIsLoadingLeads(false);
     }
@@ -262,8 +262,7 @@ const LeadsBroadcaster = () => {
       setIsCreatingNewDatabase(false);
       toast.success(`Base "${db.name}" salva com ${leads.length} contatos`);
     } catch (error) {
-      console.error('Error saving database:', error);
-      toast.error('Erro ao salvar base de leads');
+      handleError(error, 'Erro ao salvar base de leads', 'Save database');
     } finally {
       setIsSavingDatabase(false);
     }
@@ -314,8 +313,7 @@ const LeadsBroadcaster = () => {
       ));
       toast.success('Base atualizada');
     } catch (error) {
-      console.error('Error updating database:', error);
-      toast.error('Erro ao atualizar base');
+      handleError(error, 'Erro ao atualizar base', 'Update database');
     } finally {
       setIsSavingDatabase(false);
     }
@@ -355,8 +353,7 @@ const LeadsBroadcaster = () => {
         });
         
         if (response.error) {
-          console.error('Verification error:', response.error);
-          toast.error('Erro ao verificar números');
+          handleError(response.error, 'Erro ao verificar números', 'Verification');
           break;
         }
         
@@ -390,8 +387,7 @@ const LeadsBroadcaster = () => {
       toast.success(`Verificação concluída: ${validCount} válidos, ${invalidCount} inválidos`);
       
     } catch (error) {
-      console.error('Verification error:', error);
-      toast.error('Erro ao verificar números');
+      handleError(error, 'Erro ao verificar números', 'Verification');
     } finally {
       setIsVerifying(false);
     }

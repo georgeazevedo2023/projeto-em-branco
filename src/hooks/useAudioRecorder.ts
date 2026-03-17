@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 export interface AudioRecorderState {
   isRecording: boolean;
@@ -63,8 +64,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (err) {
-      console.error('Mic access error:', err);
-      toast.error('Não foi possível acessar o microfone');
+      handleError(err, 'Não foi possível acessar o microfone', 'Mic access');
     }
   }, []);
 

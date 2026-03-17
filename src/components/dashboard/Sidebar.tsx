@@ -2,6 +2,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { handleError } from '@/lib/errorUtils';
 import {
   MessageSquareMore,
   LayoutDashboard,
@@ -149,7 +150,7 @@ const Sidebar = ({ isMobile = false, onNavigate }: SidebarProps) => {
         }
       }
     } catch (error) {
-      console.error('Error fetching instances:', error);
+      handleError(error, 'Erro ao carregar instâncias', 'Sidebar fetch instances');
     }
   };
 

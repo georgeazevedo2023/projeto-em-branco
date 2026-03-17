@@ -6,6 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis, Cell } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bot, Clock } from 'lucide-react';
+import { handleError } from '@/lib/errorUtils';
 
 interface IAResponseData {
   inbox_name: string;
@@ -159,7 +160,7 @@ const HelpdeskMetricsCharts = () => {
         setRawAgentData(agentInboxMap);
       }
     } catch (err) {
-      console.error('Error fetching helpdesk metrics:', err);
+      handleError(err, 'Erro ao carregar métricas', 'Fetch helpdesk metrics');
     } finally {
       setLoading(false);
     }

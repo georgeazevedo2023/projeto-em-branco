@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSessionUserId } from '@/hooks/useAuthSession';
 import { edgeFunctionFetch } from '@/lib/edgeFunctionClient';
+import { handleError } from '@/lib/errorUtils';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +79,7 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
       if (error) throw error;
       setMessages((data as Message[]) || []);
     } catch (err) {
-      console.error('Error fetching messages:', err);
+      handleError(err, 'Erro ao carregar mensagens', 'Fetch messages');
     } finally {
       setLoading(false);
     }
@@ -201,8 +202,7 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
 
       toast.success('Solicitação de ativação da IA enviada');
     } catch (err) {
-      console.error('Error activating IA:', err);
-      toast.error('Erro ao ativar IA');
+      handleError(err, 'Erro ao ativar IA', 'Activate IA');
     } finally {
       setAtivandoIa(false);
     }

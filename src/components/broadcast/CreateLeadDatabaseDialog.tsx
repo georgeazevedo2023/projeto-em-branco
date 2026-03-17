@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Users, Database, Loader2 } from 'lucide-react';
+import { handleError } from '@/lib/errorUtils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Group } from '@/types';
@@ -117,8 +118,7 @@ const CreateLeadDatabaseDialog = ({
         .single();
 
       if (dbError) {
-        console.error('Error creating database:', dbError);
-        toast.error('Erro ao criar base de dados');
+        handleError(dbError, 'Erro ao criar base de dados', 'Create lead DB');
         return;
       }
 
@@ -138,10 +138,9 @@ const CreateLeadDatabaseDialog = ({
         .insert(leadsToInsert);
 
       if (entriesError) {
-        console.error('Error inserting leads:', entriesError);
         // Rollback - delete the database
         await supabase.from('lead_databases').delete().eq('id', database.id);
-        toast.error('Erro ao inserir leads na base');
+        handleError(entriesError, 'Erro ao inserir leads na base', 'Insert leads');
         return;
       }
 
@@ -153,8 +152,7 @@ const CreateLeadDatabaseDialog = ({
       
       onSuccess?.();
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erro ao criar base de leads');
+      handleError(error, 'Erro ao criar base de leads', 'Create lead DB');
     } finally {
       setIsCreating(false);
     }

@@ -123,8 +123,7 @@ const ManageInboxUsersDialog = ({
 
       setMembers(enriched);
     } catch (error) {
-      console.error('Error fetching members:', error);
-      toast.error('Erro ao carregar membros');
+      handleError(error, 'Erro ao carregar membros', 'Fetch inbox members');
     } finally {
       setLoading(false);
     }

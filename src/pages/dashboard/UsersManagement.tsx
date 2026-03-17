@@ -146,8 +146,7 @@ const UsersManagement = () => {
 
       setUsers(usersWithRoles);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Erro ao carregar usuários');
+      handleError(error, 'Erro ao carregar usuários', 'Fetch users');
     } finally {
       setLoading(false);
     }
@@ -206,8 +205,7 @@ const UsersManagement = () => {
       toast.success(currentlyAdmin ? 'Privilégios de admin removidos' : 'Privilégios de admin concedidos');
       fetchUsers();
     } catch (error) {
-      console.error('Error toggling admin:', error);
-      toast.error('Erro ao alterar permissões');
+      handleError(error, 'Erro ao alterar permissões', 'Toggle admin');
     }
   };
 

@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Wifi, WifiOff, QrCode, Clock, AlertCircle } from 'lucide-react';
 import { formatBR } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { handleError } from '@/lib/errorUtils';
 
 
 interface InstanceHistoryProps {
@@ -55,7 +56,7 @@ const InstanceHistory = ({ instance }: InstanceHistoryProps) => {
 
       setLogs((data as ConnectionLog[]) || []);
     } catch (err) {
-      console.error('Error fetching connection logs:', err);
+      handleError(err, 'Erro ao carregar histórico', 'Fetch connection logs');
       setError('Erro ao carregar histórico');
     } finally {
       setLoading(false);

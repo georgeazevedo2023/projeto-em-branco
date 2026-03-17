@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Image, LayoutGrid } from 'lucide-react';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import { ScheduleMessageDialog } from '@/components/group/ScheduleMessageDialog';
 import { TemplateSelector } from './TemplateSelector';
 import MessagePreview from './MessagePreview';
@@ -217,8 +218,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           carousel_data: { message: carouselData.message, cards: uploadedCards },
         };
       } catch (err) {
-        console.error('Error uploading carousel images:', err);
-        toast.error('Erro ao enviar imagens. Tente novamente.');
+        handleError(err, 'Erro ao enviar imagens. Tente novamente.', 'Upload carousel images');
         return null;
       }
     } else if (activeTab === 'text') {

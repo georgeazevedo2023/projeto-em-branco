@@ -3,7 +3,7 @@ import { uazapiProxy } from '@/lib/uazapiClient';
 import { extractGroupsArray } from '@/types/uazapi';
 import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
 import type { Group, Participant } from '@/types';
-import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 /**
  * Normalize a raw UAZAPI participant into the app Participant shape.
@@ -93,8 +93,7 @@ export function useInstanceGroups({
       setGroups(normalized);
       return normalized;
     } catch (error) {
-      console.error('useInstanceGroups fetch error:', error);
-      toast.error('Erro ao carregar grupos');
+      handleError(error, 'Erro ao carregar grupos', 'useInstanceGroups fetch');
       return [];
     } finally {
       setLoading(false);

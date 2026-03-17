@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Instance } from '@/types';
+import { handleError } from '@/lib/errorUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -140,8 +141,7 @@ const InboxManagement = () => {
 
       setInboxes(enriched);
     } catch (error) {
-      console.error('Error fetching inboxes:', error);
-      toast.error('Erro ao carregar caixas de entrada');
+      handleError(error, 'Erro ao carregar caixas de entrada', 'Fetch inboxes');
     } finally {
       setLoading(false);
     }
@@ -182,8 +182,7 @@ const InboxManagement = () => {
       setWebhookOutgoingUrl('');
       fetchInboxes();
     } catch (error: unknown) {
-      console.error('Error creating inbox:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao criar caixa de entrada');
+      handleError(error, 'Erro ao criar caixa de entrada', 'Create inbox');
     } finally {
       setIsCreating(false);
     }
@@ -206,8 +205,7 @@ const InboxManagement = () => {
       setInboxToDelete(null);
       fetchInboxes();
     } catch (error: unknown) {
-      console.error('Error deleting inbox:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao excluir');
+      handleError(error, 'Erro ao excluir caixa de entrada', 'Delete inbox');
     } finally {
       setIsDeleting(false);
     }
@@ -225,7 +223,7 @@ const InboxManagement = () => {
       setEditingWebhookId(null);
       fetchInboxes();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook');
+      handleError(error, 'Erro ao atualizar webhook', 'Save webhook');
     } finally {
       setIsSavingWebhook(false);
     }
@@ -243,7 +241,7 @@ const InboxManagement = () => {
       setEditingOutgoingId(null);
       fetchInboxes();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar webhook outgoing');
+      handleError(error, 'Erro ao atualizar webhook outgoing', 'Save outgoing webhook');
     } finally {
       setIsSavingOutgoing(false);
     }

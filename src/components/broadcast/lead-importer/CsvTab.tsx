@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Upload, Loader2, ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import { parsePhoneToJid, formatPhoneDisplay } from '@/lib/phoneUtils';
 import * as XLSX from 'xlsx';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
@@ -145,8 +146,7 @@ const CsvTab = ({ onLeadsImported }: CsvTabProps) => {
       setNameColumnIndex(nameIndex);
       setShowColumnMapping(true);
     } catch (error) {
-      console.error('Error parsing file:', error);
-      toast.error('Erro ao processar o arquivo');
+      handleError(error, 'Erro ao processar o arquivo', 'Parse CSV');
     } finally {
       setIsProcessingCsv(false);
     }
