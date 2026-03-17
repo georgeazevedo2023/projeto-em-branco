@@ -779,7 +779,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           }
           
           try {
-            await sendMediaToNumber(membersToSend[j].jid, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
+            await sendMediaMsg(membersToSend[j].jid, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
             successCount++;
             // Save to HelpDesk
             const phone = membersToSend[j].jid.replace('@s.whatsapp.net', '');
