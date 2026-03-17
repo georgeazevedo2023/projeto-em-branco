@@ -34,6 +34,7 @@ import {
   ListChecks,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 interface ExportSection {
   id: string;

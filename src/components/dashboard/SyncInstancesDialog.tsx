@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, RefreshCw, CheckCircle2, XCircle, AlertCircle, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 import type { UazapiInstance } from '@/types/uazapi';
 

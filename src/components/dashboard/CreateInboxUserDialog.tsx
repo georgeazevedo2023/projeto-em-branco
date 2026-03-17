@@ -3,6 +3,7 @@ import type { Instance } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { edgeFunctionFetch } from '@/lib/edgeFunctionClient';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import {
   Dialog,
   DialogContent,

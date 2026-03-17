@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import CreateInboxUserDialog from '@/components/dashboard/CreateInboxUserDialog';
 import type { Database } from '@/integrations/supabase/types';
 
