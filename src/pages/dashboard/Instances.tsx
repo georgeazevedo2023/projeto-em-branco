@@ -3,6 +3,7 @@ import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
+import { uazapiProxy, uazapiProxyRaw } from '@/lib/uazapiClient';
 import InstanceCard from '@/components/dashboard/InstanceCard';
 import SyncInstancesDialog from '@/components/dashboard/SyncInstancesDialog';
 import ManageInstanceAccessDialog from '@/components/dashboard/ManageInstanceAccessDialog';
