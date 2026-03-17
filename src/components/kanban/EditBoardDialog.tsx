@@ -55,7 +55,7 @@ export interface BoardMember {
   email: string;
 }
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   full_name: string | null;
   email: string;
