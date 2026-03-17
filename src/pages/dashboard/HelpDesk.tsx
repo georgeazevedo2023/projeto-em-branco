@@ -120,20 +120,7 @@ const HelpDesk = () => {
     fetchLabels();
   }, [fetchLabels]);
 
-  // Fetch departments for selected inbox
-  const fetchDepartments = useCallback(async () => {
-    if (!selectedInboxId) return;
-    const { data } = await supabase
-      .from('departments')
-      .select('id, name')
-      .eq('inbox_id', selectedInboxId)
-      .order('name');
-    setInboxDepartments((data as any[]) || []);
-  }, [selectedInboxId]);
-
-  useEffect(() => {
-    fetchDepartments();
-  }, [fetchDepartments]);
+  // Departments for selected inbox are now fetched by useDepartments hook
 
 
   // Fetch conversation_labels for loaded conversations
