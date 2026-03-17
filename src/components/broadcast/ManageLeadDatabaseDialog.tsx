@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
 interface LeadDatabase {
   id: string;
@@ -69,21 +70,7 @@ interface ManageLeadDatabaseDialogProps {
 
 const ITEMS_PER_PAGE = 30;
 
-const formatPhoneForDisplay = (phone: string): string => {
-  let number = phone.replace(/[^\d]/g, '');
-  if (!number || number.length < 10) return phone;
-  if (!number.startsWith('55') && number.length <= 11) {
-    number = '55' + number;
-  }
-  if (number.length >= 12) {
-    const ddi = number.slice(0, 2);
-    const ddd = number.slice(2, 4);
-    const parte1 = number.slice(4, 9);
-    const parte2 = number.slice(9);
-    return `+${ddi} ${ddd} ${parte1}-${parte2}`;
-  }
-  return phone;
-};
+// formatPhoneForDisplay imported from shared utils
 
 const ManageLeadDatabaseDialog = ({
   open,

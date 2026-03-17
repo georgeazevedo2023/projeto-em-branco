@@ -2,6 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Navigate } from 'react-router-dom';
+import { formatPhone } from '@/lib/phoneUtils';
+import { CopyableId } from '@/components/shared/CopyableId';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -153,50 +156,6 @@ const ROLE_COLORS: Record<InboxRole, string> = {
   admin: 'bg-primary/10 text-primary border-primary/20',
   gestor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   agente: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-};
-
-const formatPhone = (jid: string | null): string => {
-  if (!jid) return '';
-  const clean = jid.replace(/@s\.whatsapp\.net$/, '');
-  if (clean.length === 13)
-    return `${clean.slice(0, 2)} ${clean.slice(2, 4)} ${clean.slice(4, 9)}-${clean.slice(9)}`;
-  if (clean.length === 12)
-    return `${clean.slice(0, 2)} ${clean.slice(2, 4)} ${clean.slice(4, 8)}-${clean.slice(8)}`;
-  return clean;
-};
-
-const InlineCopyableId = ({ label, id, icon: Icon }: { label: string; id: string; icon: React.ElementType }) => {
-  const [copied, setCopied] = React.useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(id);
-    toast.success(`${label} copiado!`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <TooltipProvider delayDuration={200}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={handleCopy}
-            className="group inline-flex items-center gap-2 bg-muted/30 hover:bg-primary/10 border border-border/40 hover:border-primary/40 rounded-lg px-3 py-2 transition-all duration-200 cursor-pointer w-full"
-          >
-            <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-            <div className="flex flex-col items-start min-w-0 flex-1">
-              <span className="text-[11px] text-muted-foreground/70 font-medium leading-none mb-0.5">{label}</span>
-              <code className="text-xs font-mono text-foreground/80 group-hover:text-foreground transition-colors truncate max-w-full block">{id}</code>
-            </div>
-            {copied ? (
-              <Check className="w-4 h-4 text-primary shrink-0" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all shrink-0" />
-            )}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">Clique para copiar</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -922,8 +881,8 @@ const AdminPanel = () => {
                       <div className="space-y-2">
                         <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">IDs para integração</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <InlineCopyableId label="Caixa de Entrada" id={inbox.id} icon={Inbox} />
-                          <InlineCopyableId label="Instância" id={inbox.instance_id} icon={MonitorSmartphone} />
+                          <CopyableId label="Caixa de Entrada" id={inbox.id} icon={Inbox} />
+                          <CopyableId label="Instância" id={inbox.instance_id} icon={MonitorSmartphone} />
                         </div>
                       </div>
 
@@ -1253,7 +1212,7 @@ const AdminPanel = () => {
                       {/* User ID */}
                       <div className="space-y-2">
                         <p className="text-xs uppercase tracking-wider text-muted-foreground/60 font-semibold">ID do Atendente</p>
-                        <InlineCopyableId label="User ID" id={u.id} icon={User} />
+                        <CopyableId label="User ID" id={u.id} icon={User} />
                       </div>
 
                       {/* Memberships */}
@@ -1647,17 +1606,5 @@ const AdminPanel = () => {
     </div>
   );
 };
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
-
-const EmptyState = ({ icon: Icon, title, desc }: { icon: React.ElementType; title: string; desc: string }) => (
-  <div className="flex flex-col items-center justify-center py-16 text-center">
-    <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-      <Icon className="w-8 h-8 text-muted-foreground" />
-    </div>
-    <h3 className="font-semibold mb-1">{title}</h3>
-    <p className="text-sm text-muted-foreground">{desc}</p>
-  </div>
-);
 
 export default AdminPanel;

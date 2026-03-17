@@ -23,25 +23,13 @@ import type { MessageTemplate } from '@/hooks/useMessageTemplates';
 import type { Instance } from './InstanceSelector';
 import type { Group } from './GroupSelector';
 
-interface InitialData {
-  messageType: string;
-  content: string | null;
-  mediaUrl: string | null;
-  carouselData?: {
-    message?: string;
-    cards?: Array<{
-      id?: string;
-      text?: string;
-      image?: string;
-      buttons?: Array<{
-        id?: string;
-        type: 'URL' | 'REPLY' | 'CALL';
-        label: string;
-        value?: string;
-      }>;
-    }>;
-  };
-}
+import {
+  InitialData, MediaType, ActiveTab,
+  MAX_MESSAGE_LENGTH, MAX_FILE_SIZE, SEND_DELAY_MS, GROUP_DELAY_MS,
+  ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_AUDIO_TYPES,
+  sendToNumber, sendMediaToNumber, sendCarouselToNumber,
+  fileToBase64, compressImageToThumbnail, formatTime, getRandomDelay, getAcceptedTypes,
+} from '@/lib/broadcastSender';
 
 interface BroadcastMessageFormProps {
   instance: Instance;
@@ -60,18 +48,6 @@ interface SendProgress {
   results: { groupName: string; success: boolean; error?: string }[];
   startedAt: number | null;
 }
-
-type MediaType = 'image' | 'video' | 'audio' | 'file';
-type ActiveTab = 'text' | 'media' | 'carousel';
-
-const MAX_MESSAGE_LENGTH = 4096;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const SEND_DELAY_MS = 350;
-const GROUP_DELAY_MS = 500;
-
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const ALLOWED_VIDEO_TYPES = ['video/mp4'];
-const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/ogg', 'audio/mp3', 'audio/wav'];
 
 const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialData }: BroadcastMessageFormProps) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
@@ -248,50 +224,8 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     isPausedRef.current = false; // Unpause to allow the loop to exit
   };
 
-  // Função para calcular delay aleatório baseado na configuração
-  const getRandomDelay = (): number => {
-    if (randomDelay === 'none') {
-      return SEND_DELAY_MS; // 350ms padrão
-    }
-    
-    const [min, max] = randomDelay === '5-10' 
-      ? [5000, 10000]   // 5 a 10 segundos
-      : [10000, 20000]; // 10 a 20 segundos
-    
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
-  const getGroupDelay = (): number => {
-    if (randomDelay === 'none') {
-      return GROUP_DELAY_MS; // 500ms padrão
-    }
-    
-    const [min, max] = randomDelay === '5-10' 
-      ? [5000, 10000]   // 5 a 10 segundos
-      : [10000, 20000]; // 10 a 20 segundos
-    
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
-  // Compress and resize image to a smaller thumbnail for storage
-  const compressImageToThumbnail = (file: File, maxWidth = 200, quality = 0.6): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new window.Image();
-      
-      img.onload = () => {
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      
-      img.onerror = () => resolve('');
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  // getRandomDelay, compressImageToThumbnail imported from broadcastSender
+  const getGroupDelay = (): number => getRandomDelay(randomDelay, GROUP_DELAY_MS);
 
   // Save broadcast log to database
   const saveBroadcastLog = async (params: {
@@ -383,14 +317,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-    });
-  };
+  // fileToBase64 imported from broadcastSender
 
   const clearFile = () => {
     if (previewUrl) {
@@ -404,20 +331,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     }
   };
 
-  const getAcceptedTypes = () => {
-    switch (mediaType) {
-      case 'image':
-        return ALLOWED_IMAGE_TYPES.join(',');
-      case 'video':
-        return ALLOWED_VIDEO_TYPES.join(',');
-      case 'audio':
-        return ALLOWED_AUDIO_TYPES.join(',');
-      case 'file':
-        return '*/*';
-      default:
-        return '*/*';
-    }
-  };
+  // getAcceptedTypes imported from broadcastSender
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -456,116 +370,13 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     }
   };
 
-  const sendToNumber = async (number: string, text: string, accessToken: string) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-message',
-          instance_id: instance.id,
-          groupjid: number,
-          message: text,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar');
-    }
-
-    return response.json();
-  };
-
-  const sendMediaToNumber = async (
-    number: string, 
-    mediaData: string, 
-    type: string, 
-    captionText: string,
-    docName: string,
-    accessToken: string
-  ) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-media',
-          instance_id: instance.id,
-          groupjid: number,
-          mediaUrl: mediaData,
-          mediaType: type,
-          caption: captionText,
-          filename: docName,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar mídia');
-    }
-
-    return response.json();
-  };
-
-  const sendCarouselToNumber = async (
-    number: string, 
-    carousel: CarouselData,
-    accessToken: string
-  ) => {
-    // Convert local files to base64 for carousel images
-    const processedCards = await Promise.all(
-      carousel.cards.map(async (card) => {
-        let imageUrl = card.image;
-        if (card.imageFile) {
-          imageUrl = await fileToBase64(card.imageFile);
-          // Extract only base64 part without prefix
-          const base64Data = imageUrl.split(',')[1] || imageUrl;
-          imageUrl = base64Data;
-        }
-        return {
-          text: card.text,
-          image: imageUrl,
-          buttons: card.buttons,
-        };
-      })
-    );
-
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-carousel',
-          instance_id: instance.id,
-          groupjid: number,
-          message: carousel.message,
-          carousel: processedCards,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar carrossel');
-    }
-
-    return response.json();
-  };
+  // Wrapper functions that bind instance.id to shared sender functions
+  const sendText = (number: string, text: string, accessToken: string) =>
+    sendToNumber(instance.id, number, text, accessToken);
+  const sendMediaMsg = (number: string, mediaData: string, type: string, captionText: string, docName: string, accessToken: string) =>
+    sendMediaToNumber(instance.id, number, mediaData, type, captionText, docName, accessToken);
+  const sendCarouselMsg = (number: string, carousel: CarouselData, accessToken: string) =>
+    sendCarouselToNumber(instance.id, number, carousel, accessToken, fileToBase64);
 
   const handleSend = async () => {
     if (activeTab === 'text') {
@@ -685,7 +496,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           }
           
           try {
-            await sendToNumber(membersToSend[j].jid, trimmedMessage, accessToken);
+            await sendText(membersToSend[j].jid, trimmedMessage, accessToken);
             successCount++;
             // Save to HelpDesk
             const phone = membersToSend[j].jid.replace('@s.whatsapp.net', '');
@@ -701,7 +512,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           setProgress(p => ({ ...p, currentMember: j + 1 }));
           
           if (j < membersToSend.length - 1) {
-            await delay(getRandomDelay());
+            await delay(getRandomDelay(randomDelay));
           }
         }
 
@@ -802,7 +613,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               totalMembers: 1,
             }));
 
-            await sendToNumber(group.id, trimmedMessage, accessToken);
+            await sendText(group.id, trimmedMessage, accessToken);
             setProgress(p => ({ ...p, currentMember: 1 }));
 
             results.push({ groupName: group.name, success: true });
@@ -968,7 +779,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           }
           
           try {
-            await sendMediaToNumber(membersToSend[j].jid, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
+            await sendMediaMsg(membersToSend[j].jid, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
             successCount++;
             // Save to HelpDesk
             const phone = membersToSend[j].jid.replace('@s.whatsapp.net', '');
@@ -985,7 +796,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           setProgress(p => ({ ...p, currentMember: j + 1 }));
           
           if (j < membersToSend.length - 1) {
-            await delay(getRandomDelay());
+            await delay(getRandomDelay(randomDelay));
           }
         }
 
@@ -1087,7 +898,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               totalMembers: 1,
             }));
 
-            await sendMediaToNumber(group.id, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
+            await sendMediaMsg(group.id, finalMediaUrl, sendType, caption.trim(), docName, accessToken);
             setProgress(p => ({ ...p, currentMember: 1 }));
 
             results.push({ groupName: group.name, success: true });
@@ -1264,7 +1075,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               groupName: `Enviando para ${j + 1} de ${membersToSend.length}`,
             }));
 
-            await sendCarouselToNumber(member.jid, carouselData, accessToken);
+            await sendCarouselMsg(member.jid, carouselData, accessToken);
             results.push({ groupName: member.jid, success: true });
             // Save to HelpDesk
             const phone = member.jid.replace('@s.whatsapp.net', '');
@@ -1313,7 +1124,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
           }
 
           if (j < membersToSend.length - 1) {
-            await delay(getRandomDelay());
+            await delay(getRandomDelay(randomDelay));
           }
         }
 
@@ -1409,7 +1220,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               totalMembers: 1,
             }));
 
-            await sendCarouselToNumber(group.id, carouselData, accessToken);
+            await sendCarouselMsg(group.id, carouselData, accessToken);
             setProgress(p => ({ ...p, currentMember: 1 }));
 
             results.push({ groupName: group.name, success: true });
@@ -2064,7 +1875,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={getAcceptedTypes()}
+                  accept={getAcceptedTypes(mediaType)}
                   onChange={handleFileSelect}
                   className="hidden"
                   disabled={isSending}

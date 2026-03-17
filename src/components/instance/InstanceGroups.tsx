@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Users, Search, RefreshCw, MessageSquare, WifiOff, ChevronRight } from 'lucide-react';
+import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
 
 interface Instance {
   id: string;
@@ -202,14 +203,7 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
     group.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatPhone = (jid: string) => {
-    if (!jid) return 'Desconhecido';
-    // Remove @s.whatsapp.net, @lid ou qualquer sufixo @...
-    const phone = jid.split('@')[0];
-    if (!phone) return 'Desconhecido';
-    // Retornar apenas os dígitos, sem o sinal de +
-    return phone;
-  };
+  // formatPhone imported from shared utils
 
   if (!isConnected) {
     return (

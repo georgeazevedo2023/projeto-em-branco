@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ArrowLeft, Users, Search, MessageSquare } from 'lucide-react';
+import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
 
 interface Participant {
   id: string;
@@ -149,12 +150,7 @@ const GroupDetails = () => {
     }
   };
 
-  const formatPhone = (jid: string) => {
-    if (!jid) return 'Desconhecido';
-    const phone = jid.split('@')[0];
-    if (!phone) return 'Desconhecido';
-    return phone;
-  };
+  // formatPhone imported from shared utils
 
   const handleBack = () => {
     navigate(`/dashboard/instances/${instanceId}?tab=groups`);

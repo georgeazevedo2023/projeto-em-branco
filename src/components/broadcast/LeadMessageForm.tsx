@@ -23,25 +23,13 @@ import type { MessageTemplate } from '@/hooks/useMessageTemplates';
 import type { Instance } from './InstanceSelector';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 
-interface InitialData {
-  messageType: string;
-  content: string | null;
-  mediaUrl: string | null;
-  carouselData?: {
-    message?: string;
-    cards?: Array<{
-      id?: string;
-      text?: string;
-      image?: string;
-      buttons?: Array<{
-        id?: string;
-        type: 'URL' | 'REPLY' | 'CALL';
-        label: string;
-        value?: string;
-      }>;
-    }>;
-  };
-}
+import {
+  InitialData, MediaType, ActiveTab,
+  MAX_MESSAGE_LENGTH, MAX_FILE_SIZE, SEND_DELAY_MS,
+  ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_AUDIO_TYPES,
+  sendToNumber, sendMediaToNumber, sendCarouselToNumber,
+  fileToBase64, compressImageToThumbnail, formatTime, getRandomDelay, getAcceptedTypes,
+} from '@/lib/broadcastSender';
 
 interface LeadMessageFormProps {
   instance: Instance;
@@ -58,17 +46,6 @@ interface SendProgress {
   results: { name: string; success: boolean; error?: string }[];
   startedAt: number | null;
 }
-
-type MediaType = 'image' | 'video' | 'audio' | 'file';
-type ActiveTab = 'text' | 'media' | 'carousel';
-
-const MAX_MESSAGE_LENGTH = 4096;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const SEND_DELAY_MS = 350;
-
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const ALLOWED_VIDEO_TYPES = ['video/mp4'];
-const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/ogg', 'audio/mp3', 'audio/wav'];
 
 const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: LeadMessageFormProps) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
@@ -187,22 +164,9 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     isPausedRef.current = false;
   };
 
-  const getRandomDelay = (): number => {
-    if (randomDelay === 'none') return SEND_DELAY_MS;
-    
-    const [min, max] = randomDelay === '5-10' ? [5000, 10000] : [10000, 20000];
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
+  // getRandomDelay imported from broadcastSender
 
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds}s`;
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (mins < 60) return `${mins}min${secs > 0 ? ` ${secs}s` : ''}`;
-    const hours = Math.floor(mins / 60);
-    const remainingMins = mins % 60;
-    return `${hours}h${remainingMins > 0 ? ` ${remainingMins}min` : ''}`;
-  };
+  // formatTime imported from broadcastSender
 
   const calculateEstimatedTime = (): string => {
     if (randomDelay === 'none') return '';
@@ -225,27 +189,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     return `${minHours}h${minMins > 0 ? minMins + 'min' : ''} - ${maxHours}h${maxMins > 0 ? maxMins + 'min' : ''}`;
   };
 
-  // Compress and resize image to a smaller thumbnail for storage
-  const compressImageToThumbnail = (file: File, maxWidth = 200, quality = 0.6): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new window.Image();
-      
-      img.onload = () => {
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const objectUrl = img.src;
-        URL.revokeObjectURL(objectUrl);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      
-      img.onerror = () => resolve('');
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  // compressImageToThumbnail imported from broadcastSender
 
   const saveBroadcastLog = async (params: {
     messageType: string;
@@ -335,14 +279,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-    });
-  };
+  // fileToBase64 imported from broadcastSender
 
   const clearFile = () => {
     if (previewUrl) {
@@ -478,15 +415,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     }
   };
 
-  const getAcceptedTypes = () => {
-    switch (mediaType) {
-      case 'image': return ALLOWED_IMAGE_TYPES.join(',');
-      case 'video': return ALLOWED_VIDEO_TYPES.join(',');
-      case 'audio': return ALLOWED_AUDIO_TYPES.join(',');
-      case 'file': return '*/*';
-      default: return '*/*';
-    }
-  };
+  // getAcceptedTypes imported from broadcastSender
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -522,115 +451,13 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     }
   };
 
-  const sendToNumber = async (jid: string, text: string, accessToken: string) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-message',
-          instance_id: instance.id,
-          groupjid: jid,
-          message: text,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar');
-    }
-
-    return response.json();
-  };
-
-  const sendMediaToNumber = async (
-    jid: string,
-    mediaData: string,
-    type: string,
-    captionText: string,
-    docName: string,
-    accessToken: string
-  ) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-media',
-          instance_id: instance.id,
-          groupjid: jid,
-          mediaUrl: mediaData,
-          mediaType: type,
-          caption: captionText,
-          filename: docName,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar mídia');
-    }
-
-    return response.json();
-  };
-
-  const sendCarouselToNumber = async (
-    jid: string, 
-    carousel: CarouselData,
-    accessToken: string
-  ) => {
-    // Convert local files to base64
-    const processedCards = await Promise.all(
-      carousel.cards.map(async (card) => {
-        let imageUrl = card.image;
-        if (card.imageFile) {
-          imageUrl = await fileToBase64(card.imageFile);
-          const base64Data = imageUrl.split(',')[1] || imageUrl;
-          imageUrl = base64Data;
-        }
-        return {
-          text: card.text,
-          image: imageUrl,
-          buttons: card.buttons,
-        };
-      })
-    );
-
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-carousel',
-          instance_id: instance.id,
-          groupjid: jid,
-          message: carousel.message,
-          carousel: processedCards,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar carrossel');
-    }
-
-    return response.json();
-  };
+  // Wrapper functions that bind instance.id to shared sender functions
+  const sendText = (jid: string, text: string, accessToken: string) =>
+    sendToNumber(instance.id, jid, text, accessToken);
+  const sendMedia = (jid: string, mediaData: string, type: string, captionText: string, docName: string, accessToken: string) =>
+    sendMediaToNumber(instance.id, jid, mediaData, type, captionText, docName, accessToken);
+  const sendCarousel = (jid: string, carousel: CarouselData, accessToken: string) =>
+    sendCarouselToNumber(instance.id, jid, carousel, accessToken, fileToBase64);
 
   const handleSendCarousel = async () => {
     // Basic validation
@@ -685,7 +512,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }));
 
       try {
-        await sendCarouselToNumber(lead.jid, carouselData, accessToken);
+        await sendCarousel(lead.jid, carouselData, accessToken);
         results.push({ name: displayName, success: true });
         // Upload carousel images and save to HelpDesk
         try {
@@ -729,7 +556,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       setProgress(p => ({ ...p, results: [...results] }));
 
       if (i < selectedLeads.length - 1 && !isCancelledRef.current) {
-        await delay(getRandomDelay());
+        await delay(getRandomDelay(randomDelay));
       }
     }
 
@@ -826,7 +653,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }));
 
       try {
-        await sendToNumber(lead.jid, message.trim(), accessToken);
+        await sendText(lead.jid, message.trim(), accessToken);
         results.push({ name: displayName, success: true });
         // Save to HelpDesk
         saveToHelpdesk(instance.id, lead.jid, lead.phone, lead.name || null, {
@@ -841,7 +668,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
 
       // Delay before next send
       if (i < selectedLeads.length - 1 && !isCancelledRef.current) {
-        await delay(getRandomDelay());
+        await delay(getRandomDelay(randomDelay));
       }
     }
 
@@ -932,7 +759,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       }));
 
       try {
-        await sendMediaToNumber(
+        await sendMedia(
           lead.jid,
           mediaData,
           actualMediaType,
@@ -954,7 +781,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
       setProgress(p => ({ ...p, results: [...results] }));
 
       if (i < selectedLeads.length - 1 && !isCancelledRef.current) {
-        await delay(getRandomDelay());
+        await delay(getRandomDelay(randomDelay));
       }
     }
 
@@ -1130,7 +957,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept={getAcceptedTypes()}
+                        accept={getAcceptedTypes(mediaType)}
                         onChange={handleFileSelect}
                         className="hidden"
                       />

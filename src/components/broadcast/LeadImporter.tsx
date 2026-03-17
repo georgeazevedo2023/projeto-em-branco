@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { ClipboardPaste, Users, Plus, Search, Loader2, FileSpreadsheet, Upload, X, ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { parsePhoneToJid, formatPhoneDisplay } from '@/lib/phoneUtils';
 import * as XLSX from 'xlsx';
 import type { Instance } from './InstanceSelector';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
@@ -73,36 +74,9 @@ const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
   const [groupSearch, setGroupSearch] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
 
-  // Parse phone number to JID format
-  const parsePhoneToJid = (phone: string): string | null => {
-    // Remove all non-digit characters
-    let cleaned = phone.replace(/\D/g, '');
-    
-    // Minimum 10 digits (DDD + 8 digits) or more
-    if (cleaned.length < 10) return null;
-    
-    // If doesn't start with country code, add Brazil (55)
-    if (!cleaned.startsWith('55') && cleaned.length <= 11) {
-      cleaned = '55' + cleaned;
-    }
-    
-    return `${cleaned}@s.whatsapp.net`;
-  };
+  // parsePhoneToJid imported from shared utils
 
-  // Format phone for display
-  const formatPhoneDisplay = (phone: string): string => {
-    const cleaned = phone.replace(/\D/g, '');
-    
-    // Format: DDI DDD NUMBER (e.g., 55 11 999999999)
-    if (cleaned.length >= 12) {
-      const ddi = cleaned.slice(0, 2);
-      const ddd = cleaned.slice(2, 4);
-      const number = cleaned.slice(4);
-      return `${ddi} ${ddd} ${number}`;
-    }
-    
-    return cleaned;
-  };
+  // formatPhoneDisplay imported from shared utils
 
   const handlePasteImport = () => {
     if (!pasteText.trim()) {
