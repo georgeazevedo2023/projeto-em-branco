@@ -105,7 +105,7 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
           } else if (payload.payload?.status_ia === 'desligada') {
             console.log('[ChatPanel] IA desligada via broadcast');
             setIaAtivada(false);
-            supabase.from('conversations').update({ status_ia: 'desligada' } as any).eq('id', conversation.id).then();
+            supabase.from('conversations').update({ status_ia: 'desligada' } as Record<string, unknown>).eq('id', conversation.id).then();
           }
         }
       })

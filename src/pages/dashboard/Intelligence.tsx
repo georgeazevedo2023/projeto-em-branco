@@ -722,7 +722,7 @@ export default function Intelligence() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: any) => [`${value}%`, ""]}
+                        formatter={(value: number | string) => [`${value}%`, ""]}
                         contentStyle={{
                           background: "hsl(220 18% 10%)",
                           border: "1px solid hsl(220 16% 18%)",

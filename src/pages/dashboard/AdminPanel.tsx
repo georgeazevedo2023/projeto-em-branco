@@ -691,8 +691,8 @@ const AdminPanel = () => {
       toast.success('Atendente atualizado!');
       setEditingTeamUser(null);
       fetchTeam();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao atualizar atendente');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar atendente');
     } finally {
       setIsSavingTeamUser(false);
     }

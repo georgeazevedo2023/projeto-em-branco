@@ -275,8 +275,8 @@ export const ContactInfoPanel = ({
         )
       );
       toast.success('Resumo gerado com sucesso!');
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao gerar resumo');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar resumo');
     } finally {
       setGeneratingSummaryFor(null);
     }

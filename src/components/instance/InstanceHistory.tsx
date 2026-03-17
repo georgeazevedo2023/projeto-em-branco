@@ -140,14 +140,14 @@ const InstanceHistory = ({ instance }: InstanceHistoryProps) => {
                           <h4 className="font-medium">
                             {log.description || log.event_type}
                           </h4>
-                          {log.metadata && (log.metadata as any).owner_jid && (
+                          {log.metadata?.owner_jid && (
                             <p className="text-sm text-muted-foreground mt-1">
-                              Número: +{((log.metadata as any).owner_jid as string)?.split('@')[0]}
+                              Número: +{String(log.metadata.owner_jid).split('@')[0]}
                             </p>
                           )}
-                          {log.metadata && (log.metadata as any).old_status && (
+                          {log.metadata?.old_status && (
                             <p className="text-sm text-muted-foreground mt-1">
-                              {(log.metadata as any).old_status} → {(log.metadata as any).new_status}
+                              {String(log.metadata.old_status)} → {String(log.metadata.new_status)}
                             </p>
                           )}
                         </div>

@@ -353,9 +353,9 @@ const Instances = () => {
         setQrDialogOpen(true);
         startPolling(newInstance);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating instance:', error);
-      toast.error(error.message || 'Erro ao criar instância');
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar instância');
     } finally {
       setIsCreating(false);
     }
