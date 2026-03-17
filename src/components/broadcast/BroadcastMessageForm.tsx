@@ -613,7 +613,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               totalMembers: 1,
             }));
 
-            await sendToNumber(group.id, trimmedMessage, accessToken);
+            await sendText(group.id, trimmedMessage, accessToken);
             setProgress(p => ({ ...p, currentMember: 1 }));
 
             results.push({ groupName: group.name, success: true });
