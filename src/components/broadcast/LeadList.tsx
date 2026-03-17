@@ -233,7 +233,16 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
       </div>
 
       {/* Lead list — virtualized */}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-hidden">
+        {/* Total count indicator */}
+        {filteredLeads.length > 0 && (
+          <div className="px-3 py-1.5 bg-muted/30 border-b border-border/30">
+            <span className="text-[11px] text-muted-foreground font-medium">
+              {filteredLeads.length} {filteredLeads.length === 1 ? 'contato' : 'contatos'}
+              {(search || statusFilter !== 'all') && filteredLeads.length !== leads.length && ' (filtrados)'}
+            </span>
+          </div>
+        )}
         {filteredLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <User className="w-8 h-8 mx-auto mb-2 opacity-50" />
