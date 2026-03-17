@@ -9,6 +9,14 @@ import { Search, CheckSquare, Square, User, CheckCircle, XCircle, AlertCircle, C
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 import { formatPhoneForDisplay } from '@/lib/phoneUtils';
 
+interface LeadListProps {
+  leads: Lead[];
+  selectedLeads: Set<string>;
+  onSelectionChange: (selected: Set<string>) => void;
+}
+
+const ITEMS_PER_PAGE = 50;
+
 const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'valid' | 'invalid' | 'pending'>('all');
