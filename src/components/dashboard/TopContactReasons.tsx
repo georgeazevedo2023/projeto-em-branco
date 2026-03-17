@@ -96,14 +96,14 @@ const TopContactReasons = ({ instanceId, inboxId, periodDays = 30 }: TopReasonsC
 
         let filtered = data;
         if (instanceId) {
-          filtered = data.filter((c: any) => c.inboxes?.instance_id === instanceId);
+          filtered = data.filter((c: { inboxes?: { instance_id?: string } }) => c.inboxes?.instance_id === instanceId);
         }
 
         // Group reasons by inbox
         const inboxMap = new Map<string, { name: string; reasons: Map<string, number>; total: number }>();
 
-        filtered.forEach((conv: any) => {
-          const summary = conv.ai_summary as any;
+        filtered.forEach((conv: { inbox_id: string; ai_summary?: { reason?: string } | null; inboxes?: { name?: string } }) => {
+          const summary = conv.ai_summary;
           const reason = summary?.reason;
           if (!reason || typeof reason !== 'string') return;
 
