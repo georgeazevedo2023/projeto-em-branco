@@ -366,7 +366,7 @@ const BackupModule = () => {
         if (policies?.length) {
           const cols = ['tablename', 'policyname', 'permissive', 'roles', 'cmd', 'qual', 'with_check'];
           const header = cols.join(',');
-          const body = policies.map((p: any) =>
+          const body = policies.map((p: Record<string, unknown>) =>
             cols.map(c => {
               const v = p[c] ?? '';
               const s = String(v);
