@@ -110,7 +110,7 @@ export const ContactInfoPanel = ({
         setPastConversations(
           (data || []).map((c) => ({
             ...c,
-            ai_summary: c.ai_summary as AiSummary | null ?? null,
+            ai_summary: (c.ai_summary as unknown as AiSummary) ?? null,
           }))
         );
       } catch (err) {

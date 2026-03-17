@@ -456,9 +456,7 @@ const AdminPanel = () => {
         name: newInboxName.trim(),
         instance_id: selectedInstanceId,
         created_by: user!.id,
-        webhook_url: webhookUrl.trim() || null,
-        webhook_outgoing_url: webhookOutgoingUrl.trim() || null,
-      } as Record<string, unknown>);
+      });
       if (error) throw error;
       toast.success('Caixa criada!');
       setIsCreateInboxOpen(false);
