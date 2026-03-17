@@ -73,21 +73,7 @@ const LeadImporter = ({ instance, onLeadsImported }: LeadImporterProps) => {
   const [groupSearch, setGroupSearch] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
 
-  // Parse phone number to JID format
-  const parsePhoneToJid = (phone: string): string | null => {
-    // Remove all non-digit characters
-    let cleaned = phone.replace(/\D/g, '');
-    
-    // Minimum 10 digits (DDD + 8 digits) or more
-    if (cleaned.length < 10) return null;
-    
-    // If doesn't start with country code, add Brazil (55)
-    if (!cleaned.startsWith('55') && cleaned.length <= 11) {
-      cleaned = '55' + cleaned;
-    }
-    
-    return `${cleaned}@s.whatsapp.net`;
-  };
+  // parsePhoneToJid imported from shared utils
 
   // Format phone for display
   const formatPhoneDisplay = (phone: string): string => {
