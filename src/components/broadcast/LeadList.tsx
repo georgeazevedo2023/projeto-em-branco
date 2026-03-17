@@ -144,16 +144,14 @@ const LeadList = ({ leads, selectedLeads, onSelectionChange }: LeadListProps) =>
   }, [search, statusFilter]);
 
   const handleToggle = useCallback((leadId: string) => {
-    onSelectionChange(prev => {
-      const newSelection = new Set(prev);
-      if (newSelection.has(leadId)) {
-        newSelection.delete(leadId);
-      } else {
-        newSelection.add(leadId);
-      }
-      return newSelection;
-    });
-  }, [onSelectionChange]);
+    const newSelection = new Set(selectedLeads);
+    if (newSelection.has(leadId)) {
+      newSelection.delete(leadId);
+    } else {
+      newSelection.add(leadId);
+    }
+    onSelectionChange(newSelection);
+  }, [selectedLeads, onSelectionChange]);
 
   const handleSelectAll = () => {
     const allIds = new Set(filteredLeads.map(l => l.id));
