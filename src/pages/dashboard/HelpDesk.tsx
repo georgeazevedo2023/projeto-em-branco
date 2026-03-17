@@ -99,21 +99,7 @@ const HelpDesk = () => {
           setDepartmentFilter(deptParam);
         }
 
-        // Fetch departments for all inboxes (for dropdown)
-        const inboxIds = inboxData.map(ib => ib.id);
-        const { data: deptData } = await supabase
-          .from('departments')
-          .select('id, name, inbox_id')
-          .in('inbox_id', inboxIds)
-          .order('name');
-        if (deptData) {
-          const grouped: Record<string, { id: string; name: string }[]> = {};
-          deptData.forEach(d => {
-            if (!grouped[d.inbox_id]) grouped[d.inbox_id] = [];
-            grouped[d.inbox_id].push({ id: d.id, name: d.name });
-          });
-          setAllInboxDepts(grouped);
-        }
+        // Departments are now fetched by the useDepartments hook
       }
     };
     fetchInboxes();
