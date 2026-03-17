@@ -108,9 +108,9 @@ export const ContactInfoPanel = ({
 
         if (error) throw error;
         setPastConversations(
-          (data || []).map((c: any) => ({
+          (data || []).map((c) => ({
             ...c,
-            ai_summary: c.ai_summary || null,
+            ai_summary: (c.ai_summary as unknown as AiSummary) ?? null,
           }))
         );
       } catch (err) {
@@ -149,8 +149,8 @@ export const ContactInfoPanel = ({
       }
 
       setAiSummary(result.summary);
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao gerar resumo');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar resumo');
     } finally {
       setSummarizing(false);
     }
@@ -179,8 +179,8 @@ export const ContactInfoPanel = ({
         .eq('conversation_id', conversation.id)
         .eq('label_id', labelId);
       onLabelsChanged?.();
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao remover etiqueta');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover etiqueta');
     }
   };
 
@@ -211,7 +211,7 @@ export const ContactInfoPanel = ({
     });
 
     // Update local via callback
-    onUpdateConversation(conversation.id, { assigned_to: agentId } as any);
+    onUpdateConversation(conversation.id, { assigned_to: agentId });
     toast.success(agentId ? `Atribuído a ${agentName}` : 'Agente removido');
   };
 
@@ -219,13 +219,13 @@ export const ContactInfoPanel = ({
     const deptId = value === '__none__' ? null : value;
     const { error } = await supabase
       .from('conversations')
-      .update({ department_id: deptId } as any)
+      .update({ department_id: deptId })
       .eq('id', conversation.id);
     if (error) {
       toast.error('Erro ao atribuir departamento');
       return;
     }
-    onUpdateConversation(conversation.id, { department_id: deptId } as any);
+    onUpdateConversation(conversation.id, { department_id: deptId });
     const deptName = deptId ? departments.find(d => d.id === deptId)?.name : null;
     toast.success(deptId ? `Departamento: ${deptName}` : 'Departamento removido');
   };
@@ -275,8 +275,8 @@ export const ContactInfoPanel = ({
         )
       );
       toast.success('Resumo gerado com sucesso!');
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao gerar resumo');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar resumo');
     } finally {
       setGeneratingSummaryFor(null);
     }

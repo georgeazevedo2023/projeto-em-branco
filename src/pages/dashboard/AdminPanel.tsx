@@ -277,8 +277,8 @@ const AdminPanel = () => {
         created_by: inbox.created_by,
         created_at: inbox.created_at,
         member_count: memberCounts.get(inbox.id) || 0,
-        webhook_url: (inbox as any).webhook_url || null,
-        webhook_outgoing_url: (inbox as any).webhook_outgoing_url || null,
+        webhook_url: inbox.webhook_url ?? null,
+        webhook_outgoing_url: inbox.webhook_outgoing_url ?? null,
       })));
     } catch (e) {
       toast.error('Erro ao carregar caixas');
@@ -456,16 +456,14 @@ const AdminPanel = () => {
         name: newInboxName.trim(),
         instance_id: selectedInstanceId,
         created_by: user!.id,
-        webhook_url: webhookUrl.trim() || null,
-        webhook_outgoing_url: webhookOutgoingUrl.trim() || null,
-      } as any);
+      });
       if (error) throw error;
       toast.success('Caixa criada!');
       setIsCreateInboxOpen(false);
       setNewInboxName(''); setSelectedInstanceId(''); setWebhookUrl(''); setWebhookOutgoingUrl('');
       fetchInboxes();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao criar caixa');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao criar caixa');
     } finally {
       setIsCreatingInbox(false);
     }
@@ -482,8 +480,8 @@ const AdminPanel = () => {
       toast.success('Caixa excluída');
       setInboxToDelete(null);
       fetchInboxes();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao excluir');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao excluir');
     } finally {
       setIsDeletingInbox(false);
     }
@@ -492,13 +490,13 @@ const AdminPanel = () => {
   const handleSaveWebhook = async (inboxId: string) => {
     setIsSavingWebhook(true);
     try {
-      const { error } = await supabase.from('inboxes').update({ webhook_url: editWebhookValue.trim() || null } as any).eq('id', inboxId);
+      const { error } = await supabase.from('inboxes').update({ webhook_url: editWebhookValue.trim() || null }).eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook atualizado!');
       setEditingWebhookId(null);
       fetchInboxes();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar webhook');
     } finally {
       setIsSavingWebhook(false);
     }
@@ -507,13 +505,13 @@ const AdminPanel = () => {
   const handleSaveOutgoing = async (inboxId: string) => {
     setIsSavingOutgoing(true);
     try {
-      const { error } = await supabase.from('inboxes').update({ webhook_outgoing_url: editOutgoingValue.trim() || null } as any).eq('id', inboxId);
+      const { error } = await supabase.from('inboxes').update({ webhook_outgoing_url: editOutgoingValue.trim() || null }).eq('id', inboxId);
       if (error) throw error;
       toast.success('Webhook Outgoing atualizado!');
       setEditingOutgoingId(null);
       fetchInboxes();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar webhook');
     } finally {
       setIsSavingOutgoing(false);
     }
@@ -539,8 +537,8 @@ const AdminPanel = () => {
       setIsCreateUserOpen(false);
       setNewUserEmail(''); setNewUserPassword(''); setNewUserName(''); setNewUserRole('user');
       fetchUsers();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao criar usuário');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao criar usuário');
     } finally {
       setIsCreatingUser(false);
     }
@@ -608,8 +606,8 @@ const AdminPanel = () => {
       toast.success('Usuário excluído!');
       setUserToDelete(null);
       fetchUsers();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao excluir');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao excluir');
     } finally {
       setIsDeletingUser(false);
     }
@@ -691,8 +689,8 @@ const AdminPanel = () => {
       toast.success('Atendente atualizado!');
       setEditingTeamUser(null);
       fetchTeam();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao atualizar atendente');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar atendente');
     } finally {
       setIsSavingTeamUser(false);
     }

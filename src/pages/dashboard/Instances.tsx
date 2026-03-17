@@ -56,28 +56,26 @@ const normalizeQrSrc = (qr: string): string => {
 };
 
 // Extrai QR code da resposta da API (pode vir em diferentes formatos)
-const extractQrCode = (data: any): string | null => {
-  // Formato: { instance: { qrcode: "..." } }
-  if (data?.instance?.qrcode) {
-    return data.instance.qrcode;
-  }
-  // Formato: { qrcode: "..." }
-  if (data?.qrcode) {
-    return data.qrcode;
-  }
-  // Formato: { base64: "..." }
-  if (data?.base64) {
-    return data.base64;
-  }
+interface UazapiConnectResponse {
+  instance?: { qrcode?: string; status?: string };
+  qrcode?: string;
+  base64?: string;
+  status?: string | { connected?: boolean };
+  loggedIn?: boolean;
+}
+
+const extractQrCode = (data: UazapiConnectResponse): string | null => {
+  if (data?.instance?.qrcode) return data.instance.qrcode;
+  if (data?.qrcode) return data.qrcode;
+  if (data?.base64) return data.base64;
   return null;
 };
 
-// Verifica se a instância está conectada na resposta
-const checkIfConnected = (data: any): boolean => {
+const checkIfConnected = (data: UazapiConnectResponse): boolean => {
   return (
     data?.instance?.status === 'connected' ||
     data?.status === 'connected' ||
-    data?.status?.connected === true ||
+    (typeof data?.status === 'object' && data?.status?.connected === true) ||
     data?.loggedIn === true
   );
 };
@@ -157,11 +155,11 @@ const Instances = () => {
 
         // Criar mapa de status da UAZAPI
         const statusMap = new Map<string, { status: string; owner: string | null; profilePic: string | null }>();
-        uazapiInstances.forEach((inst: any) => {
-          statusMap.set(inst.id, {
+        uazapiInstances.forEach((inst: Record<string, unknown>) => {
+          statusMap.set(String(inst.id), {
             status: inst.status === 'connected' ? 'connected' : 'disconnected',
-            owner: inst.owner || null,
-            profilePic: inst.profilePicUrl || null,
+            owner: (inst.owner as string) || null,
+            profilePic: (inst.profilePicUrl as string) || null,
           });
         });
 
@@ -353,9 +351,9 @@ const Instances = () => {
         setQrDialogOpen(true);
         startPolling(newInstance);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating instance:', error);
-      toast.error(error.message || 'Erro ao criar instância');
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar instância');
     } finally {
       setIsCreating(false);
     }
