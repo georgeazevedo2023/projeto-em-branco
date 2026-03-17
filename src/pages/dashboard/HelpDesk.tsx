@@ -145,23 +145,6 @@ const HelpDesk = () => {
     fetchDepartments();
   }, [fetchDepartments]);
 
-  // Fetch agent names from all user profiles
-  const fetchAgentNames = useCallback(async () => {
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('id, full_name');
-    if (data) {
-      const map: Record<string, string> = {};
-      data.forEach(p => {
-        if (p.full_name) map[p.id] = p.full_name;
-      });
-      setAgentNamesMap(map);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAgentNames();
-  }, [fetchAgentNames]);
 
   // Fetch conversation_labels for loaded conversations
   const fetchConversationLabels = useCallback(async (convIds: string[]) => {
