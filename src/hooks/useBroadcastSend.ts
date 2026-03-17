@@ -524,8 +524,7 @@ export function useBroadcastSend(params: UseBroadcastSendParams): UseBroadcastSe
 
     setIsScheduling(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) { toast.error('Sessão expirada'); return; }
+      const userId = await getSessionUserId();
 
       const results = await Promise.all(selectedGroups.map(group => {
         const regularMembers = group.participants.filter(p => !p.isAdmin && !p.isSuperAdmin);
