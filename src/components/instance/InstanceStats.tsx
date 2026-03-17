@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { uazapiProxy } from '@/lib/uazapiClient';
 import type { Instance } from '@/types';
 import { Users, MessageSquare, Clock, Activity, Wifi, WifiOff } from 'lucide-react';
-import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
+import { useInstanceGroups } from '@/hooks/useInstanceGroups';
 
 interface InstanceStatsProps {
   instance: Instance;
@@ -21,67 +18,35 @@ interface Stats {
 }
 
 const InstanceStats = ({ instance }: InstanceStatsProps) => {
+  const isConnected = instance.status === 'connected' || instance.status === 'online';
+
+  const { groups, loading } = useInstanceGroups({
+    instanceId: instance.id,
+    enabled: isConnected,
+  });
+
   const [stats, setStats] = useState<Stats>({
     totalGroups: 0,
     totalParticipants: 0,
     uptime: 'Calculando...',
     lastActivity: 'Desconhecido',
   });
-  const [loading, setLoading] = useState(true);
-
-  const isConnected = instance.status === 'connected' || instance.status === 'online';
 
   useEffect(() => {
-    fetchStats();
-  }, [instance.id, isConnected]);
+    const createdAt = new Date(instance.created_at || Date.now());
+    const uptime = formatDistanceToNow(createdAt, { locale: ptBR, addSuffix: false });
+    const updatedAt = new Date(instance.updated_at || Date.now());
+    const lastActivity = formatDistanceToNow(updatedAt, { locale: ptBR, addSuffix: true });
 
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
+    const totalParticipants = groups.reduce((acc, g) => acc + g.size, 0);
 
-      // Calcular uptime desde created_at
-      const createdAt = new Date(instance.created_at);
-      const uptime = formatDistanceToNow(createdAt, { locale: ptBR, addSuffix: false });
-
-      // Calcular última atividade desde updated_at
-      const updatedAt = new Date(instance.updated_at);
-      const lastActivity = formatDistanceToNow(updatedAt, { locale: ptBR, addSuffix: true });
-
-      // Se conectado, buscar grupos para estatísticas
-      if (isConnected) {
-        const data = await uazapiProxy({
-          action: 'groups',
-          instance_id: instance.id,
-        });
-
-        if (Array.isArray(data)) {
-          const totalParticipants = (data as Array<Record<string, unknown>>).reduce(
-            (acc: number, group) =>
-              acc + ((group.size as number) || (group.participants as unknown[] | undefined)?.length || 0),
-            0
-          );
-          setStats({
-            totalGroups: data.length,
-            totalParticipants,
-            uptime,
-            lastActivity,
-          });
-          return;
-        }
-      }
-
-      setStats({
-        totalGroups: 0,
-        totalParticipants: 0,
-        uptime,
-        lastActivity,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setStats({
+      totalGroups: groups.length,
+      totalParticipants,
+      uptime,
+      lastActivity,
+    });
+  }, [groups, instance.created_at, instance.updated_at]);
 
   const statCards = [
     {
@@ -122,7 +87,6 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Status Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -141,7 +105,6 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
         </CardHeader>
       </Card>
 
-      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
           <Card key={stat.title}>
@@ -169,7 +132,6 @@ const InstanceStats = ({ instance }: InstanceStatsProps) => {
         ))}
       </div>
 
-      {/* Info adicional */}
       <Card>
         <CardHeader>
           <CardTitle>Sobre as Estatísticas</CardTitle>

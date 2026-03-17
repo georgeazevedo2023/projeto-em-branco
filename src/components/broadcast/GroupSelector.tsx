@@ -1,16 +1,14 @@
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useMemo, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { uazapiProxy } from '@/lib/uazapiClient';
-import { toast } from 'sonner';
 import { Search, Users, CheckSquare, Square, MessageSquare } from 'lucide-react';
-import type { Instance, Group, Participant } from '@/types';
-import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
-import { extractGroupsArray } from '@/types/uazapi';
+import { useInstanceGroups } from '@/hooks/useInstanceGroups';
+import type { Instance, Group } from '@/types';
+import { useState } from 'react';
 
 interface GroupSelectorProps {
   instance: Instance;
@@ -19,88 +17,14 @@ interface GroupSelectorProps {
 }
 
 const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSelectorProps) => {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { groups, loading } = useInstanceGroups({ instanceId: instance.id });
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (instance) {
-      fetchGroups();
-    }
-  }, [instance.id]);
-
-  const fetchGroups = async () => {
-    try {
-      setLoading(true);
-
-      const data = await uazapiProxy({
-        action: 'groups',
-        instance_id: instance.id,
-      });
-      
-      // Normalizar resposta
-      const rawGroups = extractGroupsArray(data);
-
-      const formattedGroups: Group[] = rawGroups.map((g: RawUazapiGroup) => {
-        const rawParticipants = g.Participants || g.participants || [];
-        return {
-          id: g.JID || g.jid || g.id || '',
-          name: g.Name || g.name || g.Subject || g.Topic || g.subject || 'Grupo sem nome',
-          size: rawParticipants.length || g.ParticipantCount || 0,
-          pictureUrl: g.profilePicUrl || g.pictureUrl || g.PictureUrl,
-          participants: rawParticipants.map((p: RawUazapiParticipant) => {
-            // PhoneNumber é o número real, JID pode ser LID interno do WhatsApp
-            let phoneNumber = p.PhoneNumber || p.phoneNumber || '';
-            const jid = p.JID || p.jid || p.id || '';
-            const pushName = p.PushName || p.pushName || p.DisplayName || p.Name || p.name || '';
-            
-            // Fallback: se PhoneNumber estiver vazio ou mascarado (com ·),
-            // verificar se PushName contém dígitos que parecem um número de telefone
-            if ((!phoneNumber || phoneNumber.includes('·')) && pushName) {
-              const digitsFromName = pushName.replace(/\D/g, '');
-              if (digitsFromName.length >= 10) {
-                phoneNumber = digitsFromName;
-              }
-            }
-            
-            // Se phoneNumber está mascarado (contém ·), ignorar
-            if (phoneNumber && phoneNumber.includes('·')) {
-              phoneNumber = '';
-            }
-            
-            return {
-              // Prioriza PhoneNumber como identificador principal (quando disponível)
-              jid: phoneNumber || jid,
-              phoneNumber: phoneNumber || undefined,
-              isAdmin: p.IsAdmin || p.isAdmin || false,
-              isSuperAdmin: p.IsSuperAdmin || p.isSuperAdmin || false,
-              name: pushName || undefined,
-              // Guarda o JID original para casos onde só temos LID
-              originalJid: jid,
-            };
-          }),
-        };
-      });
-
-      setGroups(formattedGroups);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-      toast.error('Erro ao carregar grupos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredGroups = useMemo(() => 
+  const filteredGroups = useMemo(() =>
     groups.filter((group) =>
       group.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ), 
+    ),
     [groups, searchTerm]
-  );
-
-  const isSelected = useCallback((groupId: string) => 
-    selectedGroups.some(g => g.id === groupId),
-    [selectedGroups]
   );
 
   const toggleGroup = useCallback((group: Group) => {
@@ -191,7 +115,7 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {filteredGroups.map((group) => {
+          {filteredGroups.map((group) => {
             const selected = selectedGroups.some(g => g.id === group.id);
             const regularCount = group.participants.filter(p => !p.isAdmin && !p.isSuperAdmin).length;
 
@@ -209,7 +133,7 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
                     onCheckedChange={() => toggleGroup(group)}
                     onClick={(e) => e.stopPropagation()}
                   />
-                  
+
                   <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                     {group.pictureUrl ? (
                       <img
@@ -221,7 +145,7 @@ const GroupSelector = ({ instance, selectedGroups, onSelectionChange }: GroupSel
                       <Users className="w-5 h-5 text-muted-foreground" />
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{group.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">

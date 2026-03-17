@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { Instance } from '@/types';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,104 +7,48 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { uazapiProxy } from '@/lib/uazapiClient';
 import { ArrowLeft, Users, MessageSquare, Image } from 'lucide-react';
-import { extractGroupsArray, type RawUazapiGroup } from '@/types/uazapi';
+import { useInstanceGroups } from '@/hooks/useInstanceGroups';
+import type { Instance, Group, Participant } from '@/types';
 import SendMessageForm from '@/components/group/SendMessageForm';
 import SendMediaForm from '@/components/group/SendMediaForm';
 
-export interface Participant {
-  jid: string;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  pictureUrl?: string;
-  size: number;
-  participants: Participant[];
-}
-
+export type { Participant };
 
 const SendToGroup = () => {
   const { instanceId, groupId } = useParams();
   const navigate = useNavigate();
-  const [group, setGroup] = useState<Group | null>(null);
   const [instance, setInstance] = useState<Instance | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loadingInstance, setLoadingInstance] = useState(true);
 
   useEffect(() => {
-    fetchInstanceAndGroup();
-  }, [instanceId, groupId]);
-
-  const fetchInstanceAndGroup = async () => {
-    try {
-      setLoading(true);
-      
-      // Buscar instância
-      const { data: instanceData, error: instanceError } = await supabase
+    const fetchInstance = async () => {
+      const { data, error } = await supabase
         .from('instances')
         .select('*')
         .eq('id', instanceId)
         .single();
 
-      if (instanceError || !instanceData) {
+      if (error || !data) {
         toast.error('Instância não encontrada');
         navigate('/dashboard/instances');
         return;
       }
+      setInstance(data);
+      setLoadingInstance(false);
+    };
+    fetchInstance();
+  }, [instanceId]);
 
-      setInstance(instanceData);
+  const { groups, loading: loadingGroups } = useInstanceGroups({
+    instanceId: instanceId || '',
+    enabled: !!instance,
+  });
 
-      const data = await uazapiProxy({
-        action: 'groups',
-        token: instanceData.token,
-      });
-      
-      // Normalizar resposta
-      const rawGroups = extractGroupsArray(data);
+  const loading = loadingInstance || loadingGroups;
 
-      // Encontrar o grupo específico
-      const decodedGroupId = decodeURIComponent(groupId || '');
-      const targetGroup = rawGroups.find((g) => {
-        const gId = g.JID || g.jid || g.id;
-        return gId === decodedGroupId;
-      });
-
-      if (!targetGroup) {
-        toast.error('Grupo não encontrado');
-        navigate(`/dashboard/instances/${instanceId}?tab=groups`);
-        return;
-      }
-
-      // Formatar grupo e participantes
-      const rawParticipants = targetGroup.Participants || targetGroup.participants || [];
-      
-      const formattedParticipants: Participant[] = rawParticipants.map((p) => ({
-        jid: p.JID || p.jid || p.id || '',
-        isAdmin: p.IsAdmin || p.isAdmin || false,
-        isSuperAdmin: p.IsSuperAdmin || p.isSuperAdmin || false,
-      }));
-
-      setParticipants(formattedParticipants);
-
-      setGroup({
-        id: targetGroup.JID || targetGroup.jid || targetGroup.id,
-        name: targetGroup.Name || targetGroup.name || targetGroup.Subject || targetGroup.Topic || targetGroup.subject || 'Grupo sem nome',
-        pictureUrl: targetGroup.profilePicUrl || targetGroup.pictureUrl || targetGroup.PictureUrl,
-        size: rawParticipants.length || targetGroup.ParticipantCount || 0,
-        participants: formattedParticipants,
-      });
-    } catch (error) {
-      console.error('Error fetching group:', error);
-      toast.error('Erro ao carregar grupo');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const decodedGroupId = decodeURIComponent(groupId || '');
+  const group = groups.find(g => g.id === decodedGroupId) || null;
 
   const handleBack = () => {
     navigate(`/dashboard/instances/${instanceId}/groups/${groupId}`);
@@ -140,7 +83,6 @@ const SendToGroup = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="outline" size="sm" onClick={handleBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -148,7 +90,6 @@ const SendToGroup = () => {
         </Button>
       </div>
 
-      {/* Informações do grupo */}
       <div className="flex items-center gap-4">
         <Avatar className="w-16 h-16 border">
           <AvatarImage src={group.pictureUrl} />
@@ -164,7 +105,6 @@ const SendToGroup = () => {
         </div>
       </div>
 
-      {/* Card de envio */}
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Enviar para o Grupo</CardTitle>
@@ -181,22 +121,22 @@ const SendToGroup = () => {
                 Mídia
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="text">
               <SendMessageForm
                 instanceToken={instance.id}
                 groupJid={group.id}
                 groupName={group.name}
-                participants={participants}
+                participants={group.participants}
               />
             </TabsContent>
-            
+
             <TabsContent value="media">
               <SendMediaForm
                 instanceToken={instance.id}
                 groupJid={group.id}
                 groupName={group.name}
-                participants={participants}
+                participants={group.participants}
               />
             </TabsContent>
           </Tabs>

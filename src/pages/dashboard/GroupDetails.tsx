@@ -7,135 +7,62 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { uazapiProxy } from '@/lib/uazapiClient';
-import { extractGroupsArray } from '@/types/uazapi';
 import type { Instance } from '@/types';
 import { toast } from 'sonner';
 import { ArrowLeft, Users, Search, MessageSquare } from 'lucide-react';
 import { formatPhoneSimple as formatPhone } from '@/lib/phoneUtils';
-
-interface Participant {
-  id: string;
-  name?: string;
-  admin?: 'admin' | 'superadmin';
-}
-
-interface Group {
-  id: string;
-  name: string;
-  subject: string;
-  pictureUrl?: string;
-  participants: Participant[];
-  size: number;
-}
-
-// Instance imported from @/types (see imports above)
+import { useInstanceGroups } from '@/hooks/useInstanceGroups';
 
 const GroupDetails = () => {
   const { instanceId, groupId } = useParams();
   const navigate = useNavigate();
-  const [group, setGroup] = useState<Group | null>(null);
   const [instance, setInstance] = useState<Instance | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingInstance, setLoadingInstance] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchInstanceAndGroup();
-  }, [instanceId, groupId]);
-
-  const fetchInstanceAndGroup = async () => {
-    try {
-      setLoading(true);
-      
-      // Buscar instância
-      const { data: instanceData, error: instanceError } = await supabase
+    const fetchInstance = async () => {
+      const { data, error } = await supabase
         .from('instances')
         .select('*')
         .eq('id', instanceId)
         .single();
 
-      if (instanceError || !instanceData) {
+      if (error || !data) {
         toast.error('Instância não encontrada');
         navigate('/dashboard/instances');
         return;
       }
+      setInstance(data);
+      setLoadingInstance(false);
+    };
+    fetchInstance();
+  }, [instanceId]);
 
-      setInstance(instanceData);
+  const { groups, loading: loadingGroups } = useInstanceGroups({
+    instanceId: instanceId || '',
+    enabled: !!instance,
+  });
 
-      // Buscar grupos da instância
-      const data = await uazapiProxy({
-        action: 'groups',
-        token: instanceData.token,
-      });
-      
-      // Normalizar resposta
-      const rawGroups = extractGroupsArray(data);
+  const loading = loadingInstance || loadingGroups;
 
-      // Encontrar o grupo específico
-      const decodedGroupId = decodeURIComponent(groupId || '');
-      const targetGroup = rawGroups.find((g) => {
-        const gId = g.JID || g.jid || g.id;
-        return gId === decodedGroupId;
-      });
-
-      if (!targetGroup) {
-        toast.error('Grupo não encontrado');
-        navigate(`/dashboard/instances/${instanceId}?tab=groups`);
-        return;
-      }
-
-      // Formatar grupo
-      const rawParticipants = targetGroup.Participants || targetGroup.participants || [];
-      const participants: Participant[] = rawParticipants.map((p: Record<string, unknown>) => {
-        const phoneNumber = (p.PhoneNumber || p.phoneNumber || '') as string;
-        const jid = (p.JID || p.jid || p.id || '') as string;
-        const phoneId = phoneNumber || jid;
-        const name = (p.PushName || p.pushName || p.DisplayName || p.Name || p.name || undefined) as string | undefined;
-        const isAdmin = p.IsAdmin || p.isAdmin;
-        const isSuperAdmin = p.IsSuperAdmin || p.isSuperAdmin;
-        
-        return {
-          id: phoneId,
-          name,
-          admin: isAdmin 
-            ? (isSuperAdmin ? 'superadmin' as const : 'admin' as const) 
-            : undefined,
-        };
-      });
-
-      setGroup({
-        id: targetGroup.JID || targetGroup.jid || targetGroup.id,
-        name: targetGroup.Name || targetGroup.name || targetGroup.Subject || targetGroup.Topic || targetGroup.subject || 'Grupo sem nome',
-        subject: targetGroup.Subject || targetGroup.Topic || targetGroup.subject || '',
-        pictureUrl: targetGroup.profilePicUrl || targetGroup.pictureUrl || targetGroup.PictureUrl,
-        participants,
-        size: participants.length || targetGroup.ParticipantCount || 0,
-      });
-    } catch (error) {
-      console.error('Error fetching group:', error);
-      toast.error('Erro ao carregar grupo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // formatPhone imported from shared utils
+  const decodedGroupId = decodeURIComponent(groupId || '');
+  const group = groups.find(g => g.id === decodedGroupId) || null;
 
   const handleBack = () => {
     navigate(`/dashboard/instances/${instanceId}?tab=groups`);
   };
 
-  // Ordenar participantes: superadmin > admin > membros
+  // Sort participants: superadmin > admin > members
   const sortedParticipants = group?.participants
     ? [...group.participants].sort((a, b) => {
-        const roleOrder: Record<string, number> = { 'superadmin': 0, 'admin': 1 };
-        return (roleOrder[a.admin || ''] ?? 2) - (roleOrder[b.admin || ''] ?? 2);
+        const order = (p: typeof a) => p.isSuperAdmin ? 0 : p.isAdmin ? 1 : 2;
+        return order(a) - order(b);
       })
     : [];
 
-  // Filtrar por busca
   const filteredParticipants = sortedParticipants.filter((p) => {
-    const phone = formatPhone(p.id).toLowerCase();
+    const phone = formatPhone(p.jid).toLowerCase();
     const name = (p.name || '').toLowerCase();
     const search = searchTerm.toLowerCase();
     return phone.includes(search) || name.includes(search);
@@ -174,7 +101,6 @@ const GroupDetails = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-fade-in">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="outline" size="sm" onClick={handleBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -182,7 +108,6 @@ const GroupDetails = () => {
         </Button>
       </div>
 
-      {/* Informações do grupo */}
       <div className="flex items-center gap-4">
         <Avatar className="w-16 h-16 border">
           <AvatarImage src={group.pictureUrl} />
@@ -198,8 +123,7 @@ const GroupDetails = () => {
         </div>
       </div>
 
-      {/* Botão para enviar mensagem */}
-      <Button 
+      <Button
         onClick={() => navigate(`/dashboard/instances/${instanceId}/groups/${groupId}/send`)}
         className="w-full sm:w-auto"
       >
@@ -207,7 +131,6 @@ const GroupDetails = () => {
         Enviar Mensagem para o Grupo
       </Button>
 
-      {/* Busca */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
@@ -218,18 +141,16 @@ const GroupDetails = () => {
         />
       </div>
 
-      {/* Badge com total filtrado */}
       {searchTerm && (
         <Badge variant="secondary">
           {filteredParticipants.length} de {sortedParticipants.length} participantes
         </Badge>
       )}
 
-      {/* Grid de participantes - 3 colunas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {filteredParticipants.map((participant, idx) => (
           <div
-            key={participant.id || idx}
+            key={participant.jid || idx}
             className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
           >
             <Avatar className="w-10 h-10">
@@ -239,24 +160,23 @@ const GroupDetails = () => {
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {participant.name || formatPhone(participant.id)}
+                {participant.name || formatPhone(participant.jid)}
               </p>
               {participant.name && (
                 <p className="text-sm text-muted-foreground truncate">
-                  {formatPhone(participant.id)}
+                  {formatPhone(participant.jid)}
                 </p>
               )}
             </div>
-            {participant.admin && (
+            {(participant.isAdmin || participant.isSuperAdmin) && (
               <Badge variant="outline" className="text-xs shrink-0">
-                {participant.admin === 'superadmin' ? 'Dono' : 'Admin'}
+                {participant.isSuperAdmin ? 'Dono' : 'Admin'}
               </Badge>
             )}
           </div>
         ))}
       </div>
 
-      {/* Mensagem se não encontrar resultados */}
       {filteredParticipants.length === 0 && searchTerm && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8 space-y-2">
