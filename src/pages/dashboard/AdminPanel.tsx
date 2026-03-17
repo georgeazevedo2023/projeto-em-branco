@@ -526,14 +526,9 @@ const AdminPanel = () => {
     }
     setIsCreatingUser(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ email: newUserEmail, password: newUserPassword, full_name: newUserName, role: newUserRole }),
+      const result = await edgeFunctionFetch<{ user?: { id: string } }>('admin-create-user', {
+        email: newUserEmail, password: newUserPassword, full_name: newUserName, role: newUserRole,
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao criar usuário');
       toast.success('Usuário criado!');
       setIsCreateUserOpen(false);
       setNewUserEmail(''); setNewUserPassword(''); setNewUserName(''); setNewUserRole('user');
