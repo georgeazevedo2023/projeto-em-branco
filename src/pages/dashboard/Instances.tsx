@@ -160,8 +160,8 @@ const Instances = () => {
         uazapiInstances.forEach((inst: Record<string, unknown>) => {
           statusMap.set(inst.id, {
             status: inst.status === 'connected' ? 'connected' : 'disconnected',
-            owner: inst.owner || null,
-            profilePic: inst.profilePicUrl || null,
+            owner: (inst.owner as string) || null,
+            profilePic: (inst.profilePicUrl as string) || null,
           });
         });
 
