@@ -93,8 +93,7 @@ export function useInstanceGroups({
       setGroups(normalized);
       return normalized;
     } catch (error) {
-      console.error('useInstanceGroups fetch error:', error);
-      toast.error('Erro ao carregar grupos');
+      handleError(error, 'Erro ao carregar grupos', 'useInstanceGroups fetch');
       return [];
     } finally {
       setLoading(false);
