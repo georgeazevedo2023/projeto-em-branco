@@ -557,7 +557,7 @@ const AdminPanel = () => {
     if (editUserPassword && editUserPassword.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     setIsSavingUser(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const token = await getAccessToken();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
