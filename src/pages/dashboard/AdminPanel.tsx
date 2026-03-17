@@ -595,7 +595,7 @@ const AdminPanel = () => {
     if (!userToDelete) return;
     setIsDeletingUser(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const token = await getAccessToken();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
