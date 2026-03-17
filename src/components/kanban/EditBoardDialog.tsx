@@ -470,7 +470,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
   const saveEntities = async (): Promise<Record<string, string>> => {
     // Get existing entity IDs from DB
     const { data: dbEntities } = await supabase.from('kanban_entities').select('id').eq('board_id', board.id);
-    const dbEntityIds = (dbEntities || []).map((e: any) => e.id);
+    const dbEntityIds = (dbEntities || []).map((e) => e.id);
     const currentEntityIds = entities.filter(e => !e.id.startsWith('new_')).map(e => e.id);
     const entitiesToDelete = dbEntityIds.filter((id: string) => !currentEntityIds.includes(id));
     if (entitiesToDelete.length > 0) {
