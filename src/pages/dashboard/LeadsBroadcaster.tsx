@@ -140,13 +140,25 @@ const LeadsBroadcaster = () => {
     setIsLoadingLeads(true);
     try {
       const ids = dbs.map(d => d.id);
-      const { data, error } = await supabase
-        .from('lead_database_entries')
-        .select('*')
-        .in('database_id', ids)
-        .limit(5000);
-
-      if (error) throw error;
+      
+      // Paginated fetch to avoid 1000-row limit
+      const allData: typeof data = [];
+      const BATCH_SIZE = 1000;
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data: batch, error } = await supabase
+          .from('lead_database_entries')
+          .select('*')
+          .in('database_id', ids)
+          .range(offset, offset + BATCH_SIZE - 1);
+        if (error) throw error;
+        allData.push(...(batch || []));
+        hasMore = (batch || []).length === BATCH_SIZE;
+        offset += BATCH_SIZE;
+      }
+      
+      var data = allData;
 
       const seen = new Set<string>();
       const uniqueEntries = (data || []).filter(entry => {

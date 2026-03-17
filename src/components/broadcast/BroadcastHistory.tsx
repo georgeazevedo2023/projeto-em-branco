@@ -278,19 +278,28 @@ const BroadcastHistory = ({ onResend }: BroadcastHistoryProps) => {
 
   const queryClient = useQueryClient();
 
+  const LOGS_PAGE_SIZE = 100;
+  const [logsPage, setLogsPage] = useState(0);
+
   const { data: logs, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['broadcast-logs'],
+    queryKey: ['broadcast-logs', logsPage],
     queryFn: async () => {
+      const from = 0;
+      const to = (logsPage + 1) * LOGS_PAGE_SIZE - 1;
       const { data, error } = await supabase
         .from('broadcast_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(from, to);
 
       if (error) throw error;
       return data as BroadcastLog[];
     },
   });
+
+  const hasMoreLogs = (logs?.length || 0) === (logsPage + 1) * LOGS_PAGE_SIZE;
+
+  const handleLoadMoreLogs = () => setLogsPage(prev => prev + 1);
 
   const deleteMutation = useMutation({
     mutationFn: async (logId: string) => {

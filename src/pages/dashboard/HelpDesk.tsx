@@ -528,6 +528,9 @@ const HelpDesk = () => {
     inboxDepartments,
     departmentFilter,
     onDepartmentFilterChange: setDepartmentFilter,
+    hasMore: hasMoreConversations,
+    loadingMore,
+    onLoadMore: loadMoreConversations,
   };
 
   if (isMobile) {
