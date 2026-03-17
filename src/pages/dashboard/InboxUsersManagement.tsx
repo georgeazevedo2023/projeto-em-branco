@@ -194,19 +194,12 @@ const InboxUsersManagement = () => {
     }
     setIsSavingEdit(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          user_id: editingUser.id,
-          email: editEmail.trim(),
-          full_name: editName.trim(),
-          ...(editPassword ? { password: editPassword } : {}),
-        }),
+      await edgeFunctionFetch('admin-update-user', {
+        user_id: editingUser.id,
+        email: editEmail.trim(),
+        full_name: editName.trim(),
+        ...(editPassword ? { password: editPassword } : {}),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
       // Sync inbox memberships
       const previousIds = editingUser.memberships.map(m => m.inbox_id);
       const currentIds = new Set(Object.keys(editInboxes));

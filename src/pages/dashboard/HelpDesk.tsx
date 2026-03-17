@@ -302,25 +302,7 @@ const HelpDesk = () => {
     if (!selectedInboxId || syncing) return;
     setSyncing(true);
     try {
-      const accessToken = await getAccessToken();
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-conversations`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ inbox_id: selectedInboxId }),
-        }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || 'Sync failed');
-      }
+      const result = await edgeFunctionFetch<{ synced: number; errors: number }>('sync-conversations', { inbox_id: selectedInboxId });
 
       toast({
         title: 'Sincronização concluída',

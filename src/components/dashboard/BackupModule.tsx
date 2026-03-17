@@ -109,23 +109,7 @@ const BackupModule = () => {
   const selectNone = () => setSelectedSections(new Set());
 
   const callBackupApi = async (action: string, tableName?: string) => {
-    const token = await getAccessToken();
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/database-backup`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action, table_name: tableName }),
-      }
-    );
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Erro na API');
-    }
-    const json = await res.json();
+    const json = await edgeFunctionFetch<{ data?: unknown[] }>('database-backup', { action, table_name: tableName });
     return json.data || [];
   };
 

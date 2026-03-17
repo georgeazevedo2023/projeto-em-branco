@@ -638,19 +638,12 @@ const AdminPanel = () => {
     }
     setIsSavingTeamUser(true);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          user_id: editingTeamUser.id,
-          email: editTeamEmail.trim(),
-          full_name: editTeamName.trim(),
-          ...(editTeamPassword ? { password: editTeamPassword } : {}),
-        }),
+      await edgeFunctionFetch('admin-update-user', {
+        user_id: editingTeamUser.id,
+        email: editTeamEmail.trim(),
+        full_name: editTeamName.trim(),
+        ...(editTeamPassword ? { password: editTeamPassword } : {}),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar');
       // Sync inbox memberships
       const previousIds = editingTeamUser.memberships.map(m => m.inbox_id);
       const currentIds = new Set(Object.keys(editTeamInboxes));

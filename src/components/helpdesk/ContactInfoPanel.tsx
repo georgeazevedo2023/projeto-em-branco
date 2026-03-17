@@ -126,27 +126,9 @@ export const ContactInfoPanel = ({
   const handleSummarize = async (forceRefresh = false) => {
     setSummarizing(true);
     try {
-      const accessToken = await getAccessToken();
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-conversation`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ conversation_id: conversation.id, force_refresh: forceRefresh }),
-        }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 429) throw new Error('Limite de IA atingido. Tente mais tarde.');
-        if (res.status === 402) throw new Error('Créditos de IA insuficientes.');
-        throw new Error(result.error || 'Erro ao gerar resumo');
-      }
+      const result = await edgeFunctionFetch<{ summary: AiSummary }>('summarize-conversation', {
+        conversation_id: conversation.id, force_refresh: forceRefresh,
+      });
 
       setAiSummary(result.summary);
     } catch (err) {

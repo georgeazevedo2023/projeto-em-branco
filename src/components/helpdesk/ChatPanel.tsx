@@ -166,7 +166,6 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
         .maybeSingle();
 
       // Fetch logged-in agent info
-      const token = await getAccessToken();
       const userId = await getSessionUserId();
 
       let currentAgentName = 'Agente';
@@ -198,22 +197,7 @@ export const ChatPanel = ({ conversation, onUpdateConversation, onBack, onShowIn
         media_url: null,
       };
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fire-outgoing-webhook`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ webhook_url: webhookUrl, payload }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Falha ao ativar IA');
-      }
+      await edgeFunctionFetch('fire-outgoing-webhook', { webhook_url: webhookUrl, payload });
 
       toast.success('Solicitação de ativação da IA enviada');
     } catch (err) {

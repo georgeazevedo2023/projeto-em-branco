@@ -95,26 +95,9 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
 
     setIsCreating(true);
     try {
-      const accessToken = await getAccessToken();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            full_name: name,
-            is_super_admin: false,
-          }),
-        }
-      );
-
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao criar usuário');
+      const result = await edgeFunctionFetch<{ user?: { id: string } }>('admin-create-user', {
+        email, password, full_name: name, is_super_admin: false,
+      });
 
       const newUserId = result.user?.id;
       if (!newUserId) throw new Error('ID do usuário não retornado');

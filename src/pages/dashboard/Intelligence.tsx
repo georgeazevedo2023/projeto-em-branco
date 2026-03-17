@@ -222,32 +222,16 @@ export default function Intelligence() {
     setAnalysis(null);
 
     try {
-      const accessToken = await getAccessToken();
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-summaries`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            inbox_id: selectedInbox === "all" ? null : selectedInbox,
-            period_days: parseInt(periodDays),
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
+      const data = await edgeFunctionFetch<Record<string, unknown>>("analyze-summaries", {
+        inbox_id: selectedInbox === "all" ? null : selectedInbox,
+        period_days: parseInt(periodDays),
+      }).catch((err: EdgeFunctionError) => {
+        if (err.status === 429) {
           toast.error("Limite de IA atingido. Tente novamente em alguns minutos.");
-        } else if (response.status === 402) {
+        } else if (err.status === 402) {
           toast.error("Créditos de IA insuficientes. Adicione créditos ao workspace.");
         } else {
-          toast.error(data.error || "Erro ao gerar análise.");
+          toast.error(err.message || "Erro ao gerar análise.");
         }
         return;
       }
