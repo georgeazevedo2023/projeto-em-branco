@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken as getAuthToken, getSessionUserId } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
 import { saveToHelpdesk } from '@/lib/saveToHelpdesk';
 import { uploadCarouselImage, base64ToFile } from '@/lib/uploadCarouselImage';
