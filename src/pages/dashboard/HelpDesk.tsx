@@ -12,58 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import type { Label } from '@/components/helpdesk/ConversationLabels';
+import type { Conversation, Message, AiSummary, Label, Inbox } from '@/types';
 
-export interface AiSummary {
-  reason: string;
-  summary: string;
-  resolution: string;
-  generated_at: string;
-  message_count: number;
-}
-
-export interface Conversation {
-  id: string;
-  inbox_id: string;
-  contact_id: string;
-  status: string;
-  priority: string;
-  assigned_to: string | null;
-  department_id: string | null;
-  is_read: boolean;
-  last_message_at: string | null;
-  created_at: string;
-  updated_at: string;
-  ai_summary?: AiSummary | null;
-  contact?: {
-    id: string;
-    name: string | null;
-    phone: string;
-    jid: string;
-    profile_pic_url: string | null;
-  };
-  inbox?: {
-    id: string;
-    name: string;
-    instance_id: string;
-    webhook_outgoing_url?: string | null;
-  };
-  last_message?: string;
-  department_name?: string;
-}
-
-export interface Message {
-  id: string;
-  conversation_id: string;
-  direction: string;
-  content: string | null;
-  media_type: string;
-  media_url: string | null;
-  sender_id: string | null;
-  external_id: string | null;
-  created_at: string;
-  transcription?: string | null;
-}
+export type { Conversation, Message, AiSummary };
 
 function mediaPreview(mediaType: string): string {
   switch (mediaType) {
@@ -73,13 +24,6 @@ function mediaPreview(mediaType: string): string {
     case 'document': return '📎 Documento';
     default: return '';
   }
-}
-
-interface Inbox {
-  id: string;
-  name: string;
-  instance_id: string;
-  webhook_outgoing_url?: string | null;
 }
 
 const HelpDesk = () => {
