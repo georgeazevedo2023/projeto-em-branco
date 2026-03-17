@@ -27,12 +27,7 @@ interface Group {
   size: number;
 }
 
-interface Instance {
-  id: string;
-  name: string;
-  token?: string;
-  status: string;
-}
+// Instance imported from @/types (see imports above)
 
 const GroupDetails = () => {
   const { instanceId, groupId } = useParams();
