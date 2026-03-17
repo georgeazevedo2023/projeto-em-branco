@@ -88,7 +88,7 @@ export const COLUMN_COLORS = [
   '#3b82f6', '#64748b',
 ];
 
-const FIELD_TYPES = [
+export const FIELD_TYPES = [
   { value: 'text', label: 'Texto Curto' },
   { value: 'currency', label: 'Moeda (R$)' },
   { value: 'date', label: 'Data' },
