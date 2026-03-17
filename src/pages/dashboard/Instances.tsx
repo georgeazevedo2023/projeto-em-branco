@@ -56,28 +56,26 @@ const normalizeQrSrc = (qr: string): string => {
 };
 
 // Extrai QR code da resposta da API (pode vir em diferentes formatos)
-const extractQrCode = (data: Record<string, unknown>): string | null => {
-  // Formato: { instance: { qrcode: "..." } }
-  if (data?.instance?.qrcode) {
-    return data.instance.qrcode;
-  }
-  // Formato: { qrcode: "..." }
-  if (data?.qrcode) {
-    return data.qrcode;
-  }
-  // Formato: { base64: "..." }
-  if (data?.base64) {
-    return data.base64;
-  }
+interface UazapiConnectResponse {
+  instance?: { qrcode?: string; status?: string };
+  qrcode?: string;
+  base64?: string;
+  status?: string | { connected?: boolean };
+  loggedIn?: boolean;
+}
+
+const extractQrCode = (data: UazapiConnectResponse): string | null => {
+  if (data?.instance?.qrcode) return data.instance.qrcode;
+  if (data?.qrcode) return data.qrcode;
+  if (data?.base64) return data.base64;
   return null;
 };
 
-// Verifica se a instância está conectada na resposta
-const checkIfConnected = (data: Record<string, unknown>): boolean => {
+const checkIfConnected = (data: UazapiConnectResponse): boolean => {
   return (
     data?.instance?.status === 'connected' ||
     data?.status === 'connected' ||
-    data?.status?.connected === true ||
+    (typeof data?.status === 'object' && data?.status?.connected === true) ||
     data?.loggedIn === true
   );
 };
