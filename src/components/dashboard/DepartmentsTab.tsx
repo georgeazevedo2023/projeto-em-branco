@@ -220,8 +220,8 @@ const DepartmentsTab = () => {
       toast.success(editingDept ? 'Departamento atualizado!' : 'Departamento criado!');
       setIsFormOpen(false);
       fetchDepartments();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao salvar');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao salvar');
     } finally {
       setSaving(false);
     }
