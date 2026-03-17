@@ -27,21 +27,8 @@ interface GroupData {
   }>;
 }
 
-interface RawUazapiGroup {
-  JID?: string; jid?: string; id?: string;
-  Name?: string; name?: string; subject?: string;
-  Size?: number; size?: number;
-  Participants?: RawUazapiParticipant[];
-  participants?: RawUazapiParticipant[];
-}
-
-interface RawUazapiParticipant {
-  JID?: string; jid?: string; id?: string;
-  DisplayName?: string; PushName?: string; pushName?: string; displayName?: string;
-  PhoneNumber?: string; phoneNumber?: string;
-  IsAdmin?: boolean; isAdmin?: boolean;
-  IsSuperAdmin?: boolean; isSuperAdmin?: boolean;
-}
+import type { RawUazapiGroup, RawUazapiParticipant } from '@/types/uazapi';
+import { extractGroupsArray } from '@/types/uazapi';
 
 interface GroupsTabProps {
   instance: Instance;
@@ -76,10 +63,7 @@ const GroupsTab = ({ instance, onLeadsImported }: GroupsTabProps) => {
       if (!response.ok) throw new Error('Failed to fetch groups');
 
       const data = await response.json();
-      let groupsData: GroupData[] = [];
-      if (Array.isArray(data)) groupsData = data;
-      else if (data.groups && Array.isArray(data.groups)) groupsData = data.groups;
-      else if (data.data && Array.isArray(data.data)) groupsData = data.data;
+      const groupsData = extractGroupsArray(data);
 
       const mappedGroups = groupsData.map((g: RawUazapiGroup) => ({
         id: g.JID || g.jid || g.id || '',
