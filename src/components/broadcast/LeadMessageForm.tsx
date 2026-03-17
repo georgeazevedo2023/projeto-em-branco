@@ -23,25 +23,13 @@ import type { MessageTemplate } from '@/hooks/useMessageTemplates';
 import type { Instance } from './InstanceSelector';
 import type { Lead } from '@/pages/dashboard/LeadsBroadcaster';
 
-interface InitialData {
-  messageType: string;
-  content: string | null;
-  mediaUrl: string | null;
-  carouselData?: {
-    message?: string;
-    cards?: Array<{
-      id?: string;
-      text?: string;
-      image?: string;
-      buttons?: Array<{
-        id?: string;
-        type: 'URL' | 'REPLY' | 'CALL';
-        label: string;
-        value?: string;
-      }>;
-    }>;
-  };
-}
+import {
+  InitialData, MediaType, ActiveTab,
+  MAX_MESSAGE_LENGTH, MAX_FILE_SIZE, SEND_DELAY_MS,
+  ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, ALLOWED_AUDIO_TYPES,
+  sendToNumber, sendMediaToNumber, sendCarouselToNumber,
+  fileToBase64, compressImageToThumbnail, formatTime, getRandomDelay, getAcceptedTypes,
+} from '@/lib/broadcastSender';
 
 interface LeadMessageFormProps {
   instance: Instance;
@@ -58,17 +46,6 @@ interface SendProgress {
   results: { name: string; success: boolean; error?: string }[];
   startedAt: number | null;
 }
-
-type MediaType = 'image' | 'video' | 'audio' | 'file';
-type ActiveTab = 'text' | 'media' | 'carousel';
-
-const MAX_MESSAGE_LENGTH = 4096;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const SEND_DELAY_MS = 350;
-
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const ALLOWED_VIDEO_TYPES = ['video/mp4'];
-const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/ogg', 'audio/mp3', 'audio/wav'];
 
 const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: LeadMessageFormProps) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
