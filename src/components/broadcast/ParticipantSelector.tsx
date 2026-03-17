@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Users, Search, CheckCircle2, XCircle } from 'lucide-react';
-import type { Group } from './GroupSelector';
+import type { Group } from '@/types';
 import { formatPhoneDisplay } from '@/lib/phoneUtils';
 
 interface ParticipantInfo {

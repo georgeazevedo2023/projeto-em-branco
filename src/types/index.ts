@@ -90,3 +90,21 @@ export interface Message {
   created_at: string;
   transcription?: string | null;
 }
+
+// ── Participant ──────────────────────────────────────────────────────
+export interface Participant {
+  jid: string;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  name?: string;
+  phoneNumber?: string;
+}
+
+// ── Group ────────────────────────────────────────────────────────────
+export interface Group {
+  id: string;
+  name: string;
+  size: number;
+  participants: Participant[];
+  pictureUrl?: string;
+}

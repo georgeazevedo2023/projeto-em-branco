@@ -6,7 +6,8 @@ import { Server, Users, MessageSquare, ChevronRight, Check, ArrowLeft, Database 
 import { toast } from 'sonner';
 import InstanceSelector from '@/components/broadcast/InstanceSelector';
 import type { Instance } from '@/types';
-import GroupSelector, { Group } from '@/components/broadcast/GroupSelector';
+import GroupSelector from '@/components/broadcast/GroupSelector';
+import type { Group } from '@/types';
 import BroadcastMessageForm from '@/components/broadcast/BroadcastMessageForm';
 import BroadcasterHeader from '@/components/broadcast/BroadcasterHeader';
 import CreateLeadDatabaseDialog from '@/components/broadcast/CreateLeadDatabaseDialog';

@@ -5,8 +5,7 @@ import { saveToHelpdesk } from '@/lib/saveToHelpdesk';
 import { uploadCarouselImage, base64ToFile } from '@/lib/uploadCarouselImage';
 import type { SendProgress } from '@/components/broadcast/BroadcastProgressModal';
 import type { CarouselData } from '@/components/broadcast/CarouselEditor';
-import type { Instance } from '@/types';
-import type { Group } from '@/components/broadcast/GroupSelector';
+import type { Instance, Group } from '@/types';
 import type { ScheduleConfig } from '@/components/group/ScheduleMessageDialog';
 import type { MediaType } from '@/lib/broadcastSender';
 import {
