@@ -115,7 +115,7 @@ const KanbanBoard = () => {
       ...f,
       options: f.options ? (f.options as string[]) : null,
       show_on_card: f.show_on_card ?? false,
-      entity_id: (f as any).entity_id ?? null,
+      entity_id: f.entity_id ?? null,
     })) as KanbanField[];
     setFields(parsedFields);
 
