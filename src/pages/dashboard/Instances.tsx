@@ -104,23 +104,7 @@ const Instances = () => {
   useEffect(() => {
     const updateInstancesStatus = async () => {
       try {
-        const accessToken = await getAccessToken();
-
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ action: 'list' }),
-          }
-        );
-
-        if (!response.ok) return;
-
-        const uazapiInstances = await response.json();
+        const uazapiInstances = await uazapiProxy({ action: 'list' });
         if (!Array.isArray(uazapiInstances)) return;
 
         // Criar mapa de status da UAZAPI
