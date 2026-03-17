@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { uazapiProxy } from '@/lib/uazapiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import { nowBRISO } from '@/lib/dateUtils';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useSendFile } from '@/hooks/useSendFile';
@@ -215,9 +216,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
       await autoAssignAgent();
       await fireOutgoingWebhook({ message_type: 'audio', content: null, media_url: audioPublicUrl });
       onMessageSent();
-    } catch (err: any) {
-      console.error('Send audio error:', err);
-      toast.error(err.message || 'Erro ao enviar áudio');
+    } catch (err) {
+      handleError(err, 'Erro ao enviar áudio', 'Send audio error');
     } finally {
       setSending(false);
     }
@@ -318,9 +318,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
       }
       setText('');
       onMessageSent();
-    } catch (err: any) {
-      console.error('Send error:', err);
-      toast.error(err.message || 'Erro ao enviar');
+    } catch (err) {
+      handleError(err, 'Erro ao enviar', 'Send error');
     } finally {
       setSending(false);
     }
@@ -439,8 +438,8 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
                                         .insert({ conversation_id: conversation.id, label_id: label.id });
                                     }
                                     onLabelsChanged?.();
-                                  } catch (err: any) {
-                                    toast.error(err.message || 'Erro');
+                                  } catch (err) {
+                                    handleError(err, 'Erro');
                                   } finally {
                                     setTogglingLabel(null);
                                   }

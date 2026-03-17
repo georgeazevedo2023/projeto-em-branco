@@ -29,6 +29,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Search, Shield, User, Loader2, Users, Settings, Phone, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Navigate } from 'react-router-dom';
@@ -175,9 +176,8 @@ const UsersManagement = () => {
       setNewUserName('');
       setNewUserIsAdmin(false);
       fetchUsers();
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-      toast.error(error.message || 'Erro ao criar usuário');
+    } catch (error) {
+      handleError(error, 'Erro ao criar usuário', 'Error creating user');
     } finally {
       setIsCreating(false);
     }
@@ -233,9 +233,8 @@ const UsersManagement = () => {
       setIsDeleteDialogOpen(false);
       setUserToDelete(null);
       fetchUsers();
-    } catch (error: any) {
-      console.error('Error deleting user:', error);
-      toast.error(error.message || 'Erro ao excluir usuário');
+    } catch (error) {
+      handleError(error, 'Erro ao excluir usuário', 'Error deleting user');
     } finally {
       setIsDeleting(false);
     }

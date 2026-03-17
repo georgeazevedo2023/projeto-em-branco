@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { uazapiProxy } from '@/lib/uazapiClient';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 interface SendFileOptions {
   conversationId: string;
@@ -139,9 +140,8 @@ export function useSendFile(): UseSendFileReturn {
 
         toast.success(isImage ? 'Imagem enviada!' : 'Documento enviado!');
         return { success: true, mediaType, mediaUrl: filePublicUrl, insertedMsg };
-      } catch (err: any) {
-        console.error('Send file error:', err);
-        toast.error(err.message || 'Erro ao enviar documento');
+      } catch (err) {
+        handleError(err, 'Erro ao enviar documento', 'Send file error');
         return { success: false };
       } finally {
         setSendingFile(false);

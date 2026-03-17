@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import CreateInboxUserDialog from '@/components/dashboard/CreateInboxUserDialog';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -220,8 +221,8 @@ const InboxUsersManagement = () => {
       toast.success('Atendente atualizado!');
       setEditingUser(null);
       fetchData();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao atualizar atendente');
+    } catch (e) {
+      handleError(e, 'Erro ao atualizar atendente');
     } finally {
       setIsSavingEdit(false);
     }

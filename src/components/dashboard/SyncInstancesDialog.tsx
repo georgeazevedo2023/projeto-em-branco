@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, RefreshCw, CheckCircle2, XCircle, AlertCircle, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 
 import type { UazapiInstance } from '@/types/uazapi';
 
@@ -131,9 +132,9 @@ export default function SyncInstancesDialog({
       const uazapiIds = new Set(instances.map((i) => i.id));
       const orphaned = localInstances?.filter((inst) => !uazapiIds.has(inst.id)) || [];
       setOrphanedInstances(orphaned);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err.message || 'Erro ao carregar dados');
+      setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
@@ -222,9 +223,8 @@ export default function SyncInstancesDialog({
       
       onSync();
       fetchData(); // Refresh data
-    } catch (err: any) {
-      console.error('Error deleting orphaned instances:', err);
-      toast.error(err.message || 'Erro ao remover instâncias órfãs');
+    } catch (err) {
+      handleError(err, 'Erro ao remover instâncias órfãs', 'Error deleting orphaned instances');
     } finally {
       setDeletingOrphans(false);
     }
@@ -277,9 +277,8 @@ export default function SyncInstancesDialog({
       toast.success(`${inserts.length} instância(s) importada(s) com sucesso!`);
       onSync();
       onOpenChange(false);
-    } catch (err: any) {
-      console.error('Error syncing instances:', err);
-      toast.error(err.message || 'Erro ao sincronizar instâncias');
+    } catch (err) {
+      handleError(err, 'Erro ao sincronizar instâncias', 'Error syncing instances');
     } finally {
       setSyncing(false);
     }

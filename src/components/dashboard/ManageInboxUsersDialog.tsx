@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Loader2, Trash2, UserPlus, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import type { Database } from '@/integrations/supabase/types';
 
 type InboxRole = Database['public']['Enums']['inbox_role'];
@@ -163,9 +164,8 @@ const ManageInboxUsersDialog = ({
       setSelectedRole('agente');
       fetchMembers();
       onUpdate();
-    } catch (error: any) {
-      console.error('Error adding member:', error);
-      toast.error(error.message || 'Erro ao adicionar');
+    } catch (error) {
+      handleError(error, 'Erro ao adicionar', 'Error adding member');
     } finally {
       setAdding(false);
     }
@@ -184,9 +184,8 @@ const ManageInboxUsersDialog = ({
       toast.success('Membro removido');
       fetchMembers();
       onUpdate();
-    } catch (error: any) {
-      console.error('Error removing member:', error);
-      toast.error(error.message || 'Erro ao remover');
+    } catch (error) {
+      handleError(error, 'Erro ao remover', 'Error removing member');
     } finally {
       setRemovingId(null);
     }
@@ -204,9 +203,8 @@ const ManageInboxUsersDialog = ({
 
       toast.success('Cargo atualizado');
       fetchMembers();
-    } catch (error: any) {
-      console.error('Error updating role:', error);
-      toast.error(error.message || 'Erro ao atualizar cargo');
+    } catch (error) {
+      handleError(error, 'Erro ao atualizar cargo', 'Error updating role');
     } finally {
       setUpdatingId(null);
     }
