@@ -45,7 +45,7 @@ const InstanceHistory = ({ instance }: InstanceHistoryProps) => {
       setError(null);
 
       const { data, error: fetchError } = await supabase
-        .from('instance_connection_logs' as any)
+        .from('instance_connection_logs')
         .select('*')
         .eq('instance_id', instance.id)
         .order('created_at', { ascending: false })
@@ -53,8 +53,8 @@ const InstanceHistory = ({ instance }: InstanceHistoryProps) => {
 
       if (fetchError) throw fetchError;
 
-      setLogs((data as any[] as ConnectionLog[]) || []);
-    } catch (err: any) {
+      setLogs((data as ConnectionLog[]) || []);
+    } catch (err) {
       console.error('Error fetching connection logs:', err);
       setError('Erro ao carregar histórico');
     } finally {
