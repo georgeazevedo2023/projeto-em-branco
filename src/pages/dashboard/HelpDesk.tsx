@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { useDepartments } from '@/hooks/useDepartments';
 import { Inbox as InboxIcon } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,9 +55,12 @@ const HelpDesk = () => {
   const [conversationNotesSet, setConversationNotesSet] = useState<Set<string>>(new Set());
 
   // Departments state
-  const [inboxDepartments, setInboxDepartments] = useState<{ id: string; name: string }[]>([]);
-  const [allInboxDepts, setAllInboxDepts] = useState<Record<string, { id: string; name: string }[]>>({});
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
+
+  // Departments hooks
+  const allInboxIds = inboxes.map(ib => ib.id);
+  const { departmentsByInbox: allInboxDepts } = useDepartments({ inboxIds: allInboxIds, enabled: allInboxIds.length > 0 });
+  const { departments: inboxDepartments } = useDepartments({ inboxId: selectedInboxId, enabled: !!selectedInboxId });
 
   const { isSuperAdmin } = useAuth();
 
@@ -95,21 +99,7 @@ const HelpDesk = () => {
           setDepartmentFilter(deptParam);
         }
 
-        // Fetch departments for all inboxes (for dropdown)
-        const inboxIds = inboxData.map(ib => ib.id);
-        const { data: deptData } = await supabase
-          .from('departments')
-          .select('id, name, inbox_id')
-          .in('inbox_id', inboxIds)
-          .order('name');
-        if (deptData) {
-          const grouped: Record<string, { id: string; name: string }[]> = {};
-          deptData.forEach(d => {
-            if (!grouped[d.inbox_id]) grouped[d.inbox_id] = [];
-            grouped[d.inbox_id].push({ id: d.id, name: d.name });
-          });
-          setAllInboxDepts(grouped);
-        }
+        // Departments are now fetched by the useDepartments hook
       }
     };
     fetchInboxes();
@@ -130,20 +120,7 @@ const HelpDesk = () => {
     fetchLabels();
   }, [fetchLabels]);
 
-  // Fetch departments for selected inbox
-  const fetchDepartments = useCallback(async () => {
-    if (!selectedInboxId) return;
-    const { data } = await supabase
-      .from('departments')
-      .select('id, name')
-      .eq('inbox_id', selectedInboxId)
-      .order('name');
-    setInboxDepartments((data as any[]) || []);
-  }, [selectedInboxId]);
-
-  useEffect(() => {
-    fetchDepartments();
-  }, [fetchDepartments]);
+  // Departments for selected inbox are now fetched by useDepartments hook
 
 
   // Fetch conversation_labels for loaded conversations

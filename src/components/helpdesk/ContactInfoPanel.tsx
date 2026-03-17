@@ -13,6 +13,7 @@ import { ManageLabelsDialog } from './ManageLabelsDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatBR } from '@/lib/dateUtils';
+import { useDepartments } from '@/hooks/useDepartments';
 
 interface PastConversation {
   id: string;
@@ -75,7 +76,7 @@ export const ContactInfoPanel = ({
     agentProfiles.map(p => ({ user_id: p.id, full_name: p.full_name || 'Sem nome' })).sort((a, b) => a.full_name.localeCompare(b.full_name)),
     [agentProfiles]
   );
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const { departments } = useDepartments({ inboxId: conversation.inbox_id, enabled: !!conversation.inbox_id });
   const [aiSummary, setAiSummary] = useState<AiSummary | null>(conversation.ai_summary || null);
   const [summarizing, setSummarizing] = useState(false);
 
@@ -85,20 +86,6 @@ export const ContactInfoPanel = ({
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
   const [generatingSummaryFor, setGeneratingSummaryFor] = useState<string | null>(null);
-
-  // Fetch departments for this inbox
-  useEffect(() => {
-    const fetchDepts = async () => {
-      if (!conversation.inbox_id) return;
-      const { data } = await supabase
-        .from('departments')
-        .select('id, name')
-        .eq('inbox_id', conversation.inbox_id)
-        .order('name');
-      setDepartments((data as any[]) || []);
-    };
-    fetchDepts();
-  }, [conversation.inbox_id]);
 
   // Sync aiSummary when conversation changes
   useEffect(() => {
