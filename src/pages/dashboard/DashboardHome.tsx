@@ -50,6 +50,18 @@ const DashboardHome = () => {
   const [filters, setFilters] = useState<DashboardFiltersState>({ instanceId: null, inboxId: null, period: 30 });
   const [showInstanceDetails, setShowInstanceDetails] = useState(false);
 
+  const ownerIds = useMemo(() => [...new Set(rawInstances.map(i => i.user_id).filter(Boolean) as string[])], [rawInstances]);
+  const { profilesMap: ownerProfilesMap } = useUserProfiles({ userIds: ownerIds, enabled: ownerIds.length > 0 });
+  const instances = useMemo<Instance[]>(() =>
+    rawInstances.map(inst => ({
+      ...inst,
+      user_profiles: inst.user_id && ownerProfilesMap[inst.user_id]
+        ? { full_name: ownerProfilesMap[inst.user_id].full_name, email: ownerProfilesMap[inst.user_id].email }
+        : undefined,
+    })),
+    [rawInstances, ownerProfilesMap]
+  );
+
   useEffect(() => {
     fetchData();
   }, [isSuperAdmin]);
