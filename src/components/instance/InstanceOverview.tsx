@@ -82,23 +82,10 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
 
     pollingRef.current = setInterval(async () => {
       try {
-        const accessToken = await getAccessToken();
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              action: 'status',
-              instance_id: instance.id,
-            }),
-          }
-        );
-
-        const data = await response.json();
+        const data = await uazapiProxy({
+          action: 'status',
+          instance_id: instance.id,
+        });
         console.log('Polling status response:', data);
 
         if (checkIfConnected(data)) {
