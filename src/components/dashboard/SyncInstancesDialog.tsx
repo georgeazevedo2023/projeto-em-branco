@@ -114,14 +114,14 @@ export default function SyncInstancesDialog({
           profileName: (inst.profileName || inst.pushname) as string | undefined,
         }));
       } else if (Array.isArray(resultObj.instances)) {
-        instances = result.instances.map((inst: any) => ({
-          id: inst.id || inst.instanceId || inst.key,
-          instanceName: inst.instanceName || inst.name || inst.key,
-          token: inst.token || '',
-          connectionStatus: inst.connectionStatus || inst.status || 'disconnected',
-          ownerJid: inst.ownerJid || inst.owner?.jid,
-          profilePicUrl: inst.profilePicUrl || inst.profilePic,
-          profileName: inst.profileName || inst.pushname,
+        instances = (resultObj.instances as Array<Record<string, unknown>>).map((inst) => ({
+          id: (inst.id || inst.instanceId || inst.key) as string,
+          instanceName: (inst.instanceName || inst.name || inst.key) as string,
+          token: (inst.token || '') as string,
+          connectionStatus: (inst.connectionStatus || inst.status || 'disconnected') as string,
+          ownerJid: (inst.ownerJid || (inst.owner as Record<string, unknown>)?.jid) as string | undefined,
+          profilePicUrl: (inst.profilePicUrl || inst.profilePic) as string | undefined,
+          profileName: (inst.profileName || inst.pushname) as string | undefined,
         }));
       }
 
