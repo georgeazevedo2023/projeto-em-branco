@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Image, LayoutGrid } from 'lucide-react';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { toast } from 'sonner';
+import { handleError } from '@/lib/errorUtils';
 import { ScheduleMessageDialog } from '@/components/group/ScheduleMessageDialog';
 import { TemplateSelector } from './TemplateSelector';
 import MessagePreview from './MessagePreview';
