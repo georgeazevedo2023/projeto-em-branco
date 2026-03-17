@@ -161,26 +161,12 @@ const UsersManagement = () => {
     setIsCreating(true);
 
     try {
-      // Create user via edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          email: newUserEmail,
-          password: newUserPassword,
-          full_name: newUserName,
-          is_super_admin: newUserIsAdmin,
-        }),
+      await edgeFunctionFetch('admin-create-user', {
+        email: newUserEmail,
+        password: newUserPassword,
+        full_name: newUserName,
+        is_super_admin: newUserIsAdmin,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao criar usuário');
-      }
 
       toast.success('Usuário criado com sucesso!');
       setIsCreateDialogOpen(false);
