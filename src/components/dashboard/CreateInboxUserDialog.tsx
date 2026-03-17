@@ -23,15 +23,10 @@ import {
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { useInstances } from '@/hooks/useInstances';
+import { useInboxes } from '@/hooks/useInboxes';
 
 type InboxRole = Database['public']['Enums']['inbox_role'];
-
-
-interface InboxItem {
-  id: string;
-  name: string;
-  instance_id: string;
-}
 
 interface CreateInboxUserDialogProps {
   open: boolean;
@@ -46,24 +41,10 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
   const [selectedRole, setSelectedRole] = useState<InboxRole>('agente');
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const [selectedInboxIds, setSelectedInboxIds] = useState<string[]>([]);
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [inboxes, setInboxes] = useState<InboxItem[]>([]);
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      fetchData();
-    }
-  }, [open]);
-
-  const fetchData = async () => {
-    const [instRes, inboxRes] = await Promise.all([
-      supabase.from('instances').select('id, name').order('name'),
-      supabase.from('inboxes').select('id, name, instance_id').order('name'),
-    ]);
-    setInstances(instRes.data || []);
-    setInboxes(inboxRes.data || []);
-  };
+  const { instances } = useInstances({ enabled: open, excludeDisabled: false });
+  const { inboxes } = useInboxes({ enabled: open });
 
   const filteredInboxes = useMemo(
     () =>
@@ -113,7 +94,6 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
 
     setIsCreating(true);
     try {
-      // 1. Create user via edge function
       const session = (await supabase.auth.getSession()).data.session;
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
@@ -138,7 +118,6 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
       const newUserId = result.user?.id;
       if (!newUserId) throw new Error('ID do usuário não retornado');
 
-      // 2. Assign instance access
       if (selectedInstanceIds.length > 0) {
         const { error: accessErr } = await supabase.from('user_instance_access').insert(
           selectedInstanceIds.map((instance_id) => ({
@@ -149,7 +128,6 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
         if (accessErr) console.error('Erro ao atribuir instâncias:', accessErr);
       }
 
-      // 3. Add to inboxes with selected role
       const { error: inboxErr } = await supabase.from('inbox_users').insert(
         selectedInboxIds.map((inbox_id) => ({
           user_id: newUserId,
@@ -182,45 +160,22 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          {/* Name */}
           <div className="space-y-2">
             <Label>Nome de Exibição</Label>
-            <Input
-              placeholder="Nome completo"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <Input placeholder="Nome completo" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-
-          {/* Email */}
           <div className="space-y-2">
             <Label>Email *</Label>
-            <Input
-              type="email"
-              placeholder="email@exemplo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <Input type="email" placeholder="email@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
-
-          {/* Password */}
           <div className="space-y-2">
             <Label>Senha *</Label>
-            <Input
-              type="password"
-              placeholder="Mínimo 6 caracteres"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <Input type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-
-          {/* Role */}
           <div className="space-y-2">
             <Label>Papel</Label>
             <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as InboxRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="gestor">Gestor</SelectItem>
@@ -228,8 +183,6 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
               </SelectContent>
             </Select>
           </div>
-
-          {/* Instances */}
           <div className="space-y-2">
             <Label>Instâncias</Label>
             <div className="border border-border/50 rounded-lg p-3 max-h-36 overflow-y-auto space-y-2">
@@ -238,41 +191,29 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
               ) : (
                 instances.map((inst) => (
                   <label key={inst.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <Checkbox
-                      checked={selectedInstanceIds.includes(inst.id)}
-                      onCheckedChange={() => toggleInstance(inst.id)}
-                    />
+                    <Checkbox checked={selectedInstanceIds.includes(inst.id)} onCheckedChange={() => toggleInstance(inst.id)} />
                     <span>{inst.name}</span>
                   </label>
                 ))
               )}
             </div>
           </div>
-
-          {/* Inboxes */}
           <div className="space-y-2">
             <Label>Caixas de Entrada *</Label>
             <div className="border border-border/50 rounded-lg p-3 max-h-36 overflow-y-auto space-y-2">
               {filteredInboxes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  {selectedInstanceIds.length > 0
-                    ? 'Nenhuma caixa para as instâncias selecionadas'
-                    : 'Selecione uma instância primeiro'}
+                  {selectedInstanceIds.length > 0 ? 'Nenhuma caixa para as instâncias selecionadas' : 'Selecione uma instância primeiro'}
                 </p>
               ) : (
                 filteredInboxes.map((inbox) => {
                   const inst = instances.find((i) => i.id === inbox.instance_id);
                   return (
                     <label key={inbox.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox
-                        checked={selectedInboxIds.includes(inbox.id)}
-                        onCheckedChange={() => toggleInbox(inbox.id)}
-                      />
+                      <Checkbox checked={selectedInboxIds.includes(inbox.id)} onCheckedChange={() => toggleInbox(inbox.id)} />
                       <span>
                         {inbox.name}
-                        {inst && (
-                          <span className="text-muted-foreground ml-1 text-xs">({inst.name})</span>
-                        )}
+                        {inst && <span className="text-muted-foreground ml-1 text-xs">({inst.name})</span>}
                       </span>
                     </label>
                   );
@@ -283,18 +224,9 @@ const CreateInboxUserDialog = ({ open, onOpenChange, onCreated }: CreateInboxUse
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSubmit} disabled={isCreating}>
-            {isCreating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Criando...
-              </>
-            ) : (
-              'Criar Usuário'
-            )}
+            {isCreating ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando...</>) : 'Criar Usuário'}
           </Button>
         </DialogFooter>
       </DialogContent>
