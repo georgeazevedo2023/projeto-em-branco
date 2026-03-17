@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getAccessToken } from '@/hooks/useAuthSession';
 import { toast } from 'sonner';
+import { useInstances } from '@/hooks/useInstances';
+import { useInboxes } from '@/hooks/useInboxes';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => ({
   value: String(i),
@@ -57,25 +59,8 @@ const Settings = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Fetch inboxes
-  const { data: inboxes } = useQuery({
-    queryKey: ['inboxes-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('inboxes').select('id, name, instance_id').order('name');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch instances
-  const { data: instances } = useQuery({
-    queryKey: ['instances-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('instances').select('id, name, status').eq('disabled', false).order('name');
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  const { inboxes } = useInboxes();
+  const { instances } = useInstances();
 
   // Fetch shift report configs
   const { data: configs, isLoading: configsLoading } = useQuery({
@@ -95,7 +80,7 @@ const Settings = () => {
       }));
       return enriched;
     },
-    enabled: !!inboxes && !!instances,
+    enabled: inboxes.length > 0 && instances.length > 0,
   });
 
   // Create config

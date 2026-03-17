@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useInboxes } from '@/hooks/useInboxes';
 import StatsCard from '@/components/dashboard/StatsCard';
 import InstanceCard from '@/components/dashboard/InstanceCard';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
@@ -36,26 +37,20 @@ interface HelpdeskLeadsStats {
   dailyData: { day: string; label: string; leads: number }[];
 }
 
-interface InboxOption {
-  id: string;
-  name: string;
-}
-
 const DashboardHome = () => {
   const { profile, isSuperAdmin } = useAuth();
+  const { inboxes } = useInboxes();
   const [instances, setInstances] = useState<Instance[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingStats, setLoadingStats] = useState(false);
   const [instanceStats, setInstanceStats] = useState<InstanceStats[]>([]);
   const [helpdeskLeads, setHelpdeskLeads] = useState<HelpdeskLeadsStats>({ today: 0, yesterday: 0, total: 0, dailyData: [] });
-  const [inboxes, setInboxes] = useState<InboxOption[]>([]);
   const [filters, setFilters] = useState<DashboardFiltersState>({ instanceId: null, inboxId: null, period: 30 });
   const [showInstanceDetails, setShowInstanceDetails] = useState(false);
 
   useEffect(() => {
     fetchData();
-    fetchInboxes();
   }, [isSuperAdmin]);
 
   useEffect(() => {
@@ -79,10 +74,6 @@ const DashboardHome = () => {
     return () => { supabase.removeChannel(channel); };
   }, [filters.instanceId]);
 
-  const fetchInboxes = async () => {
-    const { data } = await supabase.from('inboxes').select('id, name').order('name');
-    setInboxes(data || []);
-  };
 
   const fetchData = async () => {
     try {

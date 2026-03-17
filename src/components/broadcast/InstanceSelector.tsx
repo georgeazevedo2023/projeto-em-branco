@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Server, CheckCircle2, XCircle } from 'lucide-react';
 import type { Instance } from '@/types';
+import { useInstances } from '@/hooks/useInstances';
 
 export type { Instance };
 
@@ -15,15 +15,10 @@ interface InstanceSelectorProps {
 }
 
 const InstanceSelector = ({ selectedInstance, onSelect }: InstanceSelectorProps) => {
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { instances, loading } = useInstances({ excludeDisabled: false });
 
   const isConnected = (status: string) => 
     status === 'connected' || status === 'online';
-
-  useEffect(() => {
-    fetchInstances();
-  }, []);
 
   // Auto-select if only one online instance
   useEffect(() => {
@@ -34,23 +29,6 @@ const InstanceSelector = ({ selectedInstance, onSelect }: InstanceSelectorProps)
       onSelect(onlineInstances[0]);
     }
   }, [instances, loading, selectedInstance, onSelect]);
-
-  const fetchInstances = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('instances')
-        .select('id, name, status, profile_pic_url')
-        .order('name');
-
-      if (error) throw error;
-      setInstances(data || []);
-    } catch (error) {
-      console.error('Error fetching instances:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   if (loading) {
     return (
