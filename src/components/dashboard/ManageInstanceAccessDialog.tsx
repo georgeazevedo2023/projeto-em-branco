@@ -60,30 +60,14 @@ export default function ManageInstanceAccessDialog({
   const fetchData = async () => {
     if (!instance) return;
 
-    setLoading(true);
     try {
-      // Fetch all users with their roles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('id, email, full_name')
-        .order('full_name');
-
-      if (profilesError) throw profilesError;
-
       // Fetch roles to identify super admins
       const { data: roles } = await supabase
         .from('user_roles')
         .select('user_id, role')
         .eq('role', 'super_admin');
 
-      const superAdminIds = new Set(roles?.map((r) => r.user_id) || []);
-
-      const usersWithRoles = (profiles || []).map((p) => ({
-        ...p,
-        isSuperAdmin: superAdminIds.has(p.id),
-      }));
-
-      setUsers(usersWithRoles);
+      setSuperAdminIds(new Set(roles?.map((r) => r.user_id) || []));
 
       // Fetch current access for this instance
       const { data: accessData, error: accessError } = await supabase
@@ -97,8 +81,6 @@ export default function ManageInstanceAccessDialog({
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Erro ao carregar dados');
-    } finally {
-      setLoading(false);
     }
   };
 
