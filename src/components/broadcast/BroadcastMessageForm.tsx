@@ -1075,7 +1075,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               groupName: `Enviando para ${j + 1} de ${membersToSend.length}`,
             }));
 
-            await sendCarouselToNumber(member.jid, carouselData, accessToken);
+            await sendCarouselMsg(member.jid, carouselData, accessToken);
             results.push({ groupName: member.jid, success: true });
             // Save to HelpDesk
             const phone = member.jid.replace('@s.whatsapp.net', '');
