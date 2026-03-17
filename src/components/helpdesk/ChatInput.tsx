@@ -9,8 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { nowBRISO } from '@/lib/dateUtils';
-import type { Conversation } from '@/pages/dashboard/HelpDesk';
-import type { Label } from './ConversationLabels';
+import type { Conversation, Label } from '@/types';
 
 interface ChatInputProps {
   conversation: Conversation;

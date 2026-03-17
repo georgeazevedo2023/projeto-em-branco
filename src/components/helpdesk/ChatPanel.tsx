@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MessageSquare, ArrowLeft, User, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Bot, StickyNote } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Conversation, Message } from '@/pages/dashboard/HelpDesk';
-import type { Label } from './ConversationLabels';
+import type { Conversation, Message, Label } from '@/types';
 
 interface ChatPanelProps {
   conversation: Conversation | null;
