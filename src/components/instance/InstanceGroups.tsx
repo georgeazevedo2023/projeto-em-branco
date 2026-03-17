@@ -65,11 +65,7 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
   const fetchGroups = async (): Promise<number> => {
     try {
       setLoading(true);
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        toast.error('Sessão expirada');
-        return 0;
-      }
+      const accessToken = await getAccessToken();
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
