@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import type { Instance } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken } from '@/hooks/useAuthSession';
-import { uazapiProxy, uazapiProxyRaw } from '@/lib/uazapiClient';
+import { uazapiProxy } from '@/lib/uazapiClient';
+import { extractQrCode } from '@/lib/uazapiUtils';
+import { useQrConnect } from '@/hooks/useQrConnect';
 import InstanceCard from '@/components/dashboard/InstanceCard';
 import SyncInstancesDialog from '@/components/dashboard/SyncInstancesDialog';
 import ManageInstanceAccessDialog from '@/components/dashboard/ManageInstanceAccessDialog';
@@ -41,15 +42,11 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-
 interface UserProfile {
   id: string;
   email: string;
   full_name: string | null;
 }
-
-import { normalizeQrSrc, extractQrCode, checkIfConnected } from '@/lib/uazapiUtils';
-
 
 const Instances = () => {
   const { isSuperAdmin, user } = useAuth();
@@ -64,17 +61,13 @@ const Instances = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [newInstanceName, setNewInstanceName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
-  
-  // Estado centralizado para QR Code
-  const [qrDialogOpen, setQrDialogOpen] = useState(false);
-  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [isLoadingQr, setIsLoadingQr] = useState(false);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // Estado para delete dialog
   const [instanceToDelete, setInstanceToDelete] = useState<Instance | null>(null);
   const [isDeletingInstance, setIsDeletingInstance] = useState(false);
+
+  // Centralised QR connect hook
+  const qr = useQrConnect({ onConnected: () => fetchInstances() });
 
   useEffect(() => {
     fetchInstances();
@@ -83,24 +76,6 @@ const Instances = () => {
     }
   }, [isSuperAdmin]);
 
-  // Cleanup polling ao desmontar
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, []);
-
-  // Cleanup polling quando modal fecha
-  useEffect(() => {
-    if (!qrDialogOpen && pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-  }, [qrDialogOpen]);
-
   // Polling para atualizar status a cada 30 segundos
   useEffect(() => {
     const updateInstancesStatus = async () => {
@@ -108,7 +83,6 @@ const Instances = () => {
         const uazapiInstances = await uazapiProxy({ action: 'list' });
         if (!Array.isArray(uazapiInstances)) return;
 
-        // Criar mapa de status da UAZAPI
         const statusMap = new Map<string, { status: string; owner: string | null; profilePic: string | null }>();
         uazapiInstances.forEach((inst: Record<string, unknown>) => {
           statusMap.set(String(inst.id), {
@@ -118,7 +92,6 @@ const Instances = () => {
           });
         });
 
-        // Atualizar instâncias locais que têm status diferente
         const updates: (() => Promise<void>)[] = [];
         const updatedInstances = instances.map((instance) => {
           const uazapiStatus = statusMap.get(instance.id);
@@ -152,19 +125,16 @@ const Instances = () => {
       }
     };
 
-    // Atualizar status imediatamente ao carregar
     if (instances.length > 0) {
       updateInstancesStatus();
     }
 
-    // Polling a cada 30 segundos
     const interval = setInterval(updateInstancesStatus, 30000);
     return () => clearInterval(interval);
-  }, [instances.length > 0]); // Executar quando tiver instâncias
+  }, [instances.length > 0]);
 
   const fetchInstances = async () => {
     try {
-      // Fetch instances
       const { data: instancesData, error: instancesError } = await supabase
         .from('instances')
         .select('*')
@@ -173,7 +143,6 @@ const Instances = () => {
 
       if (instancesError) throw instancesError;
 
-      // Fetch user profiles for each instance
       if (instancesData && instancesData.length > 0) {
         const userIds = [...new Set(instancesData.map((i) => i.user_id))];
         const { data: profilesData } = await supabase
@@ -246,7 +215,6 @@ const Instances = () => {
         token,
       }) as Record<string, unknown>;
 
-      // Save to database
       const instanceId = (result.instance as Record<string, unknown>)?.instanceId as string || `inst_${Date.now()}`;
       const { error: dbError } = await supabase.from('instances').insert({
         id: instanceId,
@@ -258,7 +226,6 @@ const Instances = () => {
 
       if (dbError) throw dbError;
 
-      // Create access record for the assigned user
       const { error: accessError } = await supabase.from('user_instance_access').insert({
         instance_id: instanceId,
         user_id: targetUserId,
@@ -275,9 +242,8 @@ const Instances = () => {
       fetchInstances();
 
       // Show QR code if available
-      const qr = extractQrCode(result);
-      if (qr) {
-        // Abrir modal de QR com a nova instância
+      const qrCodeStr = extractQrCode(result);
+      if (qrCodeStr) {
         const newInstance: Instance = {
           id: instanceId,
           name: newInstanceName,
@@ -287,10 +253,7 @@ const Instances = () => {
           owner_jid: null,
           profile_pic_url: null,
         };
-        setSelectedInstance(newInstance);
-        setQrCode(normalizeQrSrc(qr));
-        setQrDialogOpen(true);
-        startPolling(newInstance);
+        qr.openWithQr(newInstance, qrCodeStr);
       }
     } catch (error) {
       console.error('Error creating instance:', error);
@@ -300,92 +263,8 @@ const Instances = () => {
     }
   };
 
-  const startPolling = async (instance: Instance) => {
-    // Limpar polling anterior
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-    }
-
-    pollingRef.current = setInterval(async () => {
-      try {
-        const data = await uazapiProxy({
-          action: 'status',
-          instance_id: instance.id,
-        }) as Record<string, unknown>;
-        console.log('Polling status response:', data);
-
-        if (checkIfConnected(data)) {
-          // Parar polling
-          if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
-          }
-          
-          toast.success('Conectado com sucesso!');
-          setQrDialogOpen(false);
-          setQrCode(null);
-          setSelectedInstance(null);
-          fetchInstances();
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    }, 5000);
-  };
-
   const handleConnect = async (instance: Instance) => {
-    setSelectedInstance(instance);
-    setQrDialogOpen(true);
-    setIsLoadingQr(true);
-    setQrCode(null);
-
-    try {
-      const result = await uazapiProxy({
-        action: 'connect',
-        instanceName: instance.name,
-        instance_id: instance.id,
-      }) as Record<string, unknown>;
-      console.log('Connect response:', result);
-
-      // Verificar se já está conectado
-      if (checkIfConnected(result)) {
-        toast.success('Instância já está conectada!');
-        setQrDialogOpen(false);
-        fetchInstances();
-        return;
-      }
-
-      // Extrair QR code
-      const qr = extractQrCode(result);
-      if (qr) {
-        setQrCode(normalizeQrSrc(qr));
-        startPolling(instance);
-      } else {
-        console.error('QR code not found in response:', result);
-        toast.error('Não foi possível gerar o QR Code');
-      }
-    } catch (error) {
-      console.error('Error connecting:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao gerar QR Code');
-    } finally {
-      setIsLoadingQr(false);
-    }
-  };
-
-  const handleGenerateNewQr = () => {
-    if (selectedInstance) {
-      handleConnect(selectedInstance);
-    }
-  };
-
-  const handleCloseQrDialog = () => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    setQrDialogOpen(false);
-    setQrCode(null);
-    setSelectedInstance(null);
+    qr.connect(instance);
   };
 
   const handleDelete = (instance: Instance) => {
@@ -594,29 +473,29 @@ const Instances = () => {
       </AlertDialog>
 
       {/* Modal de QR Code Centralizado */}
-      <Dialog open={qrDialogOpen} onOpenChange={handleCloseQrDialog}>
+      <Dialog open={!!qr.activeInstance} onOpenChange={() => qr.close()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="w-5 h-5" />
-              Conectar {selectedInstance?.name}
+              Conectar {qr.activeInstance?.name}
             </DialogTitle>
             <DialogDescription>
               Escaneie o QR Code com seu WhatsApp para conectar
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-6 gap-4">
-            {isLoadingQr ? (
+            {qr.isLoadingQr ? (
               <div className="w-64 h-64 bg-muted animate-pulse rounded-lg flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                   <span className="text-muted-foreground">Gerando QR Code...</span>
                 </div>
               </div>
-            ) : qrCode ? (
+            ) : qr.qrCode ? (
               <>
                 <img
-                  src={qrCode}
+                  src={qr.qrCode}
                   alt="QR Code"
                   className="w-64 h-64 rounded-lg border"
                 />
@@ -633,11 +512,11 @@ const Instances = () => {
             )}
           </div>
           <DialogFooter className="flex-row gap-2 sm:justify-center">
-            <Button variant="outline" onClick={handleCloseQrDialog}>
+            <Button variant="outline" onClick={() => qr.close()}>
               Fechar
             </Button>
-            <Button onClick={handleGenerateNewQr} disabled={isLoadingQr}>
-              <RefreshCw className={cn("w-4 h-4 mr-2", isLoadingQr && "animate-spin")} />
+            <Button onClick={qr.regenerateQr} disabled={qr.isLoadingQr}>
+              <RefreshCw className={cn("w-4 h-4 mr-2", qr.isLoadingQr && "animate-spin")} />
               Gerar novo QR
             </Button>
           </DialogFooter>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import type { Instance } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { uazapiProxy } from '@/lib/uazapiClient';
+import { useQrConnect } from '@/hooks/useQrConnect';
 
 import {
   Copy,
-  Eye,
-  EyeOff,
   QrCode,
   User,
   Calendar,
@@ -33,130 +31,25 @@ import {
 import { cn } from '@/lib/utils';
 import { formatBR } from '@/lib/dateUtils';
 
-
 interface InstanceOverviewProps {
   instance: Instance;
   onUpdate: () => void;
 }
 
-import { normalizeQrSrc, extractQrCode, checkIfConnected } from '@/lib/uazapiUtils';
-
-
 const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
   const [showToken, setShowToken] = useState(false);
-  const [showQrDialog, setShowQrDialog] = useState(false);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [isLoadingQr, setIsLoadingQr] = useState(false);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const qr = useQrConnect({ onConnected: onUpdate });
+  const showQrDialog = qr.activeInstance?.id === instance.id;
 
   const isConnected = instance.status === 'connected' || instance.status === 'online';
   const phoneNumber = instance.owner_jid?.split('@')[0];
-
-  // Cleanup polling ao desmontar ou fechar modal
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, []);
-
-  // Cleanup polling quando modal fecha
-  useEffect(() => {
-    if (!showQrDialog && pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-  }, [showQrDialog]);
 
   const copyToken = () => {
     toast.info('Tokens são gerenciados de forma segura no servidor');
   };
 
-  const startPolling = async () => {
-    // Limpar polling anterior
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-    }
-
-    pollingRef.current = setInterval(async () => {
-      try {
-        const data = await uazapiProxy({
-          action: 'status',
-          instance_id: instance.id,
-        });
-        console.log('Polling status response:', data);
-
-        if (checkIfConnected(data)) {
-          // Parar polling
-          if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
-          }
-          
-          toast.success('Conectado com sucesso!');
-          setShowQrDialog(false);
-          setQrCode(null);
-          onUpdate();
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    }, 5000);
-  };
-
-  const handleConnect = async () => {
-    setShowQrDialog(true);
-    setIsLoadingQr(true);
-    setQrCode(null);
-
-    try {
-      const data = await uazapiProxy({
-        action: 'connect',
-        instanceName: instance.name,
-        instance_id: instance.id,
-      });
-      console.log('Connect response:', data);
-
-      // Verificar se já está conectado
-      if (checkIfConnected(data)) {
-        toast.success('Instância já está conectada!');
-        setShowQrDialog(false);
-        onUpdate();
-        return;
-      }
-
-      // Extrair QR code
-      const qr = extractQrCode(data);
-      if (qr) {
-        setQrCode(normalizeQrSrc(qr));
-        // Iniciar polling para verificar conexão
-        startPolling();
-      } else {
-        console.error('QR code not found in response:', data);
-        toast.error('Não foi possível gerar o QR Code');
-      }
-    } catch (error) {
-      console.error('Error connecting:', error);
-      toast.error('Erro ao conectar instância');
-    } finally {
-      setIsLoadingQr(false);
-    }
-  };
-
-  const handleGenerateNewQr = () => {
-    handleConnect();
-  };
-
-  const handleCloseDialog = () => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    setShowQrDialog(false);
-    setQrCode(null);
-  };
+  const handleCloseDialog = () => qr.close();
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -213,7 +106,7 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
           </div>
 
           {!isConnected && (
-            <Button onClick={handleConnect} className="w-full mt-4">
+            <Button onClick={() => qr.connect(instance)} className="w-full mt-4">
               <QrCode className="w-4 h-4 mr-2" />
               Conectar via QR Code
             </Button>
@@ -311,17 +204,17 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-6 gap-4">
-            {isLoadingQr ? (
+            {qr.isLoadingQr ? (
               <div className="w-64 h-64 bg-muted animate-pulse rounded-lg flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                   <span className="text-muted-foreground">Gerando QR Code...</span>
                 </div>
               </div>
-            ) : qrCode ? (
+            ) : qr.qrCode ? (
               <>
                 <img
-                  src={qrCode}
+                  src={qr.qrCode}
                   alt="QR Code"
                   className="w-64 h-64 rounded-lg border"
                 />
@@ -341,8 +234,8 @@ const InstanceOverview = ({ instance, onUpdate }: InstanceOverviewProps) => {
             <Button variant="outline" onClick={handleCloseDialog}>
               Fechar
             </Button>
-            <Button onClick={handleGenerateNewQr} disabled={isLoadingQr}>
-              <RefreshCw className={cn("w-4 h-4 mr-2", isLoadingQr && "animate-spin")} />
+            <Button onClick={qr.regenerateQr} disabled={qr.isLoadingQr}>
+              <RefreshCw className={cn("w-4 h-4 mr-2", qr.isLoadingQr && "animate-spin")} />
               Gerar novo QR
             </Button>
           </DialogFooter>
