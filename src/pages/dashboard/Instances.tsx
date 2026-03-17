@@ -157,7 +157,7 @@ const Instances = () => {
 
         // Criar mapa de status da UAZAPI
         const statusMap = new Map<string, { status: string; owner: string | null; profilePic: string | null }>();
-        uazapiInstances.forEach((inst: any) => {
+        uazapiInstances.forEach((inst: Record<string, unknown>) => {
           statusMap.set(inst.id, {
             status: inst.status === 'connected' ? 'connected' : 'disconnected',
             owner: inst.owner || null,
