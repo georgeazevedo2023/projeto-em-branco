@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { VariableSizeList as VirtualList } from 'react-window';
 import { Search, Inbox, UserCheck, AlertCircle, Building2, SlidersHorizontal, Tag, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -31,7 +32,7 @@ interface ConversationListProps {
   onDepartmentFilterChange?: (v: string | null) => void;
 }
 
-const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string; icon?: string }[] = [
+const assignmentOptions: { value: 'todas' | 'minhas' | 'nao-atribuidas'; label: string }[] = [
   { value: 'todas', label: 'Todas' },
   { value: 'minhas', label: 'Minhas' },
   { value: 'nao-atribuidas', label: 'Não atribuídas' },
@@ -43,6 +44,9 @@ const priorityOptions: { value: 'todas' | 'alta' | 'media' | 'baixa'; label: str
   { value: 'media', label: '🟡 Média' },
   { value: 'baixa', label: '🔵 Baixa' },
 ];
+
+const BASE_ROW_HEIGHT = 64;
+const RICH_ROW_HEIGHT = 90;
 
 export const ConversationList = ({
   conversations,
@@ -69,6 +73,9 @@ export const ConversationList = ({
 }: ConversationListProps) => {
   const [manageOpen, setManageOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<VirtualList>(null);
+  const [listHeight, setListHeight] = useState(400);
 
   const hasActiveFilters =
     assignmentFilter !== 'todas' ||
@@ -82,6 +89,56 @@ export const ConversationList = ({
     !!labelFilter,
     !!departmentFilter,
   ].filter(Boolean).length;
+
+  // Measure container height
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setListHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Reset scroll when conversations change
+  useEffect(() => {
+    listRef.current?.scrollToItem(0);
+  }, [conversations.length, searchQuery, assignmentFilter, priorityFilter, labelFilter, departmentFilter]);
+
+  const getItemSize = useCallback((index: number) => {
+    const c = conversations[index];
+    if (!c) return BASE_ROW_HEIGHT;
+    const hasLabels = (conversationLabelsMap[c.id] || []).length > 0;
+    const hasAgent = !!c.assigned_to;
+    const hasNotes = conversationNotesSet.has(c.id);
+    const hasDept = !!c.department_id;
+    return (hasLabels || hasAgent || hasNotes || hasDept) ? RICH_ROW_HEIGHT : BASE_ROW_HEIGHT;
+  }, [conversations, conversationLabelsMap, conversationNotesSet]);
+
+  // Reset size cache when data changes
+  useEffect(() => {
+    listRef.current?.resetAfterIndex(0);
+  }, [conversations, conversationLabelsMap, conversationNotesSet]);
+
+  const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const c = conversations[index];
+    if (!c) return null;
+    return (
+      <div style={style} className="border-b border-border/30">
+        <ConversationItem
+          conversation={c}
+          isSelected={c.id === selectedId}
+          onClick={() => onSelect(c)}
+          labels={inboxLabels.filter(l => (conversationLabelsMap[c.id] || []).includes(l.id))}
+          agentName={c.assigned_to ? agentNamesMap[c.assigned_to] || null : null}
+          hasNotes={conversationNotesSet.has(c.id)}
+        />
+      </div>
+    );
+  }, [conversations, selectedId, onSelect, inboxLabels, conversationLabelsMap, agentNamesMap, conversationNotesSet]);
 
   return (
     <>
@@ -256,7 +313,7 @@ export const ConversationList = ({
       <div className="h-px bg-border/30 mx-3" />
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-hidden" ref={containerRef}>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -270,19 +327,16 @@ export const ConversationList = ({
             )}
           </div>
         ) : (
-          <div className="divide-y divide-border/30">
-            {conversations.map(c => (
-              <ConversationItem
-                key={c.id}
-                conversation={c}
-                isSelected={c.id === selectedId}
-                onClick={() => onSelect(c)}
-                labels={inboxLabels.filter(l => (conversationLabelsMap[c.id] || []).includes(l.id))}
-                agentName={c.assigned_to ? agentNamesMap[c.assigned_to] || null : null}
-                hasNotes={conversationNotesSet.has(c.id)}
-              />
-            ))}
-          </div>
+          <VirtualList
+            ref={listRef}
+            height={listHeight}
+            width="100%"
+            itemCount={conversations.length}
+            itemSize={getItemSize}
+            overscanCount={5}
+          >
+            {Row}
+          </VirtualList>
         )}
       </div>
 
