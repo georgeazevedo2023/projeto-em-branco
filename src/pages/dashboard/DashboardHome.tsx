@@ -74,10 +74,6 @@ const DashboardHome = () => {
     return () => { supabase.removeChannel(channel); };
   }, [filters.instanceId]);
 
-  const fetchInboxes = async () => {
-    const { data } = await supabase.from('inboxes').select('id, name').order('name');
-    setInboxes(data || []);
-  };
 
   const fetchData = async () => {
     try {
