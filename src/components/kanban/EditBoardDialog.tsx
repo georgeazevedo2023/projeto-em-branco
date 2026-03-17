@@ -412,7 +412,7 @@ export function EditBoardDialog({ open, onOpenChange, board, inboxes, onSaved }:
     // Sync columns
     const existingColIds = columns.filter(c => !c.id.startsWith('new_')).map(c => c.id);
     const { data: dbCols } = await supabase.from('kanban_columns').select('id').eq('board_id', board.id);
-    const dbColIds = (dbCols || []).map((c: any) => c.id);
+    const dbColIds = (dbCols || []).map((c) => c.id);
     const toDelete = dbColIds.filter((id: string) => !existingColIds.includes(id));
     if (toDelete.length > 0) await supabase.from('kanban_columns').delete().in('id', toDelete);
 
