@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Inbox } from '@/types';
 
 export interface UseInboxesOptions {
   enabled?: boolean;
@@ -8,7 +9,7 @@ export interface UseInboxesOptions {
 export function useInboxes(options: UseInboxesOptions = {}) {
   const { enabled = true } = options;
 
-  const [inboxes, setInboxes] = useState<any[]>([]);
+  const [inboxes, setInboxes] = useState<Inbox[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 

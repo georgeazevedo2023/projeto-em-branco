@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Instance } from '@/types';
 
 export interface UseInstancesOptions {
   enabled?: boolean;
@@ -9,7 +10,7 @@ export interface UseInstancesOptions {
 export function useInstances(options: UseInstancesOptions = {}) {
   const { enabled = true, excludeDisabled = true } = options;
 
-  const [instances, setInstances] = useState<any[]>([]);
+  const [instances, setInstances] = useState<Instance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
