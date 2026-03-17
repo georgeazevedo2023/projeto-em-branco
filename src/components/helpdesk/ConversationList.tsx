@@ -322,6 +322,14 @@ export const ConversationList = ({
 
       <div className="h-px bg-border/30 mx-3" />
 
+      {/* Conversation count */}
+      <div className="px-3 py-1.5 flex items-center">
+        <span className="text-[11px] text-muted-foreground font-medium">
+          {conversations.length} {conversations.length === 1 ? 'conversa' : 'conversas'}
+          {hasActiveFilters && ' (filtradas)'}
+        </span>
+      </div>
+
       {/* List */}
       <div className="flex-1 overflow-hidden">
         {loading ? (
