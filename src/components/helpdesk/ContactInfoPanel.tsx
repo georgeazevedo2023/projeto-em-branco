@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useUserProfiles, type UserProfileData } from '@/hooks/useUserProfiles';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
