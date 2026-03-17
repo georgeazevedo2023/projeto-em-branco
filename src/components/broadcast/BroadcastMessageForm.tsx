@@ -1220,7 +1220,7 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
               totalMembers: 1,
             }));
 
-            await sendCarouselToNumber(group.id, carouselData, accessToken);
+            await sendCarouselMsg(group.id, carouselData, accessToken);
             setProgress(p => ({ ...p, currentMember: 1 }));
 
             results.push({ groupName: group.name, success: true });
