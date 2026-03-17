@@ -156,7 +156,7 @@ const Instances = () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${session.data.session.access_token}`,
+              Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({ action: 'list' }),
           }
