@@ -95,7 +95,7 @@ const HelpdeskMetricsCharts = () => {
       if (iaConvsRes.data) {
         const inboxSecMap = new Map<string, { name: string; secs: number[]; }>();
 
-        iaConvsRes.data.forEach((conv: any) => {
+        iaConvsRes.data.forEach((conv: { inbox_id: string; inboxes?: { name?: string }; conversation_messages?: { created_at: string; direction: string }[] }) => {
           const msgs: { created_at: string; direction: string }[] = conv.conversation_messages || [];
           const sorted = [...msgs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
