@@ -211,7 +211,7 @@ export const ContactInfoPanel = ({
     });
 
     // Update local via callback
-    onUpdateConversation(conversation.id, { assigned_to: agentId } as any);
+    onUpdateConversation(conversation.id, { assigned_to: agentId });
     toast.success(agentId ? `Atribuído a ${agentName}` : 'Agente removido');
   };
 
