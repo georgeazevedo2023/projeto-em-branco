@@ -224,50 +224,8 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     isPausedRef.current = false; // Unpause to allow the loop to exit
   };
 
-  // Função para calcular delay aleatório baseado na configuração
-  const getRandomDelay = (): number => {
-    if (randomDelay === 'none') {
-      return SEND_DELAY_MS; // 350ms padrão
-    }
-    
-    const [min, max] = randomDelay === '5-10' 
-      ? [5000, 10000]   // 5 a 10 segundos
-      : [10000, 20000]; // 10 a 20 segundos
-    
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
-  const getGroupDelay = (): number => {
-    if (randomDelay === 'none') {
-      return GROUP_DELAY_MS; // 500ms padrão
-    }
-    
-    const [min, max] = randomDelay === '5-10' 
-      ? [5000, 10000]   // 5 a 10 segundos
-      : [10000, 20000]; // 10 a 20 segundos
-    
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
-  // Compress and resize image to a smaller thumbnail for storage
-  const compressImageToThumbnail = (file: File, maxWidth = 200, quality = 0.6): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new window.Image();
-      
-      img.onload = () => {
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      
-      img.onerror = () => resolve('');
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  // getRandomDelay, compressImageToThumbnail imported from broadcastSender
+  const getGroupDelay = (): number => getRandomDelay(randomDelay, GROUP_DELAY_MS);
 
   // Save broadcast log to database
   const saveBroadcastLog = async (params: {
