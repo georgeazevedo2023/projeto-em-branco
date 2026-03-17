@@ -312,9 +312,6 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     setSelectedFile(null);
     setPreviewUrl(null);
     setFilename('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   // getAcceptedTypes imported from broadcastSender
