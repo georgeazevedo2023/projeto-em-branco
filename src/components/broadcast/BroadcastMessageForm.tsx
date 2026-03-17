@@ -314,44 +314,6 @@ const BroadcastMessageForm = ({ instance, selectedGroups, onComplete, initialDat
     setFilename('');
   };
 
-  // getAcceptedTypes imported from broadcastSender
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('Arquivo muito grande. Máximo: 10MB');
-      return;
-    }
-
-    // Validate file type for specific media types
-    if (mediaType === 'video' && !ALLOWED_VIDEO_TYPES.includes(file.type)) {
-      toast.error('Apenas vídeos MP4 são suportados');
-      return;
-    }
-
-    if (mediaType === 'image' && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error('Formato de imagem não suportado');
-      return;
-    }
-
-    if (mediaType === 'audio' && !ALLOWED_AUDIO_TYPES.includes(file.type)) {
-      toast.error('Formato de áudio não suportado (use MP3 ou OGG)');
-      return;
-    }
-
-    clearFile();
-    setSelectedFile(file);
-    setFilename(file.name);
-
-    // Create preview for images and videos
-    if (mediaType === 'image' || mediaType === 'video' || mediaType === 'audio') {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
 
   // Wrapper functions that bind instance.id to shared sender functions
   const sendText = (number: string, text: string, accessToken: string) =>
