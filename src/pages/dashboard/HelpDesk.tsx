@@ -301,8 +301,7 @@ const HelpDesk = () => {
     if (!selectedInboxId || syncing) return;
     setSyncing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+      const accessToken = await getAccessToken();
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-conversations`,
