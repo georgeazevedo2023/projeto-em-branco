@@ -222,9 +222,8 @@ export default function SyncInstancesDialog({
       
       onSync();
       fetchData(); // Refresh data
-    } catch (err: any) {
-      console.error('Error deleting orphaned instances:', err);
-      toast.error(err.message || 'Erro ao remover instâncias órfãs');
+    } catch (err) {
+      handleError(err, 'Erro ao remover instâncias órfãs', 'Error deleting orphaned instances');
     } finally {
       setDeletingOrphans(false);
     }
