@@ -457,9 +457,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
   const handleSendText = async () => {
     if (!message.trim()) { toast.error('Digite uma mensagem'); return; }
 
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) { toast.error('Sessão expirada'); return; }
-    const accessToken = session.data.session.access_token;
+    const accessToken = await getAccessToken();
 
     const { startedAt, successCount, failCount } = await runSendLoop(accessToken, async (lead) => {
       await sendText(lead.jid, message.trim(), accessToken);
