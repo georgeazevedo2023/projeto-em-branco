@@ -384,7 +384,7 @@ const BackupModule = () => {
         if (users?.length) {
           const cols = ['id', 'email', 'created_at', 'last_sign_in_at', 'email_confirmed_at', 'phone', 'role'];
           const header = cols.join(',');
-          const body = users.map((u: any) =>
+          const body = users.map((u: Record<string, unknown>) =>
             cols.map(c => {
               const v = u[c] ?? '';
               const s = String(v);
