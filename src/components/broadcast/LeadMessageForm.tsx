@@ -187,8 +187,7 @@ const LeadMessageForm = ({ instance, selectedLeads, onComplete, initialData }: L
     carouselData?: CarouselData;
   }) => {
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) return;
+      const userId = await getSessionUserId();
 
       const completedAt = Date.now();
       const durationSeconds = Math.round((completedAt - params.startedAt) / 1000);
