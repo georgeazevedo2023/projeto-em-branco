@@ -66,7 +66,7 @@ const InstanceDetails = () => {
       // Atualizar status da UAZAPI
       await updateInstanceStatus();
     } catch (error) {
-      console.error('Error fetching instance:', error);
+      handleError(error, 'Erro ao carregar instância', 'Fetch instance');
     } finally {
       setLoading(false);
     }
