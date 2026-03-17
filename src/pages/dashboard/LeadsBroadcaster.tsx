@@ -142,7 +142,7 @@ const LeadsBroadcaster = () => {
       const ids = dbs.map(d => d.id);
       
       // Paginated fetch to avoid 1000-row limit
-      type EntryRow = Awaited<ReturnType<typeof supabase.from<'lead_database_entries'>>>['data'] extends (infer T)[] | null ? T : never;
+      interface EntryRow { id: string; phone: string; name: string | null; jid: string; source: string | null; group_name: string | null; is_verified: boolean | null; verified_name: string | null; verification_status: string | null; database_id: string; created_at: string | null; }
       const allData: EntryRow[] = [];
       const BATCH_SIZE = 1000;
       let offset = 0;
@@ -154,13 +154,13 @@ const LeadsBroadcaster = () => {
           .in('database_id', ids)
           .range(offset, offset + BATCH_SIZE - 1);
         if (error) throw error;
-        allData.push(...(batch || []));
+        allData.push(...((batch || []) as EntryRow[]));
         hasMore = (batch || []).length === BATCH_SIZE;
         offset += BATCH_SIZE;
       }
 
       const seen = new Set<string>();
-      const uniqueEntries = (data || []).filter(entry => {
+      const uniqueEntries = allData.filter(entry => {
         if (seen.has(entry.phone)) return false;
         seen.add(entry.phone);
         return true;
