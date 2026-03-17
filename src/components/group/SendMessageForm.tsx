@@ -5,7 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
-import { getAccessToken, getSessionUserId } from '@/hooks/useAuthSession';
+import { getSessionUserId } from '@/hooks/useAuthSession';
+import { uazapiProxyRaw } from '@/lib/uazapiClient';
+import { getAccessToken } from '@/hooks/useAuthSession';
 import { Send, Users, Clock } from 'lucide-react';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { toast } from '@/hooks/use-toast';
@@ -39,29 +41,12 @@ const SendMessageForm = ({ instanceToken, groupJid, groupName, participants, onM
   const regularMemberCount = regularMembers.length;
 
   const sendToNumber = async (number: string, text: string, accessToken: string) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          action: 'send-message',
-          instance_id: instanceToken,
-          groupjid: number,
-          message: text,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || 'Erro ao enviar');
-    }
-
-    return response.json();
+    return uazapiProxyRaw(accessToken, {
+      action: 'send-message',
+      instance_id: instanceToken,
+      groupjid: number,
+      message: text,
+    });
   };
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

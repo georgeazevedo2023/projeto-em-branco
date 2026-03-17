@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+import { uazapiProxy } from '@/lib/uazapiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { nowBRISO } from '@/lib/dateUtils';
@@ -267,27 +268,12 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
 
       const base64Audio = await blobToBase64(blob);
 
-      const { data: session } = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            action: 'send-audio',
-            instance_id: instanceId,
-            jid: contactJid,
-            audio: base64Audio,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Falha ao enviar áudio');
-      }
+      await uazapiProxy({
+        action: 'send-audio',
+        instance_id: instanceId,
+        jid: contactJid,
+        audio: base64Audio,
+      });
 
       // Save to DB with media_url
       const { data: insertedMsg, error } = await supabase.from('conversation_messages').insert({
@@ -386,30 +372,15 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
       const isImage = file.type.startsWith('image/');
       const mediaType = isImage ? 'image' : 'document';
 
-      const { data: session } = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            action: 'send-media',
-            instance_id: instanceId,
-            jid: contactJid,
-            mediaUrl: dataUri,
-            mediaType,
-            filename: isImage ? undefined : file.name,
-            caption: '',
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(isImage ? 'Falha ao enviar imagem' : 'Falha ao enviar documento');
-      }
+      await uazapiProxy({
+        action: 'send-media',
+        instance_id: instanceId,
+        jid: contactJid,
+        mediaUrl: dataUri,
+        mediaType,
+        filename: isImage ? undefined : file.name,
+        caption: '',
+      });
 
       // Save to DB
       const { data: insertedMsg, error } = await supabase.from('conversation_messages').insert({
@@ -495,27 +466,12 @@ export const ChatInput = ({ conversation, onMessageSent, onAgentAssigned, inboxL
           return;
         }
 
-        const { data: session } = await supabase.auth.getSession();
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uazapi-proxy`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session?.session?.access_token}`,
-            },
-            body: JSON.stringify({
-              action: 'send-chat',
-              instance_id: instanceId,
-              jid: contactJid,
-              message: text.trim(),
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Falha ao enviar mensagem');
-        }
+        await uazapiProxy({
+          action: 'send-chat',
+          instance_id: instanceId,
+          jid: contactJid,
+          message: text.trim(),
+        });
 
         const { data: insertedMsg, error } = await supabase.from('conversation_messages').insert({
           conversation_id: conversation.id,
