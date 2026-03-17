@@ -366,7 +366,7 @@ const Instances = () => {
       }
     } catch (error) {
       console.error('Error connecting:', error);
-      toast.error(error.message || 'Erro ao gerar QR Code');
+      toast.error(error instanceof Error ? error.message : 'Erro ao gerar QR Code');
     } finally {
       setIsLoadingQr(false);
     }
