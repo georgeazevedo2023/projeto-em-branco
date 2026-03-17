@@ -105,9 +105,9 @@ const InstanceGroups = ({ instance }: InstanceGroupsProps) => {
             return {
               id: phoneId,
               name: name,
-              admin: p.IsAdmin 
-                ? (p.IsSuperAdmin ? 'superadmin' : 'admin') 
-                : (p.isSuperAdmin ? 'superadmin' : (p.isAdmin ? 'admin' : undefined)),
+              admin: (p.IsAdmin || p.isAdmin)
+                ? ((p.IsSuperAdmin || p.isSuperAdmin) ? 'superadmin' as const : 'admin' as const)
+                : undefined,
             };
           });
           
