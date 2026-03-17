@@ -68,16 +68,7 @@ const GroupDetails = () => {
       });
       
       // Normalizar resposta
-      let rawGroups: any[];
-      if (Array.isArray(data)) {
-        rawGroups = data;
-      } else if (data?.groups && Array.isArray(data.groups)) {
-        rawGroups = data.groups;
-      } else if (data?.data && Array.isArray(data.data)) {
-        rawGroups = data.data;
-      } else {
-        rawGroups = [];
-      }
+      const rawGroups = extractGroupsArray(data);
 
       // Encontrar o grupo específico
       const decodedGroupId = decodeURIComponent(groupId || '');
