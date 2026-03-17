@@ -143,7 +143,8 @@ const LeadsBroadcaster = () => {
       const { data, error } = await supabase
         .from('lead_database_entries')
         .select('*')
-        .in('database_id', ids);
+        .in('database_id', ids)
+        .limit(5000);
 
       if (error) throw error;
 

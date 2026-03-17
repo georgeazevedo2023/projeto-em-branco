@@ -154,7 +154,7 @@ const HelpDesk = () => {
       .in('conversation_id', convIds)
       .eq('direction', 'private_note');
 
-    const noteSet = new Set<string>((data || []).map((m: any) => m.conversation_id));
+    const noteSet = new Set<string>((data || []).map((m: { conversation_id: string }) => m.conversation_id));
     setConversationNotesSet(noteSet);
   }, []);
 
@@ -166,7 +166,8 @@ const HelpDesk = () => {
         .from('conversations')
         .select('*, contacts(*), inboxes(id, name, instance_id, webhook_outgoing_url), departments(id, name)')
         .eq('inbox_id', selectedInboxId)
-        .order('last_message_at', { ascending: false });
+        .order('last_message_at', { ascending: false })
+        .limit(1000);
 
       if (statusFilter !== 'todas') {
         query = query.eq('status', statusFilter);
@@ -175,7 +176,7 @@ const HelpDesk = () => {
       const { data, error } = await query;
       if (error) throw error;
 
-      const convIds = (data || []).map((c: any) => c.id);
+      const convIds = (data || []).map((c: { id: string }) => c.id);
 
       // Fetch conversation labels and notes in parallel
       await Promise.all([
@@ -183,6 +184,7 @@ const HelpDesk = () => {
         fetchConversationNotes(convIds),
       ]);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: Conversation[] = (data || []).map((c: any) => ({
         ...c,
         contact: c.contacts,
